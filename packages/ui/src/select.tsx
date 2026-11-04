@@ -1,0 +1,41 @@
+﻿import type { SelectHTMLAttributes } from "react";
+
+type SelectProps = SelectHTMLAttributes<HTMLSelectElement> & {
+  label?: string;
+  error?: string;
+};
+
+export function Select({
+  label,
+  error,
+  id,
+  className = "",
+  children,
+  ...props
+}: SelectProps) {
+  return (
+    <div className="w-full">
+      {label && (
+        <label
+          htmlFor={id}
+          className="mb-2 block text-sm font-bold text-slate-700"
+        >
+          {label}
+        </label>
+      )}
+
+      <select
+        id={id}
+        className={`w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition focus:border-blue-500 focus:bg-white focus:ring-4 focus:ring-blue-100 ${error ? "border-red-400" : ""} ${className}`}
+        aria-invalid={!!error}
+        {...props}
+      >
+        {children}
+      </select>
+
+      {error && (
+        <p className="mt-1 text-sm text-red-600">{error}</p>
+      )}
+    </div>
+  );
+}

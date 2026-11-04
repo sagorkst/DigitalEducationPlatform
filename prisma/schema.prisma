@@ -1,0 +1,493 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  PENDING
+}
+
+enum OrganizationStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+enum MembershipStatus {
+  ACTIVE
+  PENDING
+  SUSPENDED
+}
+
+enum QuestionStatus {
+  DRAFT
+  PUBLISHED
+  HIDDEN
+  ARCHIVED
+}
+
+enum QuestionType {
+  MCQ
+  TRUE_FALSE
+  FILL_IN_THE_BLANKS
+  WRITTEN
+}
+
+enum Difficulty {
+  EASY
+  MEDIUM
+  HARD
+}
+
+enum ImportStatus {
+  PENDING
+  PROCESSING
+  REVIEW
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+}
+
+enum ImportRowStatus {
+  PENDING
+  VALID
+  INVALID
+  DUPLICATE
+  IMPORTED
+  SKIPPED
+}
+
+enum DuplicateStatus {
+  PENDING
+  CONFIRMED
+  REJECTED
+  MERGED
+}
+
+model User {
+  id            String     @id @default(uuid()) @db.Uuid
+  name          String
+  email         String?    @unique
+  phone         String?    @unique
+  passwordHash  String?
+  avatar        String?
+  status        UserStatus @default(PENDING)
+  emailVerified Boolean    @default(false)
+  phoneVerified Boolean    @default(false)
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+  deletedAt     DateTime?
+
+  memberships   Membership[]
+  auditLogs     AuditLog[] @relation("AuditActor")
+  importBatches ImportBatch[] @relation("ImportCreator")
+  savedFilters  SavedFilter[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Organization {
+  id          String              @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String              @unique
+  description String?
+  logo        String?
+  status      OrganizationStatus  @default(ACTIVE)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  deletedAt   DateTime?
+
+  memberships Membership[]
+
+  @@index([status])
+}
+
+model Membership {
+  id             String           @id @default(uuid()) @db.Uuid
+  userId         String           @db.Uuid
+  organizationId String           @db.Uuid
+  status         MembershipStatus @default(PENDING)
+  joinedAt       DateTime         @default(now())
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  user           User             @relation(fields: [userId], references: [id])
+  organization   Organization     @relation(fields: [organizationId], references: [id])
+  roles          MembershipRole[]
+
+  @@unique([userId, organizationId])
+  @@index([organizationId, status])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+
+  permissions RolePermission[]
+  memberships MembershipRole[]
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  description String?
+  createdAt   DateTime         @default(now())
+
+  roles       RolePermission[]
+}
+
+model RolePermission {
+  id           String     @id @default(uuid()) @db.Uuid
+  roleId       String     @db.Uuid
+  permissionId String     @db.Uuid
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+}
+
+model MembershipRole {
+  id           String     @id @default(uuid()) @db.Uuid
+  membershipId String     @db.Uuid
+  roleId       String     @db.Uuid
+
+  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id])
+
+  @@unique([membershipId, roleId])
+}
+
+model AuditLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  actorId    String?  @db.Uuid
+  action     String
+  entityType String
+  entityId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime @default(now())
+
+  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([actorId, createdAt])
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
+
+model Subject {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  topics      Topic[]
+  questions   Question[]
+
+  @@index([isActive])
+}
+
+model Topic {
+  id          String   @id @default(uuid()) @db.Uuid
+  subjectId   String   @db.Uuid
+  parentId    String?  @db.Uuid
+  name        String
+  slug        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  subject     Subject  @relation(fields: [subjectId], references: [id])
+  parent      Topic?   @relation("TopicHierarchy", fields: [parentId], references: [id])
+  children    Topic[]  @relation("TopicHierarchy")
+  questions   Question[]
+
+  @@unique([subjectId, slug])
+  @@index([subjectId, parentId])
+}
+
+model Institution {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  type        String?
+  description String?
+  website     String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  exams       Exam[]
+  occurrences QuestionOccurrence[]
+
+  @@index([name])
+  @@index([isActive])
+}
+
+model Exam {
+  id            String   @id @default(uuid()) @db.Uuid
+  institutionId String?  @db.Uuid
+  name          String
+  slug          String?
+  examType      String?
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  institution   Institution? @relation(fields: [institutionId], references: [id])
+  occurrences   QuestionOccurrence[]
+
+  @@index([institutionId, name])
+}
+
+model Post {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  occurrences QuestionOccurrence[]
+
+  @@index([name])
+}
+
+model Question {
+  id             String         @id @default(uuid()) @db.Uuid
+  questionCode   String         @unique
+  questionText   String
+  questionType   QuestionType   @default(MCQ)
+
+  // Legacy fields retained for existing Question Bank UI
+  optionA        String?
+  optionB        String?
+  optionC        String?
+  optionD        String?
+  correctAnswer  String?
+  subject        String
+  topic          String
+
+  explanation    String?
+  difficulty     Difficulty    @default(MEDIUM)
+  repeatGroupId  String?
+  status         QuestionStatus @default(DRAFT)
+
+  subjectId      String?        @db.Uuid
+  topicId        String?        @db.Uuid
+
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  deletedAt      DateTime?
+
+  subjectRef     Subject?       @relation(fields: [subjectId], references: [id])
+  topicRef       Topic?         @relation(fields: [topicId], references: [id])
+
+  options        QuestionOption[]
+  occurrences    QuestionOccurrence[]
+  histories      QuestionHistory[]
+  tags           QuestionTagLink[]
+  duplicateAsA   DuplicateCandidate[] @relation("DuplicateQuestionA")
+  duplicateAsB   DuplicateCandidate[] @relation("DuplicateQuestionB")
+
+  @@index([subject, topic])
+  @@index([subjectId, topicId])
+  @@index([status, difficulty])
+  @@index([repeatGroupId])
+  @@index([createdAt])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  label      String
+  optionText String
+  isCorrect  Boolean  @default(false)
+  sortOrder  Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, label])
+  @@index([questionId, sortOrder])
+}
+
+model QuestionOccurrence {
+  id               String   @id @default(uuid()) @db.Uuid
+  questionId       String   @db.Uuid
+
+  // Legacy text fields retained for existing data format
+  institution      String
+  examName         String
+  examYear         Int
+  postName         String?
+  department       String?
+  questionNumber   Int?
+  source           String?
+  sourcePage       Int?
+  sourceUrl        String?
+
+  institutionId    String?  @db.Uuid
+  examId           String?  @db.Uuid
+  postId           String?  @db.Uuid
+  sourceDocumentId String?  @db.Uuid
+
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  institutionRef   Institution? @relation(fields: [institutionId], references: [id])
+  examRef          Exam? @relation(fields: [examId], references: [id])
+  postRef          Post? @relation(fields: [postId], references: [id])
+  sourceDocument   SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
+
+  @@index([questionId])
+  @@index([institution, examYear])
+  @@index([institutionId, examYear])
+  @@index([examId, examYear])
+  @@index([examName, examYear])
+  @@index([postName])
+  @@index([postId])
+}
+
+model QuestionHistory {
+  id          String   @id @default(uuid()) @db.Uuid
+  questionId  String   @db.Uuid
+  version     Int
+  snapshot    Json
+  changeNote  String?
+  changedBy   String?  @db.Uuid
+  createdAt   DateTime @default(now())
+
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, version])
+  @@index([questionId, createdAt])
+}
+
+model SourceDocument {
+  id           String   @id @default(uuid()) @db.Uuid
+  title        String
+  documentType String?
+  fileName     String?
+  fileUrl      String?
+  fileHash     String?
+  description  String?
+  publishedAt  DateTime?
+  createdAt    DateTime @default(now())
+
+  occurrences  QuestionOccurrence[]
+
+  @@index([fileHash])
+  @@index([title])
+}
+
+model ImportBatch {
+  id             String       @id @default(uuid()) @db.Uuid
+  fileName       String
+  fileType       String
+  status         ImportStatus @default(PENDING)
+  totalRows      Int          @default(0)
+  validRows      Int          @default(0)
+  invalidRows    Int          @default(0)
+  duplicateRows  Int          @default(0)
+  importedRows   Int          @default(0)
+  skippedRows    Int          @default(0)
+  createdBy      String?      @db.Uuid
+  errorSummary   Json?
+  startedAt      DateTime?
+  completedAt    DateTime?
+  rolledBackAt   DateTime?
+  createdAt      DateTime     @default(now())
+
+  creator        User?        @relation("ImportCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  rows           ImportRow[]
+
+  @@index([status, createdAt])
+  @@index([createdBy, createdAt])
+}
+
+model ImportRow {
+  id            String          @id @default(uuid()) @db.Uuid
+  batchId       String          @db.Uuid
+  rowNumber     Int
+  rawData       Json
+  status        ImportRowStatus @default(PENDING)
+  errorMessages Json?
+  questionId    String?         @db.Uuid
+  createdAt     DateTime        @default(now())
+
+  batch         ImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@unique([batchId, rowNumber])
+  @@index([batchId, status])
+  @@index([questionId])
+}
+
+model DuplicateCandidate {
+  id              String          @id @default(uuid()) @db.Uuid
+  questionAId     String          @db.Uuid
+  questionBId     String          @db.Uuid
+  similarity      Float
+  status          DuplicateStatus @default(PENDING)
+  reviewNote      String?
+  reviewedBy      String?         @db.Uuid
+  reviewedAt      DateTime?
+  createdAt       DateTime        @default(now())
+
+  questionA       Question        @relation("DuplicateQuestionA", fields: [questionAId], references: [id], onDelete: Cascade)
+  questionB       Question        @relation("DuplicateQuestionB", fields: [questionBId], references: [id], onDelete: Cascade)
+
+  @@unique([questionAId, questionBId])
+  @@index([status, similarity])
+}
+
+model SavedFilter {
+  id          String   @id @default(uuid()) @db.Uuid
+  userId      String   @db.Uuid
+  name        String
+  filters     Json
+  isDefault   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+}
+
+model QuestionTag {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  slug      String   @unique
+  createdAt DateTime @default(now())
+
+  questions QuestionTagLink[]
+}
+
+model QuestionTagLink {
+  id         String       @id @default(uuid()) @db.Uuid
+  questionId String       @db.Uuid
+  tagId      String       @db.Uuid
+
+  question   Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag        QuestionTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([questionId, tagId])
+  @@index([tagId])
+}
