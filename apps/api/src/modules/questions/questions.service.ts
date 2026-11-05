@@ -45,13 +45,94 @@ export class QuestionsService {
     const questionCode = `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
 
     const question = await this.prisma.$transaction(async (tx) => {
+      let selectedSubject: {
+        id: string;
+        name: string;
+        isActive: boolean;
+      } | null = null;
+
+      let selectedTopic: {
+        id: string;
+        name: string;
+        subjectId: string;
+        isActive: boolean;
+        subject: {
+          id: string;
+          name: string;
+          isActive: boolean;
+        };
+      } | null = null;
+
+      if (dto.subjectId) {
+        selectedSubject = await tx.subject.findFirst({
+          where: {
+            id: dto.subjectId,
+            isActive: true,
+          },
+          select: {
+            id: true,
+            name: true,
+            isActive: true,
+          },
+        });
+
+        if (!selectedSubject) {
+          throw new BadRequestException(
+            'Selected Subject does not exist or is inactive.',
+          );
+        }
+      }
+
+      if (dto.topicId) {
+        selectedTopic = await tx.topic.findFirst({
+          where: {
+            id: dto.topicId,
+            isActive: true,
+          },
+          include: {
+            subject: {
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+              },
+            },
+          },
+        });
+
+        if (!selectedTopic || !selectedTopic.subject.isActive) {
+          throw new BadRequestException(
+            'Selected Topic does not exist or its Subject is inactive.',
+          );
+        }
+
+        if (
+          selectedSubject &&
+          selectedTopic.subjectId !== selectedSubject.id
+        ) {
+          throw new BadRequestException(
+            'Selected Topic must belong to the selected Subject.',
+          );
+        }
+
+        if (!selectedSubject) {
+          selectedSubject = selectedTopic.subject;
+        }
+      }
+
       return tx.question.create({
         data: {
           questionCode,
           questionText: dto.questionText,
           questionType,
-          subject: dto.subject,
-          topic: dto.topic,
+          subject: selectedSubject?.name ?? dto.subject,
+          topic: selectedTopic?.name ?? dto.topic,
+          ...(selectedSubject
+            ? { subjectRef: { connect: { id: selectedSubject.id } } }
+            : {}),
+          ...(selectedTopic
+            ? { topicRef: { connect: { id: selectedTopic.id } } }
+            : {}),
           correctAnswer: dto.correctAnswer,
           explanation: dto.explanation,
           difficulty: dto.difficulty ?? 'MEDIUM',
@@ -522,6 +603,100 @@ export class QuestionsService {
         }
       }
 
+      // Resolve Master Subject/Topic relations only when UUIDs are supplied.
+      let relationSubject:
+        | { id: string; name: string; isActive: boolean }
+        | null = null;
+
+      let relationTopic:
+        | {
+            id: string;
+            name: string;
+            subjectId: string;
+            isActive: boolean;
+            subject: { id: string; name: string; isActive: boolean };
+          }
+        | null = null;
+
+      const relationIdsProvided =
+        dto.subjectId !== undefined || dto.topicId !== undefined;
+
+      if (relationIdsProvided) {
+        if (dto.subjectId) {
+          relationSubject = await tx.subject.findFirst({
+            where: {
+              id: dto.subjectId,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              name: true,
+              isActive: true,
+            },
+          });
+
+          if (!relationSubject) {
+            throw new BadRequestException(
+              'Selected Subject does not exist or is inactive.',
+            );
+          }
+        }
+
+        if (dto.topicId) {
+          relationTopic = await tx.topic.findFirst({
+            where: {
+              id: dto.topicId,
+              isActive: true,
+            },
+            include: {
+              subject: {
+                select: {
+                  id: true,
+                  name: true,
+                  isActive: true,
+                },
+              },
+            },
+          });
+
+          if (!relationTopic || !relationTopic.subject.isActive) {
+            throw new BadRequestException(
+              'Selected Topic does not exist or its Subject is inactive.',
+            );
+          }
+
+          if (
+            relationSubject &&
+            relationTopic.subjectId !== relationSubject.id
+          ) {
+            throw new BadRequestException(
+              'Selected Topic must belong to the selected Subject.',
+            );
+          }
+
+          if (!relationSubject) {
+            relationSubject = relationTopic.subject;
+          }
+        } else if (dto.subjectId && existing.topicId) {
+          const existingTopic = await tx.topic.findUnique({
+            where: { id: existing.topicId },
+            select: {
+              id: true,
+              subjectId: true,
+            },
+          });
+
+          if (
+            existingTopic &&
+            existingTopic.subjectId !== relationSubject?.id
+          ) {
+            throw new BadRequestException(
+              'The existing Topic belongs to another Subject. Provide a Topic ID belonging to the new Subject.',
+            );
+          }
+        }
+      }
+
       const latestHistory = await tx.questionHistory.findFirst({
         where: { questionId: id },
         orderBy: { version: 'desc' },
@@ -557,6 +732,18 @@ export class QuestionsService {
           : {}),
         ...(dto.topic !== undefined
           ? { topic: dto.topic }
+          : {}),
+        ...(relationIdsProvided && relationSubject
+          ? {
+              subject: relationSubject.name,
+              subjectRef: { connect: { id: relationSubject.id } },
+            }
+          : {}),
+        ...(relationIdsProvided && relationTopic
+          ? {
+              topic: relationTopic.name,
+              topicRef: { connect: { id: relationTopic.id } },
+            }
           : {}),
         ...(dto.correctAnswer !== undefined
           ? { correctAnswer: dto.correctAnswer }
@@ -764,6 +951,8 @@ export class QuestionsService {
           | 'WRITTEN';
         subject: string;
         topic: string;
+        subjectId?: string | null;
+        topicId?: string | null;
         correctAnswer: string | null;
         explanation: string | null;
         difficulty: 'EASY' | 'MEDIUM' | 'HARD';
@@ -828,6 +1017,20 @@ export class QuestionsService {
           questionType: snapshot.questionType,
           subject: snapshot.subject,
           topic: snapshot.topic,
+          ...(snapshot.subjectId !== undefined
+            ? {
+                subjectRef: snapshot.subjectId
+                  ? { connect: { id: snapshot.subjectId } }
+                  : { disconnect: true },
+              }
+            : {}),
+          ...(snapshot.topicId !== undefined
+            ? {
+                topicRef: snapshot.topicId
+                  ? { connect: { id: snapshot.topicId } }
+                  : { disconnect: true },
+              }
+            : {}),
           correctAnswer: snapshot.correctAnswer,
           explanation: snapshot.explanation,
           difficulty: snapshot.difficulty,

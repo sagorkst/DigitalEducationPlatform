@@ -13,9 +13,14 @@ import {
   ArrayMaxSize,
   IsBoolean,
   MaxLength,
+  IsUUID,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
+
+// ==========================================
+// ENUMS
+// ==========================================
 
 enum QuestionType {
   MCQ = 'MCQ',
@@ -37,13 +42,19 @@ enum QuestionStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
+// ==========================================
+// QUESTION OPTION DTO
+// ==========================================
+
 class QuestionOptionDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   label!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   optionText!: string;
 
   @IsOptional()
@@ -56,13 +67,19 @@ class QuestionOptionDto {
   sortOrder?: number;
 }
 
+// ==========================================
+// QUESTION OCCURRENCE DTO
+// ==========================================
+
 class QuestionOccurrenceDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   institution!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   examName!: string;
 
   @IsInt()
@@ -72,10 +89,12 @@ class QuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   postName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   department?: string;
 
   @IsOptional()
@@ -85,6 +104,7 @@ class QuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   source?: string;
 
   @IsOptional()
@@ -94,8 +114,29 @@ class QuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   sourceUrl?: string;
+
+  @IsOptional()
+  @IsUUID()
+  institutionId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  examId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  postId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  sourceDocumentId?: string;
 }
+
+// ==========================================
+// CREATE QUESTION DTO
+// ==========================================
 
 export class CreateQuestionDto {
   @IsString()
@@ -107,20 +148,34 @@ export class CreateQuestionDto {
   @IsEnum(QuestionType)
   questionType?: QuestionType;
 
+  // Legacy text fields retained for compatibility.
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   subject!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   topic!: string;
+
+  // Master Subject and Topic relations.
+  @IsOptional()
+  @IsUUID()
+  subjectId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  topicId?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   correctAnswer?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   explanation?: string;
 
   @IsOptional()

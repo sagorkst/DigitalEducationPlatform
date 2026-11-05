@@ -13,9 +13,18 @@ import {
   ArrayMaxSize,
   IsBoolean,
   MaxLength,
+  IsUUID,
+  Validate,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
+  ValidationArguments,
 } from 'class-validator';
 
 import { Type } from 'class-transformer';
+
+// ==========================================
+// ENUMS
+// ==========================================
 
 enum QuestionType {
   MCQ = 'MCQ',
@@ -37,13 +46,61 @@ enum QuestionStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-class UpdateQuestionOptionDto {
+// ==========================================
+// AT LEAST ONE UPDATE FIELD VALIDATOR
+// ==========================================
+
+@ValidatorConstraint({
+  name: 'atLeastOneUpdateField',
+  async: false,
+})
+class AtLeastOneUpdateFieldConstraint
+  implements ValidatorConstraintInterface
+{
+  validate(
+    _value: unknown,
+    args: ValidationArguments,
+  ): boolean {
+    const dto = args.object as Record<string, unknown>;
+
+    const allowedFields = [
+      'questionText',
+      'questionType',
+      'subject',
+      'topic',
+      'subjectId',
+      'topicId',
+      'correctAnswer',
+      'explanation',
+      'difficulty',
+      'status',
+      'options',
+      'addOccurrences',
+    ];
+
+    return allowedFields.some((field) => {
+      return dto[field] !== undefined && dto[field] !== null;
+    });
+  }
+
+  defaultMessage(): string {
+    return 'At least one question field must be provided for update.';
+  }
+}
+
+// ==========================================
+// QUESTION OPTION DTO
+// ==========================================
+
+class QuestionOptionDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(10)
   label!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(2000)
   optionText!: string;
 
   @IsOptional()
@@ -56,13 +113,19 @@ class UpdateQuestionOptionDto {
   sortOrder?: number;
 }
 
-class UpdateQuestionOccurrenceDto {
+// ==========================================
+// QUESTION OCCURRENCE DTO
+// ==========================================
+
+class QuestionOccurrenceDto {
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   institution!: string;
 
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   examName!: string;
 
   @IsInt()
@@ -72,10 +135,12 @@ class UpdateQuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   postName?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(200)
   department?: string;
 
   @IsOptional()
@@ -85,6 +150,7 @@ class UpdateQuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(500)
   source?: string;
 
   @IsOptional()
@@ -94,10 +160,37 @@ class UpdateQuestionOccurrenceDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(2000)
   sourceUrl?: string;
+
+  @IsOptional()
+  @IsUUID()
+  institutionId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  examId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  postId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  sourceDocumentId?: string;
 }
 
+// ==========================================
+// UPDATE QUESTION DTO
+// ==========================================
+
 export class UpdateQuestionDto {
+  // At least one actual update field is required.
+  // changeNote alone does not count as an update.
+
+  @Validate(AtLeastOneUpdateFieldConstraint)
+  private readonly _atLeastOneUpdateField?: boolean;
+
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -108,22 +201,36 @@ export class UpdateQuestionDto {
   @IsEnum(QuestionType)
   questionType?: QuestionType;
 
+  // Legacy text fields retained for compatibility.
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   subject?: string;
 
   @IsOptional()
   @IsString()
   @IsNotEmpty()
+  @MaxLength(200)
   topic?: string;
+
+  // Master Subject and Topic relations.
+  @IsOptional()
+  @IsUUID()
+  subjectId?: string;
+
+  @IsOptional()
+  @IsUUID()
+  topicId?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   correctAnswer?: string;
 
   @IsOptional()
   @IsString()
+  @MaxLength(5000)
   explanation?: string;
 
   @IsOptional()
@@ -134,22 +241,25 @@ export class UpdateQuestionDto {
   @IsEnum(QuestionStatus)
   status?: QuestionStatus;
 
+  // Replaces existing options when supplied.
   @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })
-  @Type(() => UpdateQuestionOptionDto)
-  options?: UpdateQuestionOptionDto[];
+  @Type(() => QuestionOptionDto)
+  options?: QuestionOptionDto[];
 
+  // Adds new occurrences without replacing existing ones.
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => UpdateQuestionOccurrenceDto)
-  addOccurrences?: UpdateQuestionOccurrenceDto[];
+  @Type(() => QuestionOccurrenceDto)
+  addOccurrences?: QuestionOccurrenceDto[];
 
   @IsOptional()
   @IsString()
+  @MaxLength(1000)
   changeNote?: string;
 }
