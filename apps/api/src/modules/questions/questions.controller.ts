@@ -23,14 +23,20 @@ export class QuestionsController {
     private readonly questionsService: QuestionsService,
   ) {}
 
+  // ==========================================
   // CREATE QUESTION
+  // ==========================================
+
   @Post()
   @HttpCode(HttpStatus.CREATED)
   async create(@Body() dto: CreateQuestionDto) {
     return this.questionsService.create(dto);
   }
 
+  // ==========================================
   // GET ALL QUESTIONS + FILTERS
+  // ==========================================
+
   @Get()
   async findAll(
     @Query('page') page?: string,
@@ -70,13 +76,36 @@ export class QuestionsController {
     });
   }
 
+  // ==========================================
+  // GET DELETED QUESTIONS (TRASH)
+  // ==========================================
+
+  @Get('trash')
+  async getDeletedQuestions(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.questionsService.getDeletedQuestions({
+      page,
+      limit,
+      search,
+    });
+  }
+
+  // ==========================================
   // GET QUESTION BY ID
+  // ==========================================
+
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.questionsService.findOne(id);
   }
 
+  // ==========================================
   // UPDATE QUESTION
+  // ==========================================
+
   @Put(':id')
   async update(
     @Param('id') id: string,
@@ -85,13 +114,19 @@ export class QuestionsController {
     return this.questionsService.update(id, dto);
   }
 
+  // ==========================================
   // GET ALL HISTORY VERSIONS
+  // ==========================================
+
   @Get(':id/history')
   async getHistory(@Param('id') id: string) {
     return this.questionsService.getHistory(id);
   }
 
+  // ==========================================
   // GET A SPECIFIC HISTORY VERSION
+  // ==========================================
+
   @Get(':id/history/:version')
   async getHistoryVersion(
     @Param('id') id: string,
@@ -100,7 +135,10 @@ export class QuestionsController {
     return this.questionsService.getHistoryVersion(id, version);
   }
 
+  // ==========================================
   // RESTORE A HISTORY VERSION
+  // ==========================================
+
   @Post(':id/restore/:version')
   async restoreHistory(
     @Param('id') id: string,
@@ -109,14 +147,20 @@ export class QuestionsController {
     return this.questionsService.restoreHistory(id, version);
   }
 
+  // ==========================================
   // SOFT DELETE QUESTION
+  // ==========================================
+
   @HttpCode(HttpStatus.OK)
   @Delete(':id')
   async softDelete(@Param('id') id: string) {
     return this.questionsService.softDelete(id);
   }
 
+  // ==========================================
   // RECOVER DELETED QUESTION
+  // ==========================================
+
   @HttpCode(HttpStatus.OK)
   @Post(':id/recover')
   async recover(@Param('id') id: string) {

@@ -1,3 +1,4 @@
+
 import {
   Injectable,
   BadRequestException,
@@ -803,7 +804,6 @@ export class QuestionsService {
         );
       }
 
-      // Save current state before restoring the selected old version.
       const latestHistory = await tx.questionHistory.findFirst({
         where: { questionId: id },
         orderBy: { version: 'desc' },
@@ -821,7 +821,6 @@ export class QuestionsService {
         },
       });
 
-      // Restore the question and its options and occurrences.
       const restored = await tx.question.update({
         where: { id },
         data: {
@@ -885,7 +884,11 @@ export class QuestionsService {
       };
     });
   }
-    // Soft Delete Question
+
+  // ==========================================
+  // SOFT DELETE QUESTION
+  // ==========================================
+
   async softDelete(id: string) {
     const question = await this.prisma.question.findFirst({
       where: {
@@ -915,7 +918,100 @@ export class QuestionsService {
     };
   }
 
-  // Recover Deleted Question
+  // ==========================================
+  // GET DELETED QUESTIONS (TRASH)
+  // ==========================================
+
+  async getDeletedQuestions(query: {
+    page?: string;
+    limit?: string;
+    search?: string;
+  }) {
+    const page = Math.max(1, Number(query.page) || 1);
+    const limit = Math.min(100, Math.max(1, Number(query.limit) || 20));
+    const search = query.search?.trim();
+
+    const where: Prisma.QuestionWhereInput = {
+      deletedAt: {
+        not: null,
+      },
+
+      ...(search
+        ? {
+            OR: [
+              {
+                questionText: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                questionCode: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                subject: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+              {
+                topic: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [questions, total] = await this.prisma.$transaction([
+      this.prisma.question.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: {
+          deletedAt: 'desc',
+        },
+        include: {
+          options: {
+            orderBy: {
+              sortOrder: 'asc',
+            },
+          },
+          occurrences: {
+            orderBy: {
+              examYear: 'desc',
+            },
+          },
+        },
+      }),
+
+      this.prisma.question.count({ where }),
+    ]);
+
+    return {
+      success: true,
+      data: questions,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+      filters: {
+        search: search ?? null,
+      },
+    };
+  }
+
+  // ==========================================
+  // RECOVER DELETED QUESTION
+  // ==========================================
+
   async recover(id: string) {
     const question = await this.prisma.question.findFirst({
       where: {
