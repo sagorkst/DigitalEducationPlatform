@@ -211,6 +211,7 @@ export const TopicScalarFieldEnum = {
   name: 'name',
   slug: 'slug',
   description: 'description',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const

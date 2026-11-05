@@ -31,6 +31,7 @@ export type TopicMinAggregateOutputType = {
   name: string | null
   slug: string | null
   description: string | null
+  isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -42,6 +43,7 @@ export type TopicMaxAggregateOutputType = {
   name: string | null
   slug: string | null
   description: string | null
+  isActive: boolean | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -53,6 +55,7 @@ export type TopicCountAggregateOutputType = {
   name: number
   slug: number
   description: number
+  isActive: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -66,6 +69,7 @@ export type TopicMinAggregateInputType = {
   name?: true
   slug?: true
   description?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -77,6 +81,7 @@ export type TopicMaxAggregateInputType = {
   name?: true
   slug?: true
   description?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -88,6 +93,7 @@ export type TopicCountAggregateInputType = {
   name?: true
   slug?: true
   description?: true
+  isActive?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -172,6 +178,7 @@ export type TopicGroupByOutputType = {
   name: string
   slug: string
   description: string | null
+  isActive: boolean
   createdAt: Date
   updatedAt: Date
   _count: TopicCountAggregateOutputType | null
@@ -204,6 +211,7 @@ export type TopicWhereInput = {
   name?: Prisma.StringFilter<"Topic"> | string
   slug?: Prisma.StringFilter<"Topic"> | string
   description?: Prisma.StringNullableFilter<"Topic"> | string | null
+  isActive?: Prisma.BoolFilter<"Topic"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
   subject?: Prisma.XOR<Prisma.SubjectScalarRelationFilter, Prisma.SubjectWhereInput>
@@ -219,6 +227,7 @@ export type TopicOrderByWithRelationInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   subject?: Prisma.SubjectOrderByWithRelationInput
@@ -238,6 +247,7 @@ export type TopicWhereUniqueInput = Prisma.AtLeast<{
   name?: Prisma.StringFilter<"Topic"> | string
   slug?: Prisma.StringFilter<"Topic"> | string
   description?: Prisma.StringNullableFilter<"Topic"> | string | null
+  isActive?: Prisma.BoolFilter<"Topic"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
   subject?: Prisma.XOR<Prisma.SubjectScalarRelationFilter, Prisma.SubjectWhereInput>
@@ -253,6 +263,7 @@ export type TopicOrderByWithAggregationInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.TopicCountOrderByAggregateInput
@@ -270,6 +281,7 @@ export type TopicScalarWhereWithAggregatesInput = {
   name?: Prisma.StringWithAggregatesFilter<"Topic"> | string
   slug?: Prisma.StringWithAggregatesFilter<"Topic"> | string
   description?: Prisma.StringNullableWithAggregatesFilter<"Topic"> | string | null
+  isActive?: Prisma.BoolWithAggregatesFilter<"Topic"> | boolean
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Topic"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Topic"> | Date | string
 }
@@ -279,6 +291,7 @@ export type TopicCreateInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   subject: Prisma.SubjectCreateNestedOneWithoutTopicsInput
@@ -294,6 +307,7 @@ export type TopicUncheckedCreateInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.TopicUncheckedCreateNestedManyWithoutParentInput
@@ -305,6 +319,7 @@ export type TopicUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subject?: Prisma.SubjectUpdateOneRequiredWithoutTopicsNestedInput
@@ -320,6 +335,7 @@ export type TopicUncheckedUpdateInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.TopicUncheckedUpdateManyWithoutParentNestedInput
@@ -333,6 +349,7 @@ export type TopicCreateManyInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -342,6 +359,7 @@ export type TopicUpdateManyMutationInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -353,6 +371,7 @@ export type TopicUncheckedUpdateManyInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -384,6 +403,7 @@ export type TopicCountOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -395,6 +415,7 @@ export type TopicMaxOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -406,6 +427,7 @@ export type TopicMinOrderByAggregateInput = {
   name?: Prisma.SortOrder
   slug?: Prisma.SortOrder
   description?: Prisma.SortOrder
+  isActive?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -531,6 +553,7 @@ export type TopicCreateWithoutSubjectInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   parent?: Prisma.TopicCreateNestedOneWithoutChildrenInput
@@ -544,6 +567,7 @@ export type TopicUncheckedCreateWithoutSubjectInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.TopicUncheckedCreateNestedManyWithoutParentInput
@@ -586,6 +610,7 @@ export type TopicScalarWhereInput = {
   name?: Prisma.StringFilter<"Topic"> | string
   slug?: Prisma.StringFilter<"Topic"> | string
   description?: Prisma.StringNullableFilter<"Topic"> | string | null
+  isActive?: Prisma.BoolFilter<"Topic"> | boolean
   createdAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Topic"> | Date | string
 }
@@ -595,6 +620,7 @@ export type TopicCreateWithoutChildrenInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   subject: Prisma.SubjectCreateNestedOneWithoutTopicsInput
@@ -609,6 +635,7 @@ export type TopicUncheckedCreateWithoutChildrenInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   questions?: Prisma.QuestionUncheckedCreateNestedManyWithoutTopicRefInput
@@ -624,6 +651,7 @@ export type TopicCreateWithoutParentInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   subject: Prisma.SubjectCreateNestedOneWithoutTopicsInput
@@ -637,6 +665,7 @@ export type TopicUncheckedCreateWithoutParentInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.TopicUncheckedCreateNestedManyWithoutParentInput
@@ -669,6 +698,7 @@ export type TopicUpdateWithoutChildrenInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subject?: Prisma.SubjectUpdateOneRequiredWithoutTopicsNestedInput
@@ -683,6 +713,7 @@ export type TopicUncheckedUpdateWithoutChildrenInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   questions?: Prisma.QuestionUncheckedUpdateManyWithoutTopicRefNestedInput
@@ -709,6 +740,7 @@ export type TopicCreateWithoutQuestionsInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   subject: Prisma.SubjectCreateNestedOneWithoutTopicsInput
@@ -723,6 +755,7 @@ export type TopicUncheckedCreateWithoutQuestionsInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
   children?: Prisma.TopicUncheckedCreateNestedManyWithoutParentInput
@@ -749,6 +782,7 @@ export type TopicUpdateWithoutQuestionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subject?: Prisma.SubjectUpdateOneRequiredWithoutTopicsNestedInput
@@ -763,6 +797,7 @@ export type TopicUncheckedUpdateWithoutQuestionsInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.TopicUncheckedUpdateManyWithoutParentNestedInput
@@ -774,6 +809,7 @@ export type TopicCreateManySubjectInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -783,6 +819,7 @@ export type TopicUpdateWithoutSubjectInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   parent?: Prisma.TopicUpdateOneWithoutChildrenNestedInput
@@ -796,6 +833,7 @@ export type TopicUncheckedUpdateWithoutSubjectInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.TopicUncheckedUpdateManyWithoutParentNestedInput
@@ -808,6 +846,7 @@ export type TopicUncheckedUpdateManyWithoutSubjectInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -818,6 +857,7 @@ export type TopicCreateManyParentInput = {
   name: string
   slug: string
   description?: string | null
+  isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -827,6 +867,7 @@ export type TopicUpdateWithoutParentInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   subject?: Prisma.SubjectUpdateOneRequiredWithoutTopicsNestedInput
@@ -840,6 +881,7 @@ export type TopicUncheckedUpdateWithoutParentInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   children?: Prisma.TopicUncheckedUpdateManyWithoutParentNestedInput
@@ -852,6 +894,7 @@ export type TopicUncheckedUpdateManyWithoutParentInput = {
   name?: Prisma.StringFieldUpdateOperationsInput | string
   slug?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -903,6 +946,7 @@ export type TopicSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   name?: boolean
   slug?: boolean
   description?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   subject?: boolean | Prisma.SubjectDefaultArgs<ExtArgs>
@@ -919,6 +963,7 @@ export type TopicSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   slug?: boolean
   description?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   subject?: boolean | Prisma.SubjectDefaultArgs<ExtArgs>
@@ -932,6 +977,7 @@ export type TopicSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
   name?: boolean
   slug?: boolean
   description?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   subject?: boolean | Prisma.SubjectDefaultArgs<ExtArgs>
@@ -945,11 +991,12 @@ export type TopicSelectScalar = {
   name?: boolean
   slug?: boolean
   description?: boolean
+  isActive?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type TopicOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subjectId" | "parentId" | "name" | "slug" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["topic"]>
+export type TopicOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "subjectId" | "parentId" | "name" | "slug" | "description" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["topic"]>
 export type TopicInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subject?: boolean | Prisma.SubjectDefaultArgs<ExtArgs>
   parent?: boolean | Prisma.Topic$parentArgs<ExtArgs>
@@ -981,6 +1028,7 @@ export type $TopicPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs 
     name: string
     slug: string
     description: string | null
+    isActive: boolean
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["topic"]>
@@ -1416,6 +1464,7 @@ export interface TopicFieldRefs {
   readonly name: Prisma.FieldRef<"Topic", 'String'>
   readonly slug: Prisma.FieldRef<"Topic", 'String'>
   readonly description: Prisma.FieldRef<"Topic", 'String'>
+  readonly isActive: Prisma.FieldRef<"Topic", 'Boolean'>
   readonly createdAt: Prisma.FieldRef<"Topic", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Topic", 'DateTime'>
 }
