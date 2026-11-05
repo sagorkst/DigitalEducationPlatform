@@ -1042,4 +1042,91 @@ export class QuestionsService {
       data: recoveredQuestion,
     };
   }
+
+  // ==========================================
+  // PERMANENTLY DELETE QUESTION
+  // ONLY QUESTIONS IN TRASH CAN BE DELETED
+  // ==========================================
+
+  async permanentDelete(id: string) {
+    return this.prisma.$transaction(async (tx) => {
+      // Step 1: Find question only if it is already in Trash.
+      const question = await tx.question.findFirst({
+        where: {
+          id,
+          deletedAt: {
+            not: null,
+          },
+        },
+        select: {
+          id: true,
+          questionCode: true,
+          questionText: true,
+          deletedAt: true,
+        },
+      });
+
+      if (!question) {
+        const existingQuestion = await tx.question.findUnique({
+          where: { id },
+          select: {
+            id: true,
+            deletedAt: true,
+          },
+        });
+
+        if (!existingQuestion) {
+          throw new NotFoundException('Question not found.');
+        }
+
+        if (existingQuestion.deletedAt === null) {
+          throw new BadRequestException(
+            'Active questions cannot be permanently deleted. Move the question to Trash first.',
+          );
+        }
+
+        throw new NotFoundException('Deleted question not found.');
+      }
+
+      // Step 2: Detach ImportRow references.
+      // ImportRow.questionId has no foreign key relation.
+      const detachedImportRows = await tx.importRow.updateMany({
+        where: {
+          questionId: id,
+        },
+        data: {
+          questionId: null,
+        },
+      });
+
+      // Step 3: Delete only if the question is still in Trash.
+      // Related records are deleted through database Cascade rules.
+      const deletion = await tx.question.deleteMany({
+        where: {
+          id,
+          deletedAt: {
+            not: null,
+          },
+        },
+      });
+
+      if (deletion.count !== 1) {
+        throw new BadRequestException(
+          'Permanent deletion failed. The question may have been recovered or changed. Please try again.',
+        );
+      }
+
+      return {
+        success: true,
+        message: 'Question permanently deleted successfully.',
+        data: {
+          id: question.id,
+          questionCode: question.questionCode,
+          questionText: question.questionText,
+          permanentlyDeleted: true,
+          detachedImportRows: detachedImportRows.count,
+        },
+      };
+    });
+  }
 }

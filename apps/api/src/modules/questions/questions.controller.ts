@@ -158,6 +158,17 @@ export class QuestionsController {
   }
 
   // ==========================================
+  // PERMANENT DELETE QUESTION
+  // ONLY FROM TRASH
+  // ==========================================
+
+  @HttpCode(HttpStatus.OK)
+  @Delete(':id/permanent')
+  async permanentDelete(@Param('id') id: string) {
+    return this.questionsService.permanentDelete(id);
+  }
+
+  // ==========================================
   // RECOVER DELETED QUESTION
   // ==========================================
 
