@@ -16,6 +16,7 @@ import { ImportsModule } from './modules/imports/imports.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 @Module({
   imports: [
@@ -32,6 +33,7 @@ import { AnalyticsModule } from './modules/analytics/analytics.module';
     ReviewsModule,
     TagsModule,
     AnalyticsModule,
+    AuthModule,
   ],
   controllers: [
     HealthController,
