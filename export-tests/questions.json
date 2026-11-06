@@ -1,0 +1,485 @@
+{
+  "exportedAt": "2026-11-06T03:59:21.727Z",
+  "totalQuestions": 10,
+  "questions": [
+    {
+      "questionCode": "Q-1793937329640-A921CD",
+      "questionText": "Bulk Import Test Question 828238326",
+      "questionType": "MCQ",
+      "subject": "General Knowledge",
+      "topic": "Bangladesh",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Test Institution",
+          "examName": "Test Exam",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": null,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793937329563-715DE1",
+      "questionText": "Bulk Import Test Question 702943964",
+      "questionType": "MCQ",
+      "subject": "General Knowledge",
+      "topic": "Bangladesh",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Test Institution",
+          "examName": "Test Exam",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": null,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793936331400-236089",
+      "questionText": "Exact automatic detection test baad118cefcd4496ab9d27d3061c6af0",
+      "questionType": "MCQ",
+      "subject": "Duplicate API Testing",
+      "topic": "Automated Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Auto Detect Exam B baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793936331365-D8129C",
+      "questionText": "Exact automatic detection test baad118cefcd4496ab9d27d3061c6af0",
+      "questionType": "MCQ",
+      "subject": "Duplicate API Testing",
+      "topic": "Automated Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Auto Detect Exam A baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793936331313-B52EBC",
+      "questionText": "Another reject test question baad118cefcd4496ab9d27d3061c6af0",
+      "questionType": "MCQ",
+      "subject": "Duplicate API Testing",
+      "topic": "Automated Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Reject Exam B baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793936331283-8FDAC1",
+      "questionText": "Reject test question baad118cefcd4496ab9d27d3061c6af0",
+      "questionType": "MCQ",
+      "subject": "Duplicate API Testing",
+      "topic": "Automated Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Reject Exam A baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793936330358-7B5196",
+      "questionText": "Duplicate manual test question baad118cefcd4496ab9d27d3061c6af0",
+      "questionType": "MCQ",
+      "subject": "Duplicate API Testing",
+      "topic": "Automated Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Manual Exam A baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        },
+        {
+          "institution": "Duplicate Test Institution",
+          "examName": "Manual Exam B baad118cefcd4496ab9d27d3061c6af0",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": 1,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793935129327-EC25B3",
+      "questionText": "Occurrence API Test Question 1707320012",
+      "questionType": "MCQ",
+      "subject": "General Knowledge",
+      "topic": "Testing",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": null,
+      "explanation": null,
+      "difficulty": "MEDIUM",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Option A",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Option B",
+          "isCorrect": false,
+          "sortOrder": 2
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Legacy Test Institution",
+          "examName": "Legacy Test Exam",
+          "examYear": 2020,
+          "postName": null,
+          "department": null,
+          "questionNumber": null,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793894979951-2964FE",
+      "questionText": "What is the plural form of 'Child'?",
+      "questionType": "MCQ",
+      "subject": "English",
+      "topic": "Noun",
+      "subjectId": "371427e4-3370-4ee2-b062-47fe3695e0ce",
+      "topicId": "13da196d-1ae7-4c97-a5d7-bc375fef50a7",
+      "correctAnswer": "Children",
+      "explanation": "The plural form of Child is Children.",
+      "difficulty": "EASY",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Childs",
+          "isCorrect": false,
+          "sortOrder": 1
+        },
+        {
+          "label": "B",
+          "optionText": "Children",
+          "isCorrect": true,
+          "sortOrder": 2
+        },
+        {
+          "label": "C",
+          "optionText": "Childes",
+          "isCorrect": false,
+          "sortOrder": 3
+        },
+        {
+          "label": "D",
+          "optionText": "Childrens",
+          "isCorrect": false,
+          "sortOrder": 4
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Test Organization",
+          "examName": "Test Exam",
+          "examYear": 2025,
+          "postName": null,
+          "department": null,
+          "questionNumber": null,
+          "source": null,
+          "sourcePage": null,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    },
+    {
+      "questionCode": "Q-1793838402632-DE986C",
+      "questionText": "What is the capital of Bangladesh?",
+      "questionType": "MCQ",
+      "subject": "General Knowledge",
+      "topic": "Bangladesh Affairs",
+      "subjectId": null,
+      "topicId": null,
+      "correctAnswer": "B",
+      "explanation": "Dhaka is the capital of Bangladesh.",
+      "difficulty": "EASY",
+      "status": "DRAFT",
+      "options": [
+        {
+          "label": "A",
+          "optionText": "Chattogram",
+          "isCorrect": false,
+          "sortOrder": 0
+        },
+        {
+          "label": "B",
+          "optionText": "Dhaka",
+          "isCorrect": true,
+          "sortOrder": 1
+        },
+        {
+          "label": "C",
+          "optionText": "Khulna",
+          "isCorrect": false,
+          "sortOrder": 2
+        },
+        {
+          "label": "D",
+          "optionText": "Rajshahi",
+          "isCorrect": false,
+          "sortOrder": 3
+        }
+      ],
+      "occurrences": [
+        {
+          "institution": "Example Organization",
+          "examName": "Demo Recruitment Exam",
+          "examYear": 2025,
+          "postName": "Office Assistant",
+          "department": null,
+          "questionNumber": null,
+          "source": "Demo Question Paper",
+          "sourcePage": 1,
+          "sourceUrl": null,
+          "institutionId": null,
+          "examId": null,
+          "postId": null,
+          "sourceDocumentId": null
+        }
+      ]
+    }
+  ]
+}
