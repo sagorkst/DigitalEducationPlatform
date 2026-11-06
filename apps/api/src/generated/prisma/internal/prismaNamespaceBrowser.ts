@@ -77,7 +77,8 @@ export const ModelName = {
   QuestionTag: 'QuestionTag',
   QuestionTagLink: 'QuestionTagLink',
   QuestionReview: 'QuestionReview',
-  VerificationCode: 'VerificationCode'
+  VerificationCode: 'VerificationCode',
+  PasswordResetToken: 'PasswordResetToken'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -102,6 +103,7 @@ export const UserScalarFieldEnum = {
   email: 'email',
   phone: 'phone',
   passwordHash: 'passwordHash',
+  tokenVersion: 'tokenVersion',
   avatar: 'avatar',
   status: 'status',
   emailVerified: 'emailVerified',
@@ -476,6 +478,18 @@ export const VerificationCodeScalarFieldEnum = {
 } as const
 
 export type VerificationCodeScalarFieldEnum = (typeof VerificationCodeScalarFieldEnum)[keyof typeof VerificationCodeScalarFieldEnum]
+
+
+export const PasswordResetTokenScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type PasswordResetTokenScalarFieldEnum = (typeof PasswordResetTokenScalarFieldEnum)[keyof typeof PasswordResetTokenScalarFieldEnum]
 
 
 export const SortOrder = {

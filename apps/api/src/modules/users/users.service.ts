@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   NotFoundException,
   ForbiddenException,
@@ -228,12 +228,15 @@ export class UsersService {
 
     await this.prisma.user.update({
       where: { id: userId },
-      data: { passwordHash },
+      data: {
+        passwordHash,
+        tokenVersion: { increment: 1 },
+      },
     });
 
     return {
       success: true,
-      message: 'Password changed successfully.',
+      message: 'Password changed successfully. Please log in again.',
     };
   }
 

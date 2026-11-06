@@ -20,8 +20,18 @@ export type UserModel = runtime.Types.Result.DefaultSelection<Prisma.$UserPayloa
 
 export type AggregateUser = {
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
+}
+
+export type UserAvgAggregateOutputType = {
+  tokenVersion: number | null
+}
+
+export type UserSumAggregateOutputType = {
+  tokenVersion: number | null
 }
 
 export type UserMinAggregateOutputType = {
@@ -30,6 +40,7 @@ export type UserMinAggregateOutputType = {
   email: string | null
   phone: string | null
   passwordHash: string | null
+  tokenVersion: number | null
   avatar: string | null
   status: $Enums.UserStatus | null
   emailVerified: boolean | null
@@ -45,6 +56,7 @@ export type UserMaxAggregateOutputType = {
   email: string | null
   phone: string | null
   passwordHash: string | null
+  tokenVersion: number | null
   avatar: string | null
   status: $Enums.UserStatus | null
   emailVerified: boolean | null
@@ -60,6 +72,7 @@ export type UserCountAggregateOutputType = {
   email: number
   phone: number
   passwordHash: number
+  tokenVersion: number
   avatar: number
   status: number
   emailVerified: number
@@ -71,12 +84,21 @@ export type UserCountAggregateOutputType = {
 }
 
 
+export type UserAvgAggregateInputType = {
+  tokenVersion?: true
+}
+
+export type UserSumAggregateInputType = {
+  tokenVersion?: true
+}
+
 export type UserMinAggregateInputType = {
   id?: true
   name?: true
   email?: true
   phone?: true
   passwordHash?: true
+  tokenVersion?: true
   avatar?: true
   status?: true
   emailVerified?: true
@@ -92,6 +114,7 @@ export type UserMaxAggregateInputType = {
   email?: true
   phone?: true
   passwordHash?: true
+  tokenVersion?: true
   avatar?: true
   status?: true
   emailVerified?: true
@@ -107,6 +130,7 @@ export type UserCountAggregateInputType = {
   email?: true
   phone?: true
   passwordHash?: true
+  tokenVersion?: true
   avatar?: true
   status?: true
   emailVerified?: true
@@ -155,6 +179,18 @@ export type UserAggregateArgs<ExtArgs extends runtime.Types.Extensions.InternalA
   /**
    * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
    * 
+   * Select which fields to average
+  **/
+  _avg?: UserAvgAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
+   * Select which fields to sum
+  **/
+  _sum?: UserSumAggregateInputType
+  /**
+   * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+   * 
    * Select which fields to find the minimum value
   **/
   _min?: UserMinAggregateInputType
@@ -185,6 +221,8 @@ export type UserGroupByArgs<ExtArgs extends runtime.Types.Extensions.InternalArg
   take?: number
   skip?: number
   _count?: UserCountAggregateInputType | true
+  _avg?: UserAvgAggregateInputType
+  _sum?: UserSumAggregateInputType
   _min?: UserMinAggregateInputType
   _max?: UserMaxAggregateInputType
 }
@@ -195,6 +233,7 @@ export type UserGroupByOutputType = {
   email: string | null
   phone: string | null
   passwordHash: string | null
+  tokenVersion: number
   avatar: string | null
   status: $Enums.UserStatus
   emailVerified: boolean
@@ -203,6 +242,8 @@ export type UserGroupByOutputType = {
   updatedAt: Date
   deletedAt: Date | null
   _count: UserCountAggregateOutputType | null
+  _avg: UserAvgAggregateOutputType | null
+  _sum: UserSumAggregateOutputType | null
   _min: UserMinAggregateOutputType | null
   _max: UserMaxAggregateOutputType | null
 }
@@ -231,6 +272,7 @@ export type UserWhereInput = {
   email?: Prisma.StringNullableFilter<"User"> | string | null
   phone?: Prisma.StringNullableFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   avatar?: Prisma.StringNullableFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
@@ -244,6 +286,7 @@ export type UserWhereInput = {
   importBatches?: Prisma.ImportBatchListRelationFilter
   savedFilters?: Prisma.SavedFilterListRelationFilter
   verificationCodes?: Prisma.VerificationCodeListRelationFilter
+  passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -252,6 +295,7 @@ export type UserOrderByWithRelationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatar?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
@@ -265,6 +309,7 @@ export type UserOrderByWithRelationInput = {
   importBatches?: Prisma.ImportBatchOrderByRelationAggregateInput
   savedFilters?: Prisma.SavedFilterOrderByRelationAggregateInput
   verificationCodes?: Prisma.VerificationCodeOrderByRelationAggregateInput
+  passwordResetTokens?: Prisma.PasswordResetTokenOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -276,6 +321,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.UserWhereInput | Prisma.UserWhereInput[]
   name?: Prisma.StringFilter<"User"> | string
   passwordHash?: Prisma.StringNullableFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntFilter<"User"> | number
   avatar?: Prisma.StringNullableFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolFilter<"User"> | boolean
@@ -289,6 +335,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   importBatches?: Prisma.ImportBatchListRelationFilter
   savedFilters?: Prisma.SavedFilterListRelationFilter
   verificationCodes?: Prisma.VerificationCodeListRelationFilter
+  passwordResetTokens?: Prisma.PasswordResetTokenListRelationFilter
 }, "id" | "email" | "phone">
 
 export type UserOrderByWithAggregationInput = {
@@ -297,6 +344,7 @@ export type UserOrderByWithAggregationInput = {
   email?: Prisma.SortOrderInput | Prisma.SortOrder
   phone?: Prisma.SortOrderInput | Prisma.SortOrder
   passwordHash?: Prisma.SortOrderInput | Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatar?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
@@ -305,8 +353,10 @@ export type UserOrderByWithAggregationInput = {
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   _count?: Prisma.UserCountOrderByAggregateInput
+  _avg?: Prisma.UserAvgOrderByAggregateInput
   _max?: Prisma.UserMaxOrderByAggregateInput
   _min?: Prisma.UserMinOrderByAggregateInput
+  _sum?: Prisma.UserSumOrderByAggregateInput
 }
 
 export type UserScalarWhereWithAggregatesInput = {
@@ -318,6 +368,7 @@ export type UserScalarWhereWithAggregatesInput = {
   email?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   phone?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   passwordHash?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
+  tokenVersion?: Prisma.IntWithAggregatesFilter<"User"> | number
   avatar?: Prisma.StringNullableWithAggregatesFilter<"User"> | string | null
   status?: Prisma.EnumUserStatusWithAggregatesFilter<"User"> | $Enums.UserStatus
   emailVerified?: Prisma.BoolWithAggregatesFilter<"User"> | boolean
@@ -333,6 +384,7 @@ export type UserCreateInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -346,6 +398,7 @@ export type UserCreateInput = {
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -354,6 +407,7 @@ export type UserUncheckedCreateInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -367,6 +421,7 @@ export type UserUncheckedCreateInput = {
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -375,6 +430,7 @@ export type UserUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -388,6 +444,7 @@ export type UserUpdateInput = {
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -396,6 +453,7 @@ export type UserUncheckedUpdateInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -409,6 +467,7 @@ export type UserUncheckedUpdateInput = {
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -417,6 +476,7 @@ export type UserCreateManyInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -432,6 +492,7 @@ export type UserUpdateManyMutationInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -447,6 +508,7 @@ export type UserUncheckedUpdateManyInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -462,6 +524,7 @@ export type UserCountOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatar?: Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
@@ -471,12 +534,17 @@ export type UserCountOrderByAggregateInput = {
   deletedAt?: Prisma.SortOrder
 }
 
+export type UserAvgOrderByAggregateInput = {
+  tokenVersion?: Prisma.SortOrder
+}
+
 export type UserMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatar?: Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
@@ -492,6 +560,7 @@ export type UserMinOrderByAggregateInput = {
   email?: Prisma.SortOrder
   phone?: Prisma.SortOrder
   passwordHash?: Prisma.SortOrder
+  tokenVersion?: Prisma.SortOrder
   avatar?: Prisma.SortOrder
   status?: Prisma.SortOrder
   emailVerified?: Prisma.SortOrder
@@ -499,6 +568,10 @@ export type UserMinOrderByAggregateInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   deletedAt?: Prisma.SortOrder
+}
+
+export type UserSumOrderByAggregateInput = {
+  tokenVersion?: Prisma.SortOrder
 }
 
 export type UserScalarRelationFilter = {
@@ -517,6 +590,14 @@ export type StringFieldUpdateOperationsInput = {
 
 export type NullableStringFieldUpdateOperationsInput = {
   set?: string | null
+}
+
+export type IntFieldUpdateOperationsInput = {
+  set?: number
+  increment?: number
+  decrement?: number
+  multiply?: number
+  divide?: number
 }
 
 export type EnumUserStatusFieldUpdateOperationsInput = {
@@ -623,12 +704,27 @@ export type UserUpdateOneRequiredWithoutVerificationCodesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutVerificationCodesInput, Prisma.UserUpdateWithoutVerificationCodesInput>, Prisma.UserUncheckedUpdateWithoutVerificationCodesInput>
 }
 
+export type UserCreateNestedOneWithoutPasswordResetTokensInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasswordResetTokensInput, Prisma.UserUncheckedCreateWithoutPasswordResetTokensInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasswordResetTokensInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneRequiredWithoutPasswordResetTokensNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutPasswordResetTokensInput, Prisma.UserUncheckedCreateWithoutPasswordResetTokensInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutPasswordResetTokensInput
+  upsert?: Prisma.UserUpsertWithoutPasswordResetTokensInput
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutPasswordResetTokensInput, Prisma.UserUpdateWithoutPasswordResetTokensInput>, Prisma.UserUncheckedUpdateWithoutPasswordResetTokensInput>
+}
+
 export type UserCreateWithoutMembershipsInput = {
   id?: string
   name: string
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -641,6 +737,7 @@ export type UserCreateWithoutMembershipsInput = {
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutMembershipsInput = {
@@ -649,6 +746,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -661,6 +759,7 @@ export type UserUncheckedCreateWithoutMembershipsInput = {
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutMembershipsInput = {
@@ -685,6 +784,7 @@ export type UserUpdateWithoutMembershipsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -697,6 +797,7 @@ export type UserUpdateWithoutMembershipsInput = {
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutMembershipsInput = {
@@ -705,6 +806,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -717,6 +819,7 @@ export type UserUncheckedUpdateWithoutMembershipsInput = {
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutUserRolesInput = {
@@ -725,6 +828,7 @@ export type UserCreateWithoutUserRolesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -737,6 +841,7 @@ export type UserCreateWithoutUserRolesInput = {
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutUserRolesInput = {
@@ -745,6 +850,7 @@ export type UserUncheckedCreateWithoutUserRolesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -757,6 +863,7 @@ export type UserUncheckedCreateWithoutUserRolesInput = {
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutUserRolesInput = {
@@ -781,6 +888,7 @@ export type UserUpdateWithoutUserRolesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -793,6 +901,7 @@ export type UserUpdateWithoutUserRolesInput = {
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutUserRolesInput = {
@@ -801,6 +910,7 @@ export type UserUncheckedUpdateWithoutUserRolesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -813,6 +923,7 @@ export type UserUncheckedUpdateWithoutUserRolesInput = {
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditLogsInput = {
@@ -821,6 +932,7 @@ export type UserCreateWithoutAuditLogsInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -833,6 +945,7 @@ export type UserCreateWithoutAuditLogsInput = {
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -841,6 +954,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -853,6 +967,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -877,6 +992,7 @@ export type UserUpdateWithoutAuditLogsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -889,6 +1005,7 @@ export type UserUpdateWithoutAuditLogsInput = {
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -897,6 +1014,7 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -909,6 +1027,7 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutImportBatchesInput = {
@@ -917,6 +1036,7 @@ export type UserCreateWithoutImportBatchesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -929,6 +1049,7 @@ export type UserCreateWithoutImportBatchesInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutImportBatchesInput = {
@@ -937,6 +1058,7 @@ export type UserUncheckedCreateWithoutImportBatchesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -949,6 +1071,7 @@ export type UserUncheckedCreateWithoutImportBatchesInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutImportBatchesInput = {
@@ -973,6 +1096,7 @@ export type UserUpdateWithoutImportBatchesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -985,6 +1109,7 @@ export type UserUpdateWithoutImportBatchesInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutImportBatchesInput = {
@@ -993,6 +1118,7 @@ export type UserUncheckedUpdateWithoutImportBatchesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1005,6 +1131,7 @@ export type UserUncheckedUpdateWithoutImportBatchesInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutSavedFiltersInput = {
@@ -1013,6 +1140,7 @@ export type UserCreateWithoutSavedFiltersInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -1025,6 +1153,7 @@ export type UserCreateWithoutSavedFiltersInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutSavedFiltersInput = {
@@ -1033,6 +1162,7 @@ export type UserUncheckedCreateWithoutSavedFiltersInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -1045,6 +1175,7 @@ export type UserUncheckedCreateWithoutSavedFiltersInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutSavedFiltersInput = {
@@ -1069,6 +1200,7 @@ export type UserUpdateWithoutSavedFiltersInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1081,6 +1213,7 @@ export type UserUpdateWithoutSavedFiltersInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutSavedFiltersInput = {
@@ -1089,6 +1222,7 @@ export type UserUncheckedUpdateWithoutSavedFiltersInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1101,6 +1235,7 @@ export type UserUncheckedUpdateWithoutSavedFiltersInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutVerificationCodesInput = {
@@ -1109,6 +1244,7 @@ export type UserCreateWithoutVerificationCodesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -1121,6 +1257,7 @@ export type UserCreateWithoutVerificationCodesInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutVerificationCodesInput = {
@@ -1129,6 +1266,7 @@ export type UserUncheckedCreateWithoutVerificationCodesInput = {
   email?: string | null
   phone?: string | null
   passwordHash?: string | null
+  tokenVersion?: number
   avatar?: string | null
   status?: $Enums.UserStatus
   emailVerified?: boolean
@@ -1141,6 +1279,7 @@ export type UserUncheckedCreateWithoutVerificationCodesInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
   savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutVerificationCodesInput = {
@@ -1165,6 +1304,7 @@ export type UserUpdateWithoutVerificationCodesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1177,6 +1317,7 @@ export type UserUpdateWithoutVerificationCodesInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutVerificationCodesInput = {
@@ -1185,6 +1326,7 @@ export type UserUncheckedUpdateWithoutVerificationCodesInput = {
   email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
   avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
   emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
@@ -1197,6 +1339,111 @@ export type UserUncheckedUpdateWithoutVerificationCodesInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
   savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
+  passwordResetTokens?: Prisma.PasswordResetTokenUncheckedUpdateManyWithoutUserNestedInput
+}
+
+export type UserCreateWithoutPasswordResetTokensInput = {
+  id?: string
+  name: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  tokenVersion?: number
+  avatar?: string | null
+  status?: $Enums.UserStatus
+  emailVerified?: boolean
+  phoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  memberships?: Prisma.MembershipCreateNestedManyWithoutUserInput
+  userRoles?: Prisma.UserRoleCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  importBatches?: Prisma.ImportBatchCreateNestedManyWithoutCreatorInput
+  savedFilters?: Prisma.SavedFilterCreateNestedManyWithoutUserInput
+  verificationCodes?: Prisma.VerificationCodeCreateNestedManyWithoutUserInput
+}
+
+export type UserUncheckedCreateWithoutPasswordResetTokensInput = {
+  id?: string
+  name: string
+  email?: string | null
+  phone?: string | null
+  passwordHash?: string | null
+  tokenVersion?: number
+  avatar?: string | null
+  status?: $Enums.UserStatus
+  emailVerified?: boolean
+  phoneVerified?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  memberships?: Prisma.MembershipUncheckedCreateNestedManyWithoutUserInput
+  userRoles?: Prisma.UserRoleUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  importBatches?: Prisma.ImportBatchUncheckedCreateNestedManyWithoutCreatorInput
+  savedFilters?: Prisma.SavedFilterUncheckedCreateNestedManyWithoutUserInput
+  verificationCodes?: Prisma.VerificationCodeUncheckedCreateNestedManyWithoutUserInput
+}
+
+export type UserCreateOrConnectWithoutPasswordResetTokensInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasswordResetTokensInput, Prisma.UserUncheckedCreateWithoutPasswordResetTokensInput>
+}
+
+export type UserUpsertWithoutPasswordResetTokensInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutPasswordResetTokensInput, Prisma.UserUncheckedUpdateWithoutPasswordResetTokensInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutPasswordResetTokensInput, Prisma.UserUncheckedCreateWithoutPasswordResetTokensInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutPasswordResetTokensInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutPasswordResetTokensInput, Prisma.UserUncheckedUpdateWithoutPasswordResetTokensInput>
+}
+
+export type UserUpdateWithoutPasswordResetTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  memberships?: Prisma.MembershipUpdateManyWithoutUserNestedInput
+  userRoles?: Prisma.UserRoleUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  importBatches?: Prisma.ImportBatchUpdateManyWithoutCreatorNestedInput
+  savedFilters?: Prisma.SavedFilterUpdateManyWithoutUserNestedInput
+  verificationCodes?: Prisma.VerificationCodeUpdateManyWithoutUserNestedInput
+}
+
+export type UserUncheckedUpdateWithoutPasswordResetTokensInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  phone?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  passwordHash?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  tokenVersion?: Prisma.IntFieldUpdateOperationsInput | number
+  avatar?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumUserStatusFieldUpdateOperationsInput | $Enums.UserStatus
+  emailVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  phoneVerified?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  memberships?: Prisma.MembershipUncheckedUpdateManyWithoutUserNestedInput
+  userRoles?: Prisma.UserRoleUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
+  importBatches?: Prisma.ImportBatchUncheckedUpdateManyWithoutCreatorNestedInput
+  savedFilters?: Prisma.SavedFilterUncheckedUpdateManyWithoutUserNestedInput
+  verificationCodes?: Prisma.VerificationCodeUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1211,6 +1458,7 @@ export type UserCountOutputType = {
   importBatches: number
   savedFilters: number
   verificationCodes: number
+  passwordResetTokens: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1220,6 +1468,7 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   importBatches?: boolean | UserCountOutputTypeCountImportBatchesArgs
   savedFilters?: boolean | UserCountOutputTypeCountSavedFiltersArgs
   verificationCodes?: boolean | UserCountOutputTypeCountVerificationCodesArgs
+  passwordResetTokens?: boolean | UserCountOutputTypeCountPasswordResetTokensArgs
 }
 
 /**
@@ -1274,6 +1523,13 @@ export type UserCountOutputTypeCountVerificationCodesArgs<ExtArgs extends runtim
   where?: Prisma.VerificationCodeWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountPasswordResetTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.PasswordResetTokenWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1281,6 +1537,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  tokenVersion?: boolean
   avatar?: boolean
   status?: boolean
   emailVerified?: boolean
@@ -1294,6 +1551,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   importBatches?: boolean | Prisma.User$importBatchesArgs<ExtArgs>
   savedFilters?: boolean | Prisma.User$savedFiltersArgs<ExtArgs>
   verificationCodes?: boolean | Prisma.User$verificationCodesArgs<ExtArgs>
+  passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1303,6 +1561,7 @@ export type UserSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  tokenVersion?: boolean
   avatar?: boolean
   status?: boolean
   emailVerified?: boolean
@@ -1318,6 +1577,7 @@ export type UserSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  tokenVersion?: boolean
   avatar?: boolean
   status?: boolean
   emailVerified?: boolean
@@ -1333,6 +1593,7 @@ export type UserSelectScalar = {
   email?: boolean
   phone?: boolean
   passwordHash?: boolean
+  tokenVersion?: boolean
   avatar?: boolean
   status?: boolean
   emailVerified?: boolean
@@ -1342,7 +1603,7 @@ export type UserSelectScalar = {
   deletedAt?: boolean
 }
 
-export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone" | "passwordHash" | "avatar" | "status" | "emailVerified" | "phoneVerified" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
+export type UserOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "email" | "phone" | "passwordHash" | "tokenVersion" | "avatar" | "status" | "emailVerified" | "phoneVerified" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["user"]>
 export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   memberships?: boolean | Prisma.User$membershipsArgs<ExtArgs>
   userRoles?: boolean | Prisma.User$userRolesArgs<ExtArgs>
@@ -1350,6 +1611,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   importBatches?: boolean | Prisma.User$importBatchesArgs<ExtArgs>
   savedFilters?: boolean | Prisma.User$savedFiltersArgs<ExtArgs>
   verificationCodes?: boolean | Prisma.User$verificationCodesArgs<ExtArgs>
+  passwordResetTokens?: boolean | Prisma.User$passwordResetTokensArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1364,6 +1626,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     importBatches: Prisma.$ImportBatchPayload<ExtArgs>[]
     savedFilters: Prisma.$SavedFilterPayload<ExtArgs>[]
     verificationCodes: Prisma.$VerificationCodePayload<ExtArgs>[]
+    passwordResetTokens: Prisma.$PasswordResetTokenPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1371,6 +1634,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     email: string | null
     phone: string | null
     passwordHash: string | null
+    tokenVersion: number
     avatar: string | null
     status: $Enums.UserStatus
     emailVerified: boolean
@@ -1778,6 +2042,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   importBatches<T extends Prisma.User$importBatchesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$importBatchesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ImportBatchPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   savedFilters<T extends Prisma.User$savedFiltersArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$savedFiltersArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$SavedFilterPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   verificationCodes<T extends Prisma.User$verificationCodesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$verificationCodesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$VerificationCodePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  passwordResetTokens<T extends Prisma.User$passwordResetTokensArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$passwordResetTokensArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$PasswordResetTokenPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1812,6 +2077,7 @@ export interface UserFieldRefs {
   readonly email: Prisma.FieldRef<"User", 'String'>
   readonly phone: Prisma.FieldRef<"User", 'String'>
   readonly passwordHash: Prisma.FieldRef<"User", 'String'>
+  readonly tokenVersion: Prisma.FieldRef<"User", 'Int'>
   readonly avatar: Prisma.FieldRef<"User", 'String'>
   readonly status: Prisma.FieldRef<"User", 'UserStatus'>
   readonly emailVerified: Prisma.FieldRef<"User", 'Boolean'>
@@ -2353,6 +2619,30 @@ export type User$verificationCodesArgs<ExtArgs extends runtime.Types.Extensions.
   take?: number
   skip?: number
   distinct?: Prisma.VerificationCodeScalarFieldEnum | Prisma.VerificationCodeScalarFieldEnum[]
+}
+
+/**
+ * User.passwordResetTokens
+ */
+export type User$passwordResetTokensArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the PasswordResetToken
+   */
+  select?: Prisma.PasswordResetTokenSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the PasswordResetToken
+   */
+  omit?: Prisma.PasswordResetTokenOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.PasswordResetTokenInclude<ExtArgs> | null
+  where?: Prisma.PasswordResetTokenWhereInput
+  orderBy?: Prisma.PasswordResetTokenOrderByWithRelationInput | Prisma.PasswordResetTokenOrderByWithRelationInput[]
+  cursor?: Prisma.PasswordResetTokenWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.PasswordResetTokenScalarFieldEnum | Prisma.PasswordResetTokenScalarFieldEnum[]
 }
 
 /**

@@ -29,9 +29,10 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<{ sub: string }>(
-        token,
-      );
+      const payload = await this.jwtService.verifyAsync<{
+        sub: string;
+        ver?: number;
+      }>(token);
 
       if (!payload.sub) {
         throw new UnauthorizedException('Invalid access token.');
@@ -62,6 +63,12 @@ export class JwtAuthGuard implements CanActivate {
 
       if (!user) {
         throw new UnauthorizedException('User account is not active.');
+      }
+
+      if ((payload.ver ?? 0) !== (user.tokenVersion ?? 0)) {
+        throw new UnauthorizedException(
+          'Session expired. Please log in again.',
+        );
       }
 
       const { passwordHash, userRoles, ...safeUser } = user;
