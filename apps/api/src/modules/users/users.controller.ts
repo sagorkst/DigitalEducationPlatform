@@ -1,6 +1,14 @@
 ﻿import {
-  Controller, Get, Patch, Param, Query, Body, Req,
-  UseGuards, ParseUUIDPipe,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Param,
+  Query,
+  Body,
+  Req,
+  UseGuards,
+  ParseUUIDPipe,
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -8,14 +16,19 @@ import { PermissionsGuard } from '../rbac/permissions.guard';
 import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { UsersService } from './users.service';
+import { VerificationService } from './verification.service';
 import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
 import { ChangeMyPasswordDto } from './dto/change-my-password.dto';
+import { VerifyContactDto } from './dto/verify-contact.dto';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly verificationService: VerificationService,
+  ) {}
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
@@ -25,10 +38,7 @@ export class UsersController {
 
   @Patch('me')
   @UseGuards(JwtAuthGuard)
-  updateMyProfile(
-    @Body() dto: UpdateMyProfileDto,
-    @Req() request: any,
-  ) {
+  updateMyProfile(@Body() dto: UpdateMyProfileDto, @Req() request: any) {
     return this.usersService.updateMyProfile(request.user.id, dto);
   }
 
@@ -42,6 +52,27 @@ export class UsersController {
       request.user.id,
       dto.currentPassword,
       dto.newPassword,
+    );
+  }
+
+  @Post('me/verification/email/request')
+  @UseGuards(JwtAuthGuard)
+  requestEmailVerification(@Req() request: any) {
+    return this.verificationService.requestEmailVerification(
+      request.user.id,
+    );
+  }
+
+  @Post('me/verification/email/verify')
+  @UseGuards(JwtAuthGuard)
+  verifyEmail(
+    @Body() dto: VerifyContactDto,
+    @Req() request: any,
+  ) {
+    return this.verificationService.verifyEmail(
+      request.user.id,
+      dto.code,
+      request.ip || request.socket?.remoteAddress,
     );
   }
 

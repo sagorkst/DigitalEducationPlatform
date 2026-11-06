@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { DatabaseModule } from '../../database/database.module';
@@ -7,6 +7,7 @@ import { PermissionsGuard } from '../rbac/permissions.guard';
 
 import { UsersController } from './users.controller';
 import { UsersService } from './users.service';
+import { VerificationService } from './verification.service';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { UsersService } from './users.service';
   controllers: [UsersController],
   providers: [
     UsersService,
+    VerificationService,
     JwtAuthGuard,
     PermissionsGuard,
   ],

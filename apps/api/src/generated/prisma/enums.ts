@@ -108,3 +108,11 @@ export const ReviewStatus = {
 } as const
 
 export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus]
+
+
+export const VerificationChannel = {
+  EMAIL: 'EMAIL',
+  PHONE: 'PHONE'
+} as const
+
+export type VerificationChannel = (typeof VerificationChannel)[keyof typeof VerificationChannel]

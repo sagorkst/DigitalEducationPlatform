@@ -76,7 +76,8 @@ export const ModelName = {
   SavedFilter: 'SavedFilter',
   QuestionTag: 'QuestionTag',
   QuestionTagLink: 'QuestionTagLink',
-  QuestionReview: 'QuestionReview'
+  QuestionReview: 'QuestionReview',
+  VerificationCode: 'VerificationCode'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -460,6 +461,21 @@ export const QuestionReviewScalarFieldEnum = {
 } as const
 
 export type QuestionReviewScalarFieldEnum = (typeof QuestionReviewScalarFieldEnum)[keyof typeof QuestionReviewScalarFieldEnum]
+
+
+export const VerificationCodeScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  channel: 'channel',
+  target: 'target',
+  codeHash: 'codeHash',
+  attempts: 'attempts',
+  expiresAt: 'expiresAt',
+  consumedAt: 'consumedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type VerificationCodeScalarFieldEnum = (typeof VerificationCodeScalarFieldEnum)[keyof typeof VerificationCodeScalarFieldEnum]
 
 
 export const SortOrder = {

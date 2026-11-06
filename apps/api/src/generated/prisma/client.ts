@@ -169,3 +169,8 @@ export type QuestionTagLink = Prisma.QuestionTagLinkModel
  * 
  */
 export type QuestionReview = Prisma.QuestionReviewModel
+/**
+ * Model VerificationCode
+ * 
+ */
+export type VerificationCode = Prisma.VerificationCodeModel

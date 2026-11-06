@@ -78,6 +78,11 @@ enum ReviewStatus {
   CANCELLED
 }
 
+enum VerificationChannel {
+  EMAIL
+  PHONE
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   name          String
@@ -92,11 +97,12 @@ model User {
   updatedAt     DateTime   @updatedAt
   deletedAt     DateTime?
 
-  memberships   Membership[]
-  userRoles     UserRole[]
-  auditLogs     AuditLog[]    @relation("AuditActor")
-  importBatches ImportBatch[] @relation("ImportCreator")
-  savedFilters  SavedFilter[]
+  memberships       Membership[]
+  userRoles         UserRole[]
+  auditLogs         AuditLog[]         @relation("AuditActor")
+  importBatches     ImportBatch[]      @relation("ImportCreator")
+  savedFilters      SavedFilter[]
+  verificationCodes VerificationCode[]
 
   @@index([status])
   @@index([createdAt])
@@ -534,4 +540,21 @@ model QuestionReview {
   @@index([status, submittedAt])
   @@index([questionId, submittedAt])
   @@index([reviewerId])
+}
+
+model VerificationCode {
+  id         String              @id @default(uuid()) @db.Uuid
+  userId     String              @db.Uuid
+  channel    VerificationChannel
+  target     String
+  codeHash   String
+  attempts   Int                 @default(0)
+  expiresAt  DateTime
+  consumedAt DateTime?
+  createdAt  DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, channel, createdAt])
+  @@index([expiresAt])
 }

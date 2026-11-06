@@ -555,6 +555,23 @@ export type EnumReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumReviewStatusFilter<$PrismaModel>
 }
 
+export type EnumVerificationChannelFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationChannel | Prisma.EnumVerificationChannelFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel> | $Enums.VerificationChannel
+}
+
+export type EnumVerificationChannelWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationChannel | Prisma.EnumVerificationChannelFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationChannelWithAggregatesFilter<$PrismaModel> | $Enums.VerificationChannel
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel>
+}
+
 export type NestedUuidFilter<$PrismaModel = never> = {
   equals?: string | Prisma.StringFieldRefInput<$PrismaModel>
   in?: string[] | Prisma.ListStringFieldRefInput<$PrismaModel>
@@ -1038,6 +1055,23 @@ export type NestedEnumReviewStatusWithAggregatesFilter<$PrismaModel = never> = {
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumReviewStatusFilter<$PrismaModel>
   _max?: Prisma.NestedEnumReviewStatusFilter<$PrismaModel>
+}
+
+export type NestedEnumVerificationChannelFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationChannel | Prisma.EnumVerificationChannelFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel> | $Enums.VerificationChannel
+}
+
+export type NestedEnumVerificationChannelWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.VerificationChannel | Prisma.EnumVerificationChannelFieldRefInput<$PrismaModel>
+  in?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  notIn?: $Enums.VerificationChannel[] | Prisma.ListEnumVerificationChannelFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumVerificationChannelWithAggregatesFilter<$PrismaModel> | $Enums.VerificationChannel
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumVerificationChannelFilter<$PrismaModel>
 }
 
 
