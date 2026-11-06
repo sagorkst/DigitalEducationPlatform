@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 
 import { HealthController } from './health.controller';
 import { DatabaseController } from './database.controller';
@@ -17,6 +17,8 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
 import { TagsModule } from './modules/tags/tags.module';
 import { AnalyticsModule } from './modules/analytics/analytics.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { RbacModule } from './modules/rbac/rbac.module';
+import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
@@ -34,6 +36,8 @@ import { AuthModule } from './modules/auth/auth.module';
     TagsModule,
     AnalyticsModule,
     AuthModule,
+    RbacModule,
+    UsersModule,
   ],
   controllers: [
     HealthController,

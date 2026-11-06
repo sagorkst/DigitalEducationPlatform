@@ -58,6 +58,7 @@ export const ModelName = {
   Permission: 'Permission',
   RolePermission: 'RolePermission',
   MembershipRole: 'MembershipRole',
+  UserRole: 'UserRole',
   AuditLog: 'AuditLog',
   Subject: 'Subject',
   Topic: 'Topic',
@@ -176,6 +177,16 @@ export const MembershipRoleScalarFieldEnum = {
 } as const
 
 export type MembershipRoleScalarFieldEnum = (typeof MembershipRoleScalarFieldEnum)[keyof typeof MembershipRoleScalarFieldEnum]
+
+
+export const UserRoleScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  roleId: 'roleId',
+  createdAt: 'createdAt'
+} as const
+
+export type UserRoleScalarFieldEnum = (typeof UserRoleScalarFieldEnum)[keyof typeof UserRoleScalarFieldEnum]
 
 
 export const AuditLogScalarFieldEnum = {

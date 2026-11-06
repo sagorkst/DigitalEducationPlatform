@@ -1,10 +1,12 @@
-﻿import {
+
+import {
   Injectable,
   ConflictException,
   BadRequestException,
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  InternalServerErrorException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcryptjs';
@@ -26,56 +28,95 @@ export class AuthService {
     const phone = dto.phone?.trim() || null;
 
     if (!email && !phone) {
-      throw new BadRequestException('Email অথবা phone দিতে হবে।');
+      throw new BadRequestException(
+        'Email or phone number is required.',
+      );
     }
 
     if (email) {
-      const existingEmail = await this.prisma.user.findUnique({
+      const existing = await this.prisma.user.findUnique({
         where: { email },
         select: { id: true },
       });
 
-      if (existingEmail) {
-        throw new ConflictException('এই email দিয়ে account রয়েছে।');
+      if (existing) {
+        throw new ConflictException(
+          'An account with this email already exists.',
+        );
       }
     }
 
     if (phone) {
-      const existingPhone = await this.prisma.user.findUnique({
+      const existing = await this.prisma.user.findUnique({
         where: { phone },
         select: { id: true },
       });
 
-      if (existingPhone) {
-        throw new ConflictException('এই phone number দিয়ে account রয়েছে।');
+      if (existing) {
+        throw new ConflictException(
+          'An account with this phone number already exists.',
+        );
       }
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
 
     try {
-      const user = await this.prisma.user.create({
-        data: {
-          name,
-          email,
-          phone,
-          passwordHash,
-          status: 'PENDING',
-        },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          phone: true,
-          status: true,
-          createdAt: true,
-        },
+      const user = await this.prisma.$transaction(async (tx) => {
+        const defaultRole = await tx.role.findUnique({
+          where: { name: 'USER' },
+          select: { id: true },
+        });
+
+        if (!defaultRole) {
+          throw new InternalServerErrorException(
+            'Default USER role is missing. Run the database seed first.',
+          );
+        }
+
+        return tx.user.create({
+          data: {
+            name,
+            email,
+            phone,
+            passwordHash,
+            status: 'PENDING',
+            userRoles: {
+              create: {
+                roleId: defaultRole.id,
+              },
+            },
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            status: true,
+            createdAt: true,
+            userRoles: {
+              select: {
+                role: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        });
       });
+
+      const { userRoles, ...profile } = user;
 
       return {
         success: true,
-        message: 'Registration সফল হয়েছে। Account approval-এর অপেক্ষায় রয়েছে।',
-        data: { user },
+        message:
+          'Registration successful. Your account is waiting for approval.',
+        data: {
+          user: profile,
+          roles: userRoles.map((item) => item.role.name),
+        },
       };
     } catch (error) {
       if (
@@ -84,7 +125,9 @@ export class AuthService {
         'code' in error &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Email অথবা phone number আগে থেকেই ব্যবহৃত হয়েছে।');
+        throw new ConflictException(
+          'Email or phone number is already in use.',
+        );
       }
 
       throw error;
@@ -105,7 +148,9 @@ export class AuthService {
     });
 
     if (!user || !user.passwordHash) {
-      throw new UnauthorizedException('ভুল email/phone অথবা password।');
+      throw new UnauthorizedException(
+        'Invalid email/phone or password.',
+      );
     }
 
     const passwordMatched = await bcrypt.compare(
@@ -114,15 +159,21 @@ export class AuthService {
     );
 
     if (!passwordMatched) {
-      throw new UnauthorizedException('ভুল email/phone অথবা password।');
+      throw new UnauthorizedException(
+        'Invalid email/phone or password.',
+      );
     }
 
     if (user.status === 'PENDING') {
-      throw new ForbiddenException('আপনার account এখনো অনুমোদিত হয়নি।');
+      throw new ForbiddenException(
+        'Your account is waiting for approval.',
+      );
     }
 
     if (user.status !== 'ACTIVE') {
-      throw new ForbiddenException('আপনার account বর্তমানে সক্রিয় নয়।');
+      throw new ForbiddenException(
+        'Your account is not currently active.',
+      );
     }
 
     const accessToken = await this.jwtService.signAsync({
@@ -131,7 +182,7 @@ export class AuthService {
 
     return {
       success: true,
-      message: 'Login সফল হয়েছে।',
+      message: 'Login successful.',
       data: {
         accessToken,
         tokenType: 'Bearer',
@@ -163,37 +214,16 @@ export class AuthService {
         emailVerified: true,
         phoneVerified: true,
         createdAt: true,
-        memberships: {
-          where: {
-            status: 'ACTIVE',
-            organization: {
-              status: 'ACTIVE',
-              deletedAt: null,
-            },
-          },
+        userRoles: {
           select: {
-            id: true,
-            organization: {
+            role: {
               select: {
                 id: true,
                 name: true,
-                slug: true,
-              },
-            },
-            roles: {
-              select: {
-                role: {
+                permissions: {
                   select: {
-                    id: true,
-                    name: true,
-                    permissions: {
-                      select: {
-                        permission: {
-                          select: {
-                            key: true,
-                          },
-                        },
-                      },
+                    permission: {
+                      select: { key: true },
                     },
                   },
                 },
@@ -205,37 +235,32 @@ export class AuthService {
     });
 
     if (!user) {
-      throw new NotFoundException('User পাওয়া যায়নি।');
+      throw new NotFoundException('User not found.');
     }
 
-    const memberships = user.memberships.map((membership) => ({
-      id: membership.id,
-      organization: membership.organization,
-      roles: membership.roles.map((item) => item.role.name),
-      permissions: [
-        ...new Set(
-          membership.roles.flatMap((item) =>
-            item.role.permissions.map((permission) => permission.permission.key),
+    const roles = user.userRoles.map((item) => ({
+      id: item.role.id,
+      name: item.role.name,
+    }));
+
+    const permissions = [
+      ...new Set(
+        user.userRoles.flatMap((item) =>
+          item.role.permissions.map(
+            (entry) => entry.permission.key,
           ),
         ),
-      ],
-    }));
+      ),
+    ];
+
+    const { userRoles, ...profile } = user;
 
     return {
       success: true,
       data: {
-        user: {
-          id: user.id,
-          name: user.name,
-          email: user.email,
-          phone: user.phone,
-          avatar: user.avatar,
-          status: user.status,
-          emailVerified: user.emailVerified,
-          phoneVerified: user.phoneVerified,
-          createdAt: user.createdAt,
-        },
-        memberships,
+        user: profile,
+        roles,
+        permissions,
       },
     };
   }

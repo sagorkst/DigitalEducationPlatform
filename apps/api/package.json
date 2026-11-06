@@ -7,7 +7,12 @@
     "start": "nest start",
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test:rbac": "node --test tests/rbac.service.test.cjs",
+    "db:seed": "ts-node src/database/seed.ts",
+    "db:bootstrap-super-admin": "ts-node src/database/bootstrap-super-admin.ts",
+    "test:auth": "node --test tests/auth.service.test.cjs",
+    "test:users": "node --test tests/users.service.test.cjs"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.11",

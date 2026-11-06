@@ -1,11 +1,10 @@
-﻿import {
+import {
   Injectable,
   CanActivate,
   ExecutionContext,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-
 import { PrismaService } from '../../database/prisma.service';
 
 @Injectable()
@@ -19,10 +18,7 @@ export class JwtAuthGuard implements CanActivate {
     const request = context.switchToHttp().getRequest();
     const authorization = request.headers.authorization;
 
-    if (
-      !authorization ||
-      !authorization.startsWith('Bearer ')
-    ) {
+    if (!authorization || !authorization.startsWith('Bearer ')) {
       throw new UnauthorizedException('Bearer token required.');
     }
 
@@ -33,9 +29,9 @@ export class JwtAuthGuard implements CanActivate {
     }
 
     try {
-      const payload = await this.jwtService.verifyAsync<{
-        sub: string;
-      }>(token);
+      const payload = await this.jwtService.verifyAsync<{ sub: string }>(
+        token,
+      );
 
       if (!payload.sub) {
         throw new UnauthorizedException('Invalid access token.');
@@ -48,21 +44,13 @@ export class JwtAuthGuard implements CanActivate {
           deletedAt: null,
         },
         include: {
-          memberships: {
-            where: {
-              status: 'ACTIVE',
-            },
+          userRoles: {
             include: {
-              organization: true,
-              roles: {
+              role: {
                 include: {
-                  role: {
+                  permissions: {
                     include: {
-                      permissions: {
-                        include: {
-                          permission: true,
-                        },
-                      },
+                      permission: true,
                     },
                   },
                 },
@@ -73,32 +61,30 @@ export class JwtAuthGuard implements CanActivate {
       });
 
       if (!user) {
-        throw new UnauthorizedException(
-          'User account is not active.',
-        );
+        throw new UnauthorizedException('User account is not active.');
       }
 
-      const { passwordHash, ...safeUser } = user;
+      const { passwordHash, userRoles, ...safeUser } = user;
+
+      const roles = userRoles.map((item) => ({
+        id: item.role.id,
+        name: item.role.name,
+      }));
+
+      const permissions = [
+        ...new Set(
+          userRoles.flatMap((item) =>
+            item.role.permissions.map(
+              (rolePermission) => rolePermission.permission.key,
+            ),
+          ),
+        ),
+      ];
 
       request.user = {
         ...safeUser,
-        memberships: user.memberships
-          .filter(
-            (membership) =>
-              membership.organization.status === 'ACTIVE' &&
-              membership.organization.deletedAt === null,
-          )
-          .map((membership) => ({
-            id: membership.id,
-            organization: membership.organization,
-            roles: membership.roles.map((membershipRole) => ({
-              id: membershipRole.role.id,
-              name: membershipRole.role.name,
-              permissions: membershipRole.role.permissions.map(
-                (rolePermission) => rolePermission.permission.key,
-              ),
-            })),
-          })),
+        roles,
+        permissions,
       };
 
       return true;
