@@ -15,6 +15,7 @@ import { DuplicatesModule } from './modules/duplicates/duplicates.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
 import { TagsModule } from './modules/tags/tags.module';
+import { AnalyticsModule } from './modules/analytics/analytics.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { TagsModule } from './modules/tags/tags.module';
     ImportsModule,
     ReviewsModule,
     TagsModule,
+    AnalyticsModule,
   ],
   controllers: [
     HealthController,
