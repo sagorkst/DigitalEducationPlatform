@@ -74,7 +74,8 @@ export const ModelName = {
   DuplicateCandidate: 'DuplicateCandidate',
   SavedFilter: 'SavedFilter',
   QuestionTag: 'QuestionTag',
-  QuestionTagLink: 'QuestionTagLink'
+  QuestionTagLink: 'QuestionTagLink',
+  QuestionReview: 'QuestionReview'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -431,6 +432,23 @@ export const QuestionTagLinkScalarFieldEnum = {
 } as const
 
 export type QuestionTagLinkScalarFieldEnum = (typeof QuestionTagLinkScalarFieldEnum)[keyof typeof QuestionTagLinkScalarFieldEnum]
+
+
+export const QuestionReviewScalarFieldEnum = {
+  id: 'id',
+  questionId: 'questionId',
+  status: 'status',
+  submittedBy: 'submittedBy',
+  reviewerId: 'reviewerId',
+  submissionNote: 'submissionNote',
+  reviewNote: 'reviewNote',
+  submittedAt: 'submittedAt',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type QuestionReviewScalarFieldEnum = (typeof QuestionReviewScalarFieldEnum)[keyof typeof QuestionReviewScalarFieldEnum]
 
 
 export const SortOrder = {

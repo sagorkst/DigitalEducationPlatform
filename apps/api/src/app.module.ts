@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 
 import { HealthController } from './health.controller';
 import { DatabaseController } from './database.controller';
@@ -13,6 +13,7 @@ import { PostsModule } from './modules/posts/posts.module';
 import { OccurrencesModule } from './modules/occurrences/occurrences.module';
 import { DuplicatesModule } from './modules/duplicates/duplicates.module';
 import { ImportsModule } from './modules/imports/imports.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ImportsModule } from './modules/imports/imports.module';
     OccurrencesModule,
     DuplicatesModule,
     ImportsModule,
+    ReviewsModule,
   ],
   controllers: [
     HealthController,

@@ -307,6 +307,7 @@ export type QuestionWhereInput = {
   options?: Prisma.QuestionOptionListRelationFilter
   occurrences?: Prisma.QuestionOccurrenceListRelationFilter
   histories?: Prisma.QuestionHistoryListRelationFilter
+  reviews?: Prisma.QuestionReviewListRelationFilter
   tags?: Prisma.QuestionTagLinkListRelationFilter
   duplicateAsA?: Prisma.DuplicateCandidateListRelationFilter
   duplicateAsB?: Prisma.DuplicateCandidateListRelationFilter
@@ -338,6 +339,7 @@ export type QuestionOrderByWithRelationInput = {
   options?: Prisma.QuestionOptionOrderByRelationAggregateInput
   occurrences?: Prisma.QuestionOccurrenceOrderByRelationAggregateInput
   histories?: Prisma.QuestionHistoryOrderByRelationAggregateInput
+  reviews?: Prisma.QuestionReviewOrderByRelationAggregateInput
   tags?: Prisma.QuestionTagLinkOrderByRelationAggregateInput
   duplicateAsA?: Prisma.DuplicateCandidateOrderByRelationAggregateInput
   duplicateAsB?: Prisma.DuplicateCandidateOrderByRelationAggregateInput
@@ -372,6 +374,7 @@ export type QuestionWhereUniqueInput = Prisma.AtLeast<{
   options?: Prisma.QuestionOptionListRelationFilter
   occurrences?: Prisma.QuestionOccurrenceListRelationFilter
   histories?: Prisma.QuestionHistoryListRelationFilter
+  reviews?: Prisma.QuestionReviewListRelationFilter
   tags?: Prisma.QuestionTagLinkListRelationFilter
   duplicateAsA?: Prisma.DuplicateCandidateListRelationFilter
   duplicateAsB?: Prisma.DuplicateCandidateListRelationFilter
@@ -453,6 +456,7 @@ export type QuestionCreateInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -482,6 +486,7 @@ export type QuestionUncheckedCreateInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -511,6 +516,7 @@ export type QuestionUpdateInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -540,6 +546,7 @@ export type QuestionUncheckedUpdateInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -876,6 +883,20 @@ export type QuestionUpdateOneRequiredWithoutTagsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.QuestionUpdateToOneWithWhereWithoutTagsInput, Prisma.QuestionUpdateWithoutTagsInput>, Prisma.QuestionUncheckedUpdateWithoutTagsInput>
 }
 
+export type QuestionCreateNestedOneWithoutReviewsInput = {
+  create?: Prisma.XOR<Prisma.QuestionCreateWithoutReviewsInput, Prisma.QuestionUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.QuestionCreateOrConnectWithoutReviewsInput
+  connect?: Prisma.QuestionWhereUniqueInput
+}
+
+export type QuestionUpdateOneRequiredWithoutReviewsNestedInput = {
+  create?: Prisma.XOR<Prisma.QuestionCreateWithoutReviewsInput, Prisma.QuestionUncheckedCreateWithoutReviewsInput>
+  connectOrCreate?: Prisma.QuestionCreateOrConnectWithoutReviewsInput
+  upsert?: Prisma.QuestionUpsertWithoutReviewsInput
+  connect?: Prisma.QuestionWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.QuestionUpdateToOneWithWhereWithoutReviewsInput, Prisma.QuestionUpdateWithoutReviewsInput>, Prisma.QuestionUncheckedUpdateWithoutReviewsInput>
+}
+
 export type QuestionCreateWithoutSubjectRefInput = {
   id?: string
   questionCode: string
@@ -899,6 +920,7 @@ export type QuestionCreateWithoutSubjectRefInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -927,6 +949,7 @@ export type QuestionUncheckedCreateWithoutSubjectRefInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -1007,6 +1030,7 @@ export type QuestionCreateWithoutTopicRefInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -1035,6 +1059,7 @@ export type QuestionUncheckedCreateWithoutTopicRefInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -1089,6 +1114,7 @@ export type QuestionCreateWithoutOptionsInput = {
   topicRef?: Prisma.TopicCreateNestedOneWithoutQuestionsInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -1117,6 +1143,7 @@ export type QuestionUncheckedCreateWithoutOptionsInput = {
   deletedAt?: Date | string | null
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -1161,6 +1188,7 @@ export type QuestionUpdateWithoutOptionsInput = {
   topicRef?: Prisma.TopicUpdateOneWithoutQuestionsNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -1189,6 +1217,7 @@ export type QuestionUncheckedUpdateWithoutOptionsInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -1217,6 +1246,7 @@ export type QuestionCreateWithoutOccurrencesInput = {
   topicRef?: Prisma.TopicCreateNestedOneWithoutQuestionsInput
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -1245,6 +1275,7 @@ export type QuestionUncheckedCreateWithoutOccurrencesInput = {
   deletedAt?: Date | string | null
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -1289,6 +1320,7 @@ export type QuestionUpdateWithoutOccurrencesInput = {
   topicRef?: Prisma.TopicUpdateOneWithoutQuestionsNestedInput
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -1317,6 +1349,7 @@ export type QuestionUncheckedUpdateWithoutOccurrencesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -1345,6 +1378,7 @@ export type QuestionCreateWithoutHistoriesInput = {
   topicRef?: Prisma.TopicCreateNestedOneWithoutQuestionsInput
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
@@ -1373,6 +1407,7 @@ export type QuestionUncheckedCreateWithoutHistoriesInput = {
   deletedAt?: Date | string | null
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
@@ -1417,6 +1452,7 @@ export type QuestionUpdateWithoutHistoriesInput = {
   topicRef?: Prisma.TopicUpdateOneWithoutQuestionsNestedInput
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -1445,6 +1481,7 @@ export type QuestionUncheckedUpdateWithoutHistoriesInput = {
   deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -1474,6 +1511,7 @@ export type QuestionCreateWithoutDuplicateAsAInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
 }
@@ -1502,6 +1540,7 @@ export type QuestionUncheckedCreateWithoutDuplicateAsAInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
 }
@@ -1535,6 +1574,7 @@ export type QuestionCreateWithoutDuplicateAsBInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
 }
@@ -1563,6 +1603,7 @@ export type QuestionUncheckedCreateWithoutDuplicateAsBInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
 }
@@ -1607,6 +1648,7 @@ export type QuestionUpdateWithoutDuplicateAsAInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
 }
@@ -1635,6 +1677,7 @@ export type QuestionUncheckedUpdateWithoutDuplicateAsAInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
 }
@@ -1674,6 +1717,7 @@ export type QuestionUpdateWithoutDuplicateAsBInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
 }
@@ -1702,6 +1746,7 @@ export type QuestionUncheckedUpdateWithoutDuplicateAsBInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
 }
@@ -1730,6 +1775,7 @@ export type QuestionCreateWithoutTagsInput = {
   options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
 }
@@ -1758,6 +1804,7 @@ export type QuestionUncheckedCreateWithoutTagsInput = {
   options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
   histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  reviews?: Prisma.QuestionReviewUncheckedCreateNestedManyWithoutQuestionInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
 }
@@ -1802,6 +1849,7 @@ export type QuestionUpdateWithoutTagsInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
 }
@@ -1830,6 +1878,139 @@ export type QuestionUncheckedUpdateWithoutTagsInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
+  duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
+  duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
+}
+
+export type QuestionCreateWithoutReviewsInput = {
+  id?: string
+  questionCode: string
+  questionText: string
+  questionType?: $Enums.QuestionType
+  optionA?: string | null
+  optionB?: string | null
+  optionC?: string | null
+  optionD?: string | null
+  correctAnswer?: string | null
+  subject: string
+  topic: string
+  explanation?: string | null
+  difficulty?: $Enums.Difficulty
+  repeatGroupId?: string | null
+  status?: $Enums.QuestionStatus
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  subjectRef?: Prisma.SubjectCreateNestedOneWithoutQuestionsInput
+  topicRef?: Prisma.TopicCreateNestedOneWithoutQuestionsInput
+  options?: Prisma.QuestionOptionCreateNestedManyWithoutQuestionInput
+  occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutQuestionInput
+  histories?: Prisma.QuestionHistoryCreateNestedManyWithoutQuestionInput
+  tags?: Prisma.QuestionTagLinkCreateNestedManyWithoutQuestionInput
+  duplicateAsA?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionAInput
+  duplicateAsB?: Prisma.DuplicateCandidateCreateNestedManyWithoutQuestionBInput
+}
+
+export type QuestionUncheckedCreateWithoutReviewsInput = {
+  id?: string
+  questionCode: string
+  questionText: string
+  questionType?: $Enums.QuestionType
+  optionA?: string | null
+  optionB?: string | null
+  optionC?: string | null
+  optionD?: string | null
+  correctAnswer?: string | null
+  subject: string
+  topic: string
+  explanation?: string | null
+  difficulty?: $Enums.Difficulty
+  repeatGroupId?: string | null
+  status?: $Enums.QuestionStatus
+  subjectId?: string | null
+  topicId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  deletedAt?: Date | string | null
+  options?: Prisma.QuestionOptionUncheckedCreateNestedManyWithoutQuestionInput
+  occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutQuestionInput
+  histories?: Prisma.QuestionHistoryUncheckedCreateNestedManyWithoutQuestionInput
+  tags?: Prisma.QuestionTagLinkUncheckedCreateNestedManyWithoutQuestionInput
+  duplicateAsA?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionAInput
+  duplicateAsB?: Prisma.DuplicateCandidateUncheckedCreateNestedManyWithoutQuestionBInput
+}
+
+export type QuestionCreateOrConnectWithoutReviewsInput = {
+  where: Prisma.QuestionWhereUniqueInput
+  create: Prisma.XOR<Prisma.QuestionCreateWithoutReviewsInput, Prisma.QuestionUncheckedCreateWithoutReviewsInput>
+}
+
+export type QuestionUpsertWithoutReviewsInput = {
+  update: Prisma.XOR<Prisma.QuestionUpdateWithoutReviewsInput, Prisma.QuestionUncheckedUpdateWithoutReviewsInput>
+  create: Prisma.XOR<Prisma.QuestionCreateWithoutReviewsInput, Prisma.QuestionUncheckedCreateWithoutReviewsInput>
+  where?: Prisma.QuestionWhereInput
+}
+
+export type QuestionUpdateToOneWithWhereWithoutReviewsInput = {
+  where?: Prisma.QuestionWhereInput
+  data: Prisma.XOR<Prisma.QuestionUpdateWithoutReviewsInput, Prisma.QuestionUncheckedUpdateWithoutReviewsInput>
+}
+
+export type QuestionUpdateWithoutReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  questionCode?: Prisma.StringFieldUpdateOperationsInput | string
+  questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
+  optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionC?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionD?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  topic?: Prisma.StringFieldUpdateOperationsInput | string
+  explanation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  difficulty?: Prisma.EnumDifficultyFieldUpdateOperationsInput | $Enums.Difficulty
+  repeatGroupId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  subjectRef?: Prisma.SubjectUpdateOneWithoutQuestionsNestedInput
+  topicRef?: Prisma.TopicUpdateOneWithoutQuestionsNestedInput
+  options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
+  occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
+  histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
+  duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
+  duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
+}
+
+export type QuestionUncheckedUpdateWithoutReviewsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  questionCode?: Prisma.StringFieldUpdateOperationsInput | string
+  questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
+  optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionC?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  optionD?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  correctAnswer?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  subject?: Prisma.StringFieldUpdateOperationsInput | string
+  topic?: Prisma.StringFieldUpdateOperationsInput | string
+  explanation?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  difficulty?: Prisma.EnumDifficultyFieldUpdateOperationsInput | $Enums.Difficulty
+  repeatGroupId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumQuestionStatusFieldUpdateOperationsInput | $Enums.QuestionStatus
+  subjectId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  topicId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  deletedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
+  occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
+  histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
 }
@@ -1879,6 +2060,7 @@ export type QuestionUpdateWithoutSubjectRefInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -1907,6 +2089,7 @@ export type QuestionUncheckedUpdateWithoutSubjectRefInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -1979,6 +2162,7 @@ export type QuestionUpdateWithoutTopicRefInput = {
   options?: Prisma.QuestionOptionUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUpdateManyWithoutQuestionBNestedInput
@@ -2007,6 +2191,7 @@ export type QuestionUncheckedUpdateWithoutTopicRefInput = {
   options?: Prisma.QuestionOptionUncheckedUpdateManyWithoutQuestionNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutQuestionNestedInput
   histories?: Prisma.QuestionHistoryUncheckedUpdateManyWithoutQuestionNestedInput
+  reviews?: Prisma.QuestionReviewUncheckedUpdateManyWithoutQuestionNestedInput
   tags?: Prisma.QuestionTagLinkUncheckedUpdateManyWithoutQuestionNestedInput
   duplicateAsA?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionANestedInput
   duplicateAsB?: Prisma.DuplicateCandidateUncheckedUpdateManyWithoutQuestionBNestedInput
@@ -2043,6 +2228,7 @@ export type QuestionCountOutputType = {
   options: number
   occurrences: number
   histories: number
+  reviews: number
   tags: number
   duplicateAsA: number
   duplicateAsB: number
@@ -2052,6 +2238,7 @@ export type QuestionCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensio
   options?: boolean | QuestionCountOutputTypeCountOptionsArgs
   occurrences?: boolean | QuestionCountOutputTypeCountOccurrencesArgs
   histories?: boolean | QuestionCountOutputTypeCountHistoriesArgs
+  reviews?: boolean | QuestionCountOutputTypeCountReviewsArgs
   tags?: boolean | QuestionCountOutputTypeCountTagsArgs
   duplicateAsA?: boolean | QuestionCountOutputTypeCountDuplicateAsAArgs
   duplicateAsB?: boolean | QuestionCountOutputTypeCountDuplicateAsBArgs
@@ -2086,6 +2273,13 @@ export type QuestionCountOutputTypeCountOccurrencesArgs<ExtArgs extends runtime.
  */
 export type QuestionCountOutputTypeCountHistoriesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.QuestionHistoryWhereInput
+}
+
+/**
+ * QuestionCountOutputType without action
+ */
+export type QuestionCountOutputTypeCountReviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.QuestionReviewWhereInput
 }
 
 /**
@@ -2136,6 +2330,7 @@ export type QuestionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   options?: boolean | Prisma.Question$optionsArgs<ExtArgs>
   occurrences?: boolean | Prisma.Question$occurrencesArgs<ExtArgs>
   histories?: boolean | Prisma.Question$historiesArgs<ExtArgs>
+  reviews?: boolean | Prisma.Question$reviewsArgs<ExtArgs>
   tags?: boolean | Prisma.Question$tagsArgs<ExtArgs>
   duplicateAsA?: boolean | Prisma.Question$duplicateAsAArgs<ExtArgs>
   duplicateAsB?: boolean | Prisma.Question$duplicateAsBArgs<ExtArgs>
@@ -2222,6 +2417,7 @@ export type QuestionInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   options?: boolean | Prisma.Question$optionsArgs<ExtArgs>
   occurrences?: boolean | Prisma.Question$occurrencesArgs<ExtArgs>
   histories?: boolean | Prisma.Question$historiesArgs<ExtArgs>
+  reviews?: boolean | Prisma.Question$reviewsArgs<ExtArgs>
   tags?: boolean | Prisma.Question$tagsArgs<ExtArgs>
   duplicateAsA?: boolean | Prisma.Question$duplicateAsAArgs<ExtArgs>
   duplicateAsB?: boolean | Prisma.Question$duplicateAsBArgs<ExtArgs>
@@ -2244,6 +2440,7 @@ export type $QuestionPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     options: Prisma.$QuestionOptionPayload<ExtArgs>[]
     occurrences: Prisma.$QuestionOccurrencePayload<ExtArgs>[]
     histories: Prisma.$QuestionHistoryPayload<ExtArgs>[]
+    reviews: Prisma.$QuestionReviewPayload<ExtArgs>[]
     tags: Prisma.$QuestionTagLinkPayload<ExtArgs>[]
     duplicateAsA: Prisma.$DuplicateCandidatePayload<ExtArgs>[]
     duplicateAsB: Prisma.$DuplicateCandidatePayload<ExtArgs>[]
@@ -2668,6 +2865,7 @@ export interface Prisma__QuestionClient<T, Null = never, ExtArgs extends runtime
   options<T extends Prisma.Question$optionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$optionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionOptionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   occurrences<T extends Prisma.Question$occurrencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$occurrencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   histories<T extends Prisma.Question$historiesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$historiesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionHistoryPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reviews<T extends Prisma.Question$reviewsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$reviewsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionReviewPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   tags<T extends Prisma.Question$tagsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$tagsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionTagLinkPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   duplicateAsA<T extends Prisma.Question$duplicateAsAArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$duplicateAsAArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DuplicateCandidatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   duplicateAsB<T extends Prisma.Question$duplicateAsBArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Question$duplicateAsBArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$DuplicateCandidatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
@@ -3228,6 +3426,30 @@ export type Question$historiesArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.QuestionHistoryScalarFieldEnum | Prisma.QuestionHistoryScalarFieldEnum[]
+}
+
+/**
+ * Question.reviews
+ */
+export type Question$reviewsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the QuestionReview
+   */
+  select?: Prisma.QuestionReviewSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the QuestionReview
+   */
+  omit?: Prisma.QuestionReviewOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.QuestionReviewInclude<ExtArgs> | null
+  where?: Prisma.QuestionReviewWhereInput
+  orderBy?: Prisma.QuestionReviewOrderByWithRelationInput | Prisma.QuestionReviewOrderByWithRelationInput[]
+  cursor?: Prisma.QuestionReviewWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.QuestionReviewScalarFieldEnum | Prisma.QuestionReviewScalarFieldEnum[]
 }
 
 /**

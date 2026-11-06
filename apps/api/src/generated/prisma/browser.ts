@@ -137,3 +137,8 @@ export type QuestionTag = Prisma.QuestionTagModel
  * 
  */
 export type QuestionTagLink = Prisma.QuestionTagLinkModel
+/**
+ * Model QuestionReview
+ * 
+ */
+export type QuestionReview = Prisma.QuestionReviewModel

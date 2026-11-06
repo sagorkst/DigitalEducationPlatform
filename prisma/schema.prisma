@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client"
   output   = "../apps/api/src/generated/prisma"
@@ -72,6 +71,13 @@ enum DuplicateStatus {
   MERGED
 }
 
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
 model User {
   id            String     @id @default(uuid()) @db.Uuid
   name          String
@@ -87,7 +93,7 @@ model User {
   deletedAt     DateTime?
 
   memberships   Membership[]
-  auditLogs     AuditLog[] @relation("AuditActor")
+  auditLogs     AuditLog[]    @relation("AuditActor")
   importBatches ImportBatch[] @relation("ImportCreator")
   savedFilters  SavedFilter[]
 
@@ -96,14 +102,14 @@ model User {
 }
 
 model Organization {
-  id          String              @id @default(uuid()) @db.Uuid
+  id          String             @id @default(uuid()) @db.Uuid
   name        String
-  slug        String              @unique
+  slug        String             @unique
   description String?
   logo        String?
-  status      OrganizationStatus  @default(ACTIVE)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
+  status      OrganizationStatus @default(ACTIVE)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
   deletedAt   DateTime?
 
   memberships Membership[]
@@ -120,51 +126,51 @@ model Membership {
   createdAt      DateTime         @default(now())
   updatedAt      DateTime         @updatedAt
 
-  user           User             @relation(fields: [userId], references: [id])
-  organization   Organization     @relation(fields: [organizationId], references: [id])
-  roles          MembershipRole[]
+  user         User             @relation(fields: [userId], references: [id])
+  organization Organization     @relation(fields: [organizationId], references: [id])
+  roles        MembershipRole[]
 
   @@unique([userId, organizationId])
   @@index([organizationId, status])
 }
 
 model Role {
-  id          String           @id @default(uuid()) @db.Uuid
-  name        String           @unique
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String   @unique
   description String?
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime @default(now())
 
   permissions RolePermission[]
   memberships MembershipRole[]
 }
 
 model Permission {
-  id          String           @id @default(uuid()) @db.Uuid
-  key         String           @unique
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
   description String?
-  createdAt   DateTime         @default(now())
+  createdAt   DateTime @default(now())
 
-  roles       RolePermission[]
+  roles RolePermission[]
 }
 
 model RolePermission {
-  id           String     @id @default(uuid()) @db.Uuid
-  roleId       String     @db.Uuid
-  permissionId String     @db.Uuid
+  id           String @id @default(uuid()) @db.Uuid
+  roleId       String @db.Uuid
+  permissionId String @db.Uuid
 
-  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
-  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
 
   @@unique([roleId, permissionId])
 }
 
 model MembershipRole {
-  id           String     @id @default(uuid()) @db.Uuid
-  membershipId String     @db.Uuid
-  roleId       String     @db.Uuid
+  id           String @id @default(uuid()) @db.Uuid
+  membershipId String @db.Uuid
+  roleId       String @db.Uuid
 
-  membership   Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
-  role         Role       @relation(fields: [roleId], references: [id])
+  membership Membership @relation(fields: [membershipId], references: [id], onDelete: Cascade)
+  role       Role       @relation(fields: [roleId], references: [id])
 
   @@unique([membershipId, roleId])
 }
@@ -179,7 +185,7 @@ model AuditLog {
   ipAddress  String?
   createdAt  DateTime @default(now())
 
-  actor      User?    @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
+  actor User? @relation("AuditActor", fields: [actorId], references: [id], onDelete: SetNull)
 
   @@index([actorId, createdAt])
   @@index([entityType, entityId])
@@ -195,12 +201,11 @@ model Subject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  topics      Topic[]
-  questions   Question[]
+  topics    Topic[]
+  questions Question[]
 
   @@index([isActive])
 }
-
 
 model Topic {
   id          String   @id @default(uuid()) @db.Uuid
@@ -213,16 +218,15 @@ model Topic {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  subject     Subject  @relation(fields: [subjectId], references: [id])
-  parent      Topic?   @relation("TopicHierarchy", fields: [parentId], references: [id])
-  children    Topic[]  @relation("TopicHierarchy")
-  questions   Question[]
+  subject   Subject    @relation(fields: [subjectId], references: [id])
+  parent    Topic?     @relation("TopicHierarchy", fields: [parentId], references: [id])
+  children  Topic[]    @relation("TopicHierarchy")
+  questions Question[]
 
   @@unique([subjectId, slug])
   @@index([subjectId, parentId])
   @@index([isActive])
 }
-
 
 model Institution {
   id          String   @id @default(uuid()) @db.Uuid
@@ -252,8 +256,8 @@ model Exam {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  institution   Institution? @relation(fields: [institutionId], references: [id])
-  occurrences   QuestionOccurrence[]
+  institution Institution?         @relation(fields: [institutionId], references: [id])
+  occurrences QuestionOccurrence[]
 
   @@index([institutionId, name])
 }
@@ -272,41 +276,42 @@ model Post {
 }
 
 model Question {
-  id             String         @id @default(uuid()) @db.Uuid
-  questionCode   String         @unique
-  questionText   String
-  questionType   QuestionType   @default(MCQ)
+  id           String       @id @default(uuid()) @db.Uuid
+  questionCode String       @unique
+  questionText String
+  questionType QuestionType @default(MCQ)
 
   // Legacy fields retained for existing Question Bank UI
-  optionA        String?
-  optionB        String?
-  optionC        String?
-  optionD        String?
-  correctAnswer  String?
-  subject        String
-  topic          String
+  optionA       String?
+  optionB       String?
+  optionC       String?
+  optionD       String?
+  correctAnswer String?
+  subject       String
+  topic         String
 
-  explanation    String?
-  difficulty     Difficulty    @default(MEDIUM)
-  repeatGroupId  String?
-  status         QuestionStatus @default(DRAFT)
+  explanation   String?
+  difficulty    Difficulty     @default(MEDIUM)
+  repeatGroupId String?
+  status        QuestionStatus @default(DRAFT)
 
-  subjectId      String?        @db.Uuid
-  topicId        String?        @db.Uuid
+  subjectId String? @db.Uuid
+  topicId   String? @db.Uuid
 
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
-  deletedAt      DateTime?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
 
-  subjectRef     Subject?       @relation(fields: [subjectId], references: [id])
-  topicRef       Topic?         @relation(fields: [topicId], references: [id])
+  subjectRef Subject? @relation(fields: [subjectId], references: [id])
+  topicRef   Topic?   @relation(fields: [topicId], references: [id])
 
-  options        QuestionOption[]
-  occurrences    QuestionOccurrence[]
-  histories      QuestionHistory[]
-  tags           QuestionTagLink[]
-  duplicateAsA   DuplicateCandidate[] @relation("DuplicateQuestionA")
-  duplicateAsB   DuplicateCandidate[] @relation("DuplicateQuestionB")
+  options      QuestionOption[]
+  occurrences  QuestionOccurrence[]
+  histories    QuestionHistory[]
+  reviews      QuestionReview[]
+  tags         QuestionTagLink[]
+  duplicateAsA DuplicateCandidate[] @relation("DuplicateQuestionA")
+  duplicateAsB DuplicateCandidate[] @relation("DuplicateQuestionB")
 
   @@index([subject, topic])
   @@index([subjectId, topicId])
@@ -324,40 +329,40 @@ model QuestionOption {
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
 
-  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([questionId, label])
   @@index([questionId, sortOrder])
 }
 
 model QuestionOccurrence {
-  id               String   @id @default(uuid()) @db.Uuid
-  questionId       String   @db.Uuid
+  id         String @id @default(uuid()) @db.Uuid
+  questionId String @db.Uuid
 
   // Legacy text fields retained for existing data format
-  institution      String
-  examName         String
-  examYear         Int
-  postName         String?
-  department       String?
-  questionNumber   Int?
-  source           String?
-  sourcePage       Int?
-  sourceUrl        String?
+  institution    String
+  examName       String
+  examYear       Int
+  postName       String?
+  department     String?
+  questionNumber Int?
+  source         String?
+  sourcePage     Int?
+  sourceUrl      String?
 
-  institutionId    String?  @db.Uuid
-  examId           String?  @db.Uuid
-  postId           String?  @db.Uuid
-  sourceDocumentId String?  @db.Uuid
+  institutionId    String? @db.Uuid
+  examId           String? @db.Uuid
+  postId           String? @db.Uuid
+  sourceDocumentId String? @db.Uuid
 
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  question         Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  institutionRef   Institution? @relation(fields: [institutionId], references: [id])
-  examRef          Exam? @relation(fields: [examId], references: [id])
-  postRef          Post? @relation(fields: [postId], references: [id])
-  sourceDocument   SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
+  question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  institutionRef Institution?    @relation(fields: [institutionId], references: [id])
+  examRef        Exam?           @relation(fields: [examId], references: [id])
+  postRef        Post?           @relation(fields: [postId], references: [id])
+  sourceDocument SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
 
   @@index([questionId])
   @@index([institution, examYear])
@@ -369,22 +374,22 @@ model QuestionOccurrence {
 }
 
 model QuestionHistory {
-  id          String   @id @default(uuid()) @db.Uuid
-  questionId  String   @db.Uuid
-  version     Int
-  snapshot    Json
-  changeNote  String?
-  changedBy   String?  @db.Uuid
-  createdAt   DateTime @default(now())
+  id         String   @id @default(uuid()) @db.Uuid
+  questionId String   @db.Uuid
+  version    Int
+  snapshot   Json
+  changeNote String?
+  changedBy  String?  @db.Uuid
+  createdAt  DateTime @default(now())
 
-  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
 
   @@unique([questionId, version])
   @@index([questionId, createdAt])
 }
 
 model SourceDocument {
-  id           String   @id @default(uuid()) @db.Uuid
+  id           String    @id @default(uuid()) @db.Uuid
   title        String
   documentType String?
   fileName     String?
@@ -392,34 +397,34 @@ model SourceDocument {
   fileHash     String?
   description  String?
   publishedAt  DateTime?
-  createdAt    DateTime @default(now())
+  createdAt    DateTime  @default(now())
 
-  occurrences  QuestionOccurrence[]
+  occurrences QuestionOccurrence[]
 
   @@index([fileHash])
   @@index([title])
 }
 
 model ImportBatch {
-  id             String       @id @default(uuid()) @db.Uuid
-  fileName       String
-  fileType       String
-  status         ImportStatus @default(PENDING)
-  totalRows      Int          @default(0)
-  validRows      Int          @default(0)
-  invalidRows    Int          @default(0)
-  duplicateRows  Int          @default(0)
-  importedRows   Int          @default(0)
-  skippedRows    Int          @default(0)
-  createdBy      String?      @db.Uuid
-  errorSummary   Json?
-  startedAt      DateTime?
-  completedAt    DateTime?
-  rolledBackAt   DateTime?
-  createdAt      DateTime     @default(now())
+  id            String       @id @default(uuid()) @db.Uuid
+  fileName      String
+  fileType      String
+  status        ImportStatus @default(PENDING)
+  totalRows     Int          @default(0)
+  validRows     Int          @default(0)
+  invalidRows   Int          @default(0)
+  duplicateRows Int          @default(0)
+  importedRows  Int          @default(0)
+  skippedRows   Int          @default(0)
+  createdBy     String?      @db.Uuid
+  errorSummary  Json?
+  startedAt     DateTime?
+  completedAt   DateTime?
+  rolledBackAt  DateTime?
+  createdAt     DateTime     @default(now())
 
-  creator        User?        @relation("ImportCreator", fields: [createdBy], references: [id], onDelete: SetNull)
-  rows           ImportRow[]
+  creator User?       @relation("ImportCreator", fields: [createdBy], references: [id], onDelete: SetNull)
+  rows    ImportRow[]
 
   @@index([status, createdAt])
   @@index([createdBy, createdAt])
@@ -435,7 +440,7 @@ model ImportRow {
   questionId    String?         @db.Uuid
   createdAt     DateTime        @default(now())
 
-  batch         ImportBatch     @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  batch ImportBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@unique([batchId, rowNumber])
   @@index([batchId, status])
@@ -443,33 +448,33 @@ model ImportRow {
 }
 
 model DuplicateCandidate {
-  id              String          @id @default(uuid()) @db.Uuid
-  questionAId     String          @db.Uuid
-  questionBId     String          @db.Uuid
-  similarity      Float
-  status          DuplicateStatus @default(PENDING)
-  reviewNote      String?
-  reviewedBy      String?         @db.Uuid
-  reviewedAt      DateTime?
-  createdAt       DateTime        @default(now())
+  id          String          @id @default(uuid()) @db.Uuid
+  questionAId String          @db.Uuid
+  questionBId String          @db.Uuid
+  similarity  Float
+  status      DuplicateStatus @default(PENDING)
+  reviewNote  String?
+  reviewedBy  String?         @db.Uuid
+  reviewedAt  DateTime?
+  createdAt   DateTime        @default(now())
 
-  questionA       Question        @relation("DuplicateQuestionA", fields: [questionAId], references: [id], onDelete: Cascade)
-  questionB       Question        @relation("DuplicateQuestionB", fields: [questionBId], references: [id], onDelete: Cascade)
+  questionA Question @relation("DuplicateQuestionA", fields: [questionAId], references: [id], onDelete: Cascade)
+  questionB Question @relation("DuplicateQuestionB", fields: [questionBId], references: [id], onDelete: Cascade)
 
   @@unique([questionAId, questionBId])
   @@index([status, similarity])
 }
 
 model SavedFilter {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  name        String
-  filters     Json
-  isDefault   Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  name      String
+  filters   Json
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, name])
   @@index([userId])
@@ -485,13 +490,33 @@ model QuestionTag {
 }
 
 model QuestionTagLink {
-  id         String       @id @default(uuid()) @db.Uuid
-  questionId String       @db.Uuid
-  tagId      String       @db.Uuid
+  id         String @id @default(uuid()) @db.Uuid
+  questionId String @db.Uuid
+  tagId      String @db.Uuid
 
-  question   Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
-  tag        QuestionTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  question Question    @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  tag      QuestionTag @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@unique([questionId, tagId])
   @@index([tagId])
+}
+
+model QuestionReview {
+  id             String       @id @default(uuid()) @db.Uuid
+  questionId     String       @db.Uuid
+  status         ReviewStatus @default(PENDING)
+  submittedBy    String?      @db.Uuid
+  reviewerId     String?      @db.Uuid
+  submissionNote String?
+  reviewNote     String?
+  submittedAt    DateTime     @default(now())
+  reviewedAt     DateTime?
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  question Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([status, submittedAt])
+  @@index([questionId, submittedAt])
+  @@index([reviewerId])
 }

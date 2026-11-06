@@ -420,7 +420,8 @@ export const ModelName = {
   DuplicateCandidate: 'DuplicateCandidate',
   SavedFilter: 'SavedFilter',
   QuestionTag: 'QuestionTag',
-  QuestionTagLink: 'QuestionTagLink'
+  QuestionTagLink: 'QuestionTagLink',
+  QuestionReview: 'QuestionReview'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "organization" | "membership" | "role" | "permission" | "rolePermission" | "membershipRole" | "auditLog" | "subject" | "topic" | "institution" | "exam" | "post" | "question" | "questionOption" | "questionOccurrence" | "questionHistory" | "sourceDocument" | "importBatch" | "importRow" | "duplicateCandidate" | "savedFilter" | "questionTag" | "questionTagLink"
+    modelProps: "user" | "organization" | "membership" | "role" | "permission" | "rolePermission" | "membershipRole" | "auditLog" | "subject" | "topic" | "institution" | "exam" | "post" | "question" | "questionOption" | "questionOccurrence" | "questionHistory" | "sourceDocument" | "importBatch" | "importRow" | "duplicateCandidate" | "savedFilter" | "questionTag" | "questionTagLink" | "questionReview"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -2216,6 +2217,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    QuestionReview: {
+      payload: Prisma.$QuestionReviewPayload<ExtArgs>
+      fields: Prisma.QuestionReviewFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.QuestionReviewFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.QuestionReviewFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        findFirst: {
+          args: Prisma.QuestionReviewFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.QuestionReviewFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        findMany: {
+          args: Prisma.QuestionReviewFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>[]
+        }
+        create: {
+          args: Prisma.QuestionReviewCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        createMany: {
+          args: Prisma.QuestionReviewCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.QuestionReviewCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>[]
+        }
+        delete: {
+          args: Prisma.QuestionReviewDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        update: {
+          args: Prisma.QuestionReviewUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        deleteMany: {
+          args: Prisma.QuestionReviewDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.QuestionReviewUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.QuestionReviewUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>[]
+        }
+        upsert: {
+          args: Prisma.QuestionReviewUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$QuestionReviewPayload>
+        }
+        aggregate: {
+          args: Prisma.QuestionReviewAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateQuestionReview>
+        }
+        groupBy: {
+          args: Prisma.QuestionReviewGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.QuestionReviewGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.QuestionReviewCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.QuestionReviewCountAggregateOutputType> | number
+        }
+      }
+    }
   }
 } & {
   other: {
@@ -2595,6 +2670,23 @@ export const QuestionTagLinkScalarFieldEnum = {
 export type QuestionTagLinkScalarFieldEnum = (typeof QuestionTagLinkScalarFieldEnum)[keyof typeof QuestionTagLinkScalarFieldEnum]
 
 
+export const QuestionReviewScalarFieldEnum = {
+  id: 'id',
+  questionId: 'questionId',
+  status: 'status',
+  submittedBy: 'submittedBy',
+  reviewerId: 'reviewerId',
+  submissionNote: 'submissionNote',
+  reviewNote: 'reviewNote',
+  submittedAt: 'submittedAt',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type QuestionReviewScalarFieldEnum = (typeof QuestionReviewScalarFieldEnum)[keyof typeof QuestionReviewScalarFieldEnum]
+
+
 export const SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -2851,6 +2943,20 @@ export type EnumDuplicateStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$
 export type ListEnumDuplicateStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DuplicateStatus[]'>
     
 
+
+/**
+ * Reference to a field of type 'ReviewStatus'
+ */
+export type EnumReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'ReviewStatus[]'
+ */
+export type ListEnumReviewStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ReviewStatus[]'>
+    
+
 /**
  * Batch Payload for updateMany & deleteMany & createMany
  */
@@ -3026,6 +3132,7 @@ export type GlobalOmitConfig = {
   savedFilter?: Prisma.SavedFilterOmit
   questionTag?: Prisma.QuestionTagOmit
   questionTagLink?: Prisma.QuestionTagLinkOmit
+  questionReview?: Prisma.QuestionReviewOmit
 }
 
 /* Types for Logging */

@@ -98,3 +98,13 @@ export const DuplicateStatus = {
 } as const
 
 export type DuplicateStatus = (typeof DuplicateStatus)[keyof typeof DuplicateStatus]
+
+
+export const ReviewStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus]
