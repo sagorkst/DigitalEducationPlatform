@@ -14,6 +14,7 @@ import { OccurrencesModule } from './modules/occurrences/occurrences.module';
 import { DuplicatesModule } from './modules/duplicates/duplicates.module';
 import { ImportsModule } from './modules/imports/imports.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { TagsModule } from './modules/tags/tags.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     DuplicatesModule,
     ImportsModule,
     ReviewsModule,
+    TagsModule,
   ],
   controllers: [
     HealthController,
