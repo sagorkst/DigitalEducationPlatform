@@ -1,4 +1,4 @@
-import {
+﻿import {
   Controller,
   Post,
   Get,
@@ -7,9 +7,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { Request } from 'express';
+import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
+import { SessionService } from './session.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
@@ -25,6 +27,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly passwordResetService: PasswordResetService,
+    private readonly sessionService: SessionService,
   ) {}
 
   @Post('register')
@@ -32,16 +35,37 @@ export class AuthController {
     return this.authService.register(dto);
   }
 
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
   @Post('login')
   login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
   }
 
+  @Throttle({
+    default: {
+      limit: 3,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
   @Post('password/forgot')
   forgotPassword(@Body() dto: ForgotPasswordDto) {
     return this.passwordResetService.requestPasswordReset(dto.email);
   }
 
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
   @Post('password/reset')
   resetPassword(
     @Body() dto: ResetPasswordDto,
@@ -52,6 +76,12 @@ export class AuthController {
       dto.newPassword,
       request.ip,
     );
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post('logout')
+  logout(@Req() request: AuthenticatedRequest) {
+    return this.sessionService.logout(request.user.id);
   }
 
   @UseGuards(JwtAuthGuard)

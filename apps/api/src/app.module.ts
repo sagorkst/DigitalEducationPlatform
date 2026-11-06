@@ -1,4 +1,6 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 
 import { HealthController } from './health.controller';
 import { DatabaseController } from './database.controller';
@@ -22,6 +24,13 @@ import { UsersModule } from './modules/users/users.module';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'default',
+        ttl: 60000,
+        limit: 60,
+      },
+    ]),
     DatabaseModule,
     QuestionsModule,
     SubjectsModule,
@@ -43,6 +52,11 @@ import { UsersModule } from './modules/users/users.module';
     HealthController,
     DatabaseController,
   ],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}
