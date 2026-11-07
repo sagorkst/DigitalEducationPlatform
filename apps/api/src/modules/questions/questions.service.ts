@@ -3,6 +3,7 @@ import {
   Injectable,
   BadRequestException,
   NotFoundException,
+  ConflictException,
 } from '@nestjs/common';
 
 import { randomBytes } from 'crypto';
@@ -14,6 +15,25 @@ import { UpdateQuestionDto } from './dto/update-question.dto';
 @Injectable()
 export class QuestionsService {
   constructor(private readonly prisma: PrismaService) {}
+
+  // ==========================================
+  // HANDLE UNIQUE CONSTRAINT ERRORS
+  // ==========================================
+
+  private handleQuestionError(error: unknown): never {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'P2002'
+    ) {
+      throw new ConflictException(
+        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+      );
+    }
+
+    throw error;
+  }
 
   // ==========================================
   // CREATE QUESTION
@@ -44,137 +64,145 @@ export class QuestionsService {
 
     const questionCode = `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
 
-    const question = await this.prisma.$transaction(async (tx) => {
-      let selectedSubject: {
-        id: string;
-        name: string;
-        isActive: boolean;
-      } | null = null;
-
-      let selectedTopic: {
-        id: string;
-        name: string;
-        subjectId: string;
-        isActive: boolean;
-        subject: {
+    try {
+      const question = await this.prisma.$transaction(async (tx) => {
+        let selectedSubject: {
           id: string;
           name: string;
           isActive: boolean;
-        };
-      } | null = null;
+        } | null = null;
 
-      if (dto.subjectId) {
-        selectedSubject = await tx.subject.findFirst({
-          where: {
-            id: dto.subjectId,
-            isActive: true,
-          },
-          select: {
-            id: true,
-            name: true,
-            isActive: true,
-          },
-        });
+        let selectedTopic: {
+          id: string;
+          name: string;
+          subjectId: string;
+          isActive: boolean;
+          subject: {
+            id: string;
+            name: string;
+            isActive: boolean;
+          };
+        } | null = null;
 
-        if (!selectedSubject) {
-          throw new BadRequestException(
-            'Selected Subject does not exist or is inactive.',
-          );
+        if (dto.subjectId) {
+          selectedSubject = await tx.subject.findFirst({
+            where: {
+              id: dto.subjectId,
+              isActive: true,
+            },
+            select: {
+              id: true,
+              name: true,
+              isActive: true,
+            },
+          });
+
+          if (!selectedSubject) {
+            throw new BadRequestException(
+              'Selected Subject does not exist or is inactive.',
+            );
+          }
         }
-      }
 
-      if (dto.topicId) {
-        selectedTopic = await tx.topic.findFirst({
-          where: {
-            id: dto.topicId,
-            isActive: true,
-          },
-          include: {
-            subject: {
-              select: {
-                id: true,
-                name: true,
-                isActive: true,
+        if (dto.topicId) {
+          selectedTopic = await tx.topic.findFirst({
+            where: {
+              id: dto.topicId,
+              isActive: true,
+            },
+            include: {
+              subject: {
+                select: {
+                  id: true,
+                  name: true,
+                  isActive: true,
+                },
               },
             },
+          });
+
+          if (!selectedTopic || !selectedTopic.subject.isActive) {
+            throw new BadRequestException(
+              'Selected Topic does not exist or its Subject is inactive.',
+            );
+          }
+
+          if (
+            selectedSubject &&
+            selectedTopic.subjectId !== selectedSubject.id
+          ) {
+            throw new BadRequestException(
+              'Selected Topic must belong to the selected Subject.',
+            );
+          }
+
+          if (!selectedSubject) {
+            selectedSubject = selectedTopic.subject;
+          }
+        }
+
+        return tx.question.create({
+          data: {
+            questionCode,
+            questionText: dto.questionText,
+            questionType,
+            subject: selectedSubject?.name ?? dto.subject,
+            topic: selectedTopic?.name ?? dto.topic,
+            ...(selectedSubject
+              ? { subjectRef: { connect: { id: selectedSubject.id } } }
+              : {}),
+            ...(selectedTopic
+              ? { topicRef: { connect: { id: selectedTopic.id } } }
+              : {}),
+            correctAnswer: dto.correctAnswer,
+            explanation: dto.explanation,
+            difficulty: dto.difficulty ?? 'MEDIUM',
+            status: dto.status ?? 'DRAFT',
+
+            options: {
+              create: (dto.options ?? []).map((option) => ({
+                label: option.label,
+                optionText: option.optionText,
+                isCorrect: option.isCorrect ?? false,
+                sortOrder: option.sortOrder ?? 0,
+              })),
+            },
+
+            occurrences: {
+              create: dto.occurrences.map((occurrence) => ({
+                institution: occurrence.institution,
+                examName: occurrence.examName,
+                examYear: occurrence.examYear,
+                postName: occurrence.postName,
+                department: occurrence.department,
+                questionNumber: occurrence.questionNumber,
+                source: occurrence.source,
+                sourcePage: occurrence.sourcePage,
+                sourceUrl: occurrence.sourceUrl,
+                institutionId: occurrence.institutionId,
+                examId: occurrence.examId,
+                postId: occurrence.postId,
+                sourceDocumentId: occurrence.sourceDocumentId,
+              })),
+            },
+          },
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            occurrences: true,
           },
         });
-
-        if (!selectedTopic || !selectedTopic.subject.isActive) {
-          throw new BadRequestException(
-            'Selected Topic does not exist or its Subject is inactive.',
-          );
-        }
-
-        if (
-          selectedSubject &&
-          selectedTopic.subjectId !== selectedSubject.id
-        ) {
-          throw new BadRequestException(
-            'Selected Topic must belong to the selected Subject.',
-          );
-        }
-
-        if (!selectedSubject) {
-          selectedSubject = selectedTopic.subject;
-        }
-      }
-
-      return tx.question.create({
-        data: {
-          questionCode,
-          questionText: dto.questionText,
-          questionType,
-          subject: selectedSubject?.name ?? dto.subject,
-          topic: selectedTopic?.name ?? dto.topic,
-          ...(selectedSubject
-            ? { subjectRef: { connect: { id: selectedSubject.id } } }
-            : {}),
-          ...(selectedTopic
-            ? { topicRef: { connect: { id: selectedTopic.id } } }
-            : {}),
-          correctAnswer: dto.correctAnswer,
-          explanation: dto.explanation,
-          difficulty: dto.difficulty ?? 'MEDIUM',
-          status: dto.status ?? 'DRAFT',
-
-          options: {
-            create: (dto.options ?? []).map((option) => ({
-              label: option.label,
-              optionText: option.optionText,
-              isCorrect: option.isCorrect ?? false,
-              sortOrder: option.sortOrder ?? 0,
-            })),
-          },
-
-          occurrences: {
-            create: dto.occurrences.map((occurrence) => ({
-              institution: occurrence.institution,
-              examName: occurrence.examName,
-              examYear: occurrence.examYear,
-              postName: occurrence.postName,
-              department: occurrence.department,
-              questionNumber: occurrence.questionNumber,
-              source: occurrence.source,
-              sourcePage: occurrence.sourcePage,
-              sourceUrl: occurrence.sourceUrl,
-            })),
-          },
-        },
-        include: {
-          options: {
-            orderBy: { sortOrder: 'asc' },
-          },
-          occurrences: true,
-        },
       });
-    });
 
-    return {
-      success: true,
-      message: 'Question created successfully.',
-      data: question,
-    };
+      return {
+        success: true,
+        message: 'Question created successfully.',
+        data: question,
+      };
+    } catch (error) {
+      this.handleQuestionError(error);
+    }
   }
 
   // ==========================================
@@ -558,268 +586,276 @@ export class QuestionsService {
   // ==========================================
 
   async update(id: string, dto: UpdateQuestionDto) {
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.question.findFirst({
-        where: {
-          id,
-          deletedAt: null,
-        },
-        include: {
-          options: {
-            orderBy: { sortOrder: 'asc' },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const existing = await tx.question.findFirst({
+          where: {
+            id,
+            deletedAt: null,
           },
-          occurrences: true,
-        },
-      });
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            occurrences: true,
+          },
+        });
 
-      if (!existing) {
-        throw new NotFoundException('Question not found.');
-      }
+        if (!existing) {
+          throw new NotFoundException('Question not found.');
+        }
 
-      const nextQuestionType =
-        dto.questionType ?? existing.questionType;
+        const nextQuestionType =
+          dto.questionType ?? existing.questionType;
 
-      const nextOptions =
-        dto.options ?? existing.options;
+        const nextOptions =
+          dto.options ?? existing.options;
 
-      if (
-        nextQuestionType === 'MCQ' &&
-        nextOptions.length < 2
-      ) {
-        throw new BadRequestException(
-          'MCQ questions must have at least two options.',
-        );
-      }
-
-      if (nextQuestionType === 'MCQ') {
-        const correctOptions = nextOptions.filter(
-          (option) => option.isCorrect,
-        );
-
-        if (correctOptions.length !== 1) {
+        if (
+          nextQuestionType === 'MCQ' &&
+          nextOptions.length < 2
+        ) {
           throw new BadRequestException(
-            'MCQ questions must have exactly one correct option.',
+            'MCQ questions must have at least two options.',
           );
         }
-      }
 
-      // Resolve Master Subject/Topic relations only when UUIDs are supplied.
-      let relationSubject:
-        | { id: string; name: string; isActive: boolean }
-        | null = null;
+        if (nextQuestionType === 'MCQ') {
+          const correctOptions = nextOptions.filter(
+            (option) => option.isCorrect,
+          );
 
-      let relationTopic:
-        | {
-            id: string;
-            name: string;
-            subjectId: string;
-            isActive: boolean;
-            subject: { id: string; name: string; isActive: boolean };
-          }
-        | null = null;
-
-      const relationIdsProvided =
-        dto.subjectId !== undefined || dto.topicId !== undefined;
-
-      if (relationIdsProvided) {
-        if (dto.subjectId) {
-          relationSubject = await tx.subject.findFirst({
-            where: {
-              id: dto.subjectId,
-              isActive: true,
-            },
-            select: {
-              id: true,
-              name: true,
-              isActive: true,
-            },
-          });
-
-          if (!relationSubject) {
+          if (correctOptions.length !== 1) {
             throw new BadRequestException(
-              'Selected Subject does not exist or is inactive.',
+              'MCQ questions must have exactly one correct option.',
             );
           }
         }
 
-        if (dto.topicId) {
-          relationTopic = await tx.topic.findFirst({
-            where: {
-              id: dto.topicId,
-              isActive: true,
-            },
-            include: {
-              subject: {
-                select: {
-                  id: true,
-                  name: true,
-                  isActive: true,
+        // Resolve Master Subject/Topic relations only when UUIDs are supplied.
+        let relationSubject:
+          | { id: string; name: string; isActive: boolean }
+          | null = null;
+
+        let relationTopic:
+          | {
+              id: string;
+              name: string;
+              subjectId: string;
+              isActive: boolean;
+              subject: { id: string; name: string; isActive: boolean };
+            }
+          | null = null;
+
+        const relationIdsProvided =
+          dto.subjectId !== undefined || dto.topicId !== undefined;
+
+        if (relationIdsProvided) {
+          if (dto.subjectId) {
+            relationSubject = await tx.subject.findFirst({
+              where: {
+                id: dto.subjectId,
+                isActive: true,
+              },
+              select: {
+                id: true,
+                name: true,
+                isActive: true,
+              },
+            });
+
+            if (!relationSubject) {
+              throw new BadRequestException(
+                'Selected Subject does not exist or is inactive.',
+              );
+            }
+          }
+
+          if (dto.topicId) {
+            relationTopic = await tx.topic.findFirst({
+              where: {
+                id: dto.topicId,
+                isActive: true,
+              },
+              include: {
+                subject: {
+                  select: {
+                    id: true,
+                    name: true,
+                    isActive: true,
+                  },
                 },
               },
-            },
-          });
+            });
 
-          if (!relationTopic || !relationTopic.subject.isActive) {
-            throw new BadRequestException(
-              'Selected Topic does not exist or its Subject is inactive.',
-            );
-          }
+            if (!relationTopic || !relationTopic.subject.isActive) {
+              throw new BadRequestException(
+                'Selected Topic does not exist or its Subject is inactive.',
+              );
+            }
 
-          if (
-            relationSubject &&
-            relationTopic.subjectId !== relationSubject.id
-          ) {
-            throw new BadRequestException(
-              'Selected Topic must belong to the selected Subject.',
-            );
-          }
+            if (
+              relationSubject &&
+              relationTopic.subjectId !== relationSubject.id
+            ) {
+              throw new BadRequestException(
+                'Selected Topic must belong to the selected Subject.',
+              );
+            }
 
-          if (!relationSubject) {
-            relationSubject = relationTopic.subject;
-          }
-        } else if (dto.subjectId && existing.topicId) {
-          const existingTopic = await tx.topic.findUnique({
-            where: { id: existing.topicId },
-            select: {
-              id: true,
-              subjectId: true,
-            },
-          });
+            if (!relationSubject) {
+              relationSubject = relationTopic.subject;
+            }
+          } else if (dto.subjectId && existing.topicId) {
+            const existingTopic = await tx.topic.findUnique({
+              where: { id: existing.topicId },
+              select: {
+                id: true,
+                subjectId: true,
+              },
+            });
 
-          if (
-            existingTopic &&
-            existingTopic.subjectId !== relationSubject?.id
-          ) {
-            throw new BadRequestException(
-              'The existing Topic belongs to another Subject. Provide a Topic ID belonging to the new Subject.',
-            );
+            if (
+              existingTopic &&
+              existingTopic.subjectId !== relationSubject?.id
+            ) {
+              throw new BadRequestException(
+                'The existing Topic belongs to another Subject. Provide a Topic ID belonging to the new Subject.',
+              );
+            }
           }
         }
-      }
 
-      const latestHistory = await tx.questionHistory.findFirst({
-        where: { questionId: id },
-        orderBy: { version: 'desc' },
-        select: { version: true },
-      });
+        const latestHistory = await tx.questionHistory.findFirst({
+          where: { questionId: id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
 
-      const version = (latestHistory?.version ?? 0) + 1;
+        const version = (latestHistory?.version ?? 0) + 1;
 
-      const snapshot = {
-        ...existing,
-        options: existing.options,
-        occurrences: existing.occurrences,
-      };
+        const snapshot = {
+          ...existing,
+          options: existing.options,
+          occurrences: existing.occurrences,
+        };
 
-      await tx.questionHistory.create({
-        data: {
-          questionId: id,
+        await tx.questionHistory.create({
+          data: {
+            questionId: id,
+            version,
+            snapshot: snapshot as Prisma.InputJsonValue,
+            changeNote: dto.changeNote,
+          },
+        });
+
+        const updateData: Prisma.QuestionUpdateInput = {
+          ...(dto.questionText !== undefined
+            ? { questionText: dto.questionText }
+            : {}),
+          ...(dto.questionType !== undefined
+            ? { questionType: dto.questionType }
+            : {}),
+          ...(dto.subject !== undefined
+            ? { subject: dto.subject }
+            : {}),
+          ...(dto.topic !== undefined
+            ? { topic: dto.topic }
+            : {}),
+          ...(relationIdsProvided && relationSubject
+            ? {
+                subject: relationSubject.name,
+                subjectRef: { connect: { id: relationSubject.id } },
+              }
+            : {}),
+          ...(relationIdsProvided && relationTopic
+            ? {
+                topic: relationTopic.name,
+                topicRef: { connect: { id: relationTopic.id } },
+              }
+            : {}),
+          ...(dto.correctAnswer !== undefined
+            ? { correctAnswer: dto.correctAnswer }
+            : {}),
+          ...(dto.explanation !== undefined
+            ? { explanation: dto.explanation }
+            : {}),
+          ...(dto.difficulty !== undefined
+            ? { difficulty: dto.difficulty }
+            : {}),
+          ...(dto.status !== undefined
+            ? { status: dto.status }
+            : {}),
+        };
+
+        await tx.question.update({
+          where: { id },
+          data: {
+            ...updateData,
+
+            ...(dto.options !== undefined
+              ? {
+                  options: {
+                    deleteMany: {},
+                    create: dto.options.map((option) => ({
+                      label: option.label,
+                      optionText: option.optionText,
+                      isCorrect: option.isCorrect ?? false,
+                      sortOrder: option.sortOrder ?? 0,
+                    })),
+                  },
+                }
+              : {}),
+
+            ...(dto.addOccurrences?.length
+              ? {
+                  occurrences: {
+                    create: dto.addOccurrences.map((occurrence) => ({
+                      institution: occurrence.institution,
+                      examName: occurrence.examName,
+                      examYear: occurrence.examYear,
+                      postName: occurrence.postName,
+                      department: occurrence.department,
+                      questionNumber: occurrence.questionNumber,
+                      source: occurrence.source,
+                      sourcePage: occurrence.sourcePage,
+                      sourceUrl: occurrence.sourceUrl,
+                      institutionId: occurrence.institutionId,
+                      examId: occurrence.examId,
+                      postId: occurrence.postId,
+                      sourceDocumentId: occurrence.sourceDocumentId,
+                    })),
+                  },
+                }
+              : {}),
+          },
+        });
+
+        const updated = await tx.question.findUnique({
+          where: { id },
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            occurrences: {
+              orderBy: { examYear: 'desc' },
+            },
+            histories: {
+              orderBy: { version: 'desc' },
+            },
+          },
+        });
+
+        return {
+          success: true,
+          message: 'Question updated successfully.',
           version,
-          snapshot: snapshot as Prisma.InputJsonValue,
-          changeNote: dto.changeNote,
-        },
+          data: updated,
+        };
       });
-
-      const updateData: Prisma.QuestionUpdateInput = {
-        ...(dto.questionText !== undefined
-          ? { questionText: dto.questionText }
-          : {}),
-        ...(dto.questionType !== undefined
-          ? { questionType: dto.questionType }
-          : {}),
-        ...(dto.subject !== undefined
-          ? { subject: dto.subject }
-          : {}),
-        ...(dto.topic !== undefined
-          ? { topic: dto.topic }
-          : {}),
-        ...(relationIdsProvided && relationSubject
-          ? {
-              subject: relationSubject.name,
-              subjectRef: { connect: { id: relationSubject.id } },
-            }
-          : {}),
-        ...(relationIdsProvided && relationTopic
-          ? {
-              topic: relationTopic.name,
-              topicRef: { connect: { id: relationTopic.id } },
-            }
-          : {}),
-        ...(dto.correctAnswer !== undefined
-          ? { correctAnswer: dto.correctAnswer }
-          : {}),
-        ...(dto.explanation !== undefined
-          ? { explanation: dto.explanation }
-          : {}),
-        ...(dto.difficulty !== undefined
-          ? { difficulty: dto.difficulty }
-          : {}),
-        ...(dto.status !== undefined
-          ? { status: dto.status }
-          : {}),
-      };
-
-      await tx.question.update({
-        where: { id },
-        data: {
-          ...updateData,
-
-          ...(dto.options !== undefined
-            ? {
-                options: {
-                  deleteMany: {},
-                  create: dto.options.map((option) => ({
-                    label: option.label,
-                    optionText: option.optionText,
-                    isCorrect: option.isCorrect ?? false,
-                    sortOrder: option.sortOrder ?? 0,
-                  })),
-                },
-              }
-            : {}),
-
-          ...(dto.addOccurrences?.length
-            ? {
-                occurrences: {
-                  create: dto.addOccurrences.map((occurrence) => ({
-                    institution: occurrence.institution,
-                    examName: occurrence.examName,
-                    examYear: occurrence.examYear,
-                    postName: occurrence.postName,
-                    department: occurrence.department,
-                    questionNumber: occurrence.questionNumber,
-                    source: occurrence.source,
-                    sourcePage: occurrence.sourcePage,
-                    sourceUrl: occurrence.sourceUrl,
-                  })),
-                },
-              }
-            : {}),
-        },
-      });
-
-      const updated = await tx.question.findUnique({
-        where: { id },
-        include: {
-          options: {
-            orderBy: { sortOrder: 'asc' },
-          },
-          occurrences: {
-            orderBy: { examYear: 'desc' },
-          },
-          histories: {
-            orderBy: { version: 'desc' },
-          },
-        },
-      });
-
-      return {
-        success: true,
-        message: 'Question updated successfully.',
-        version,
-        data: updated,
-      };
-    });
+    } catch (error) {
+      this.handleQuestionError(error);
+    }
   }
 
   // ==========================================
@@ -909,183 +945,187 @@ export class QuestionsService {
       throw new BadRequestException('Invalid history version.');
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      const current = await tx.question.findFirst({
-        where: {
-          id,
-          deletedAt: null,
-        },
-        include: {
-          options: {
-            orderBy: { sortOrder: 'asc' },
+    try {
+      return await this.prisma.$transaction(async (tx) => {
+        const current = await tx.question.findFirst({
+          where: {
+            id,
+            deletedAt: null,
           },
-          occurrences: true,
-        },
-      });
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            occurrences: true,
+          },
+        });
 
-      if (!current) {
-        throw new NotFoundException('Question not found.');
-      }
+        if (!current) {
+          throw new NotFoundException('Question not found.');
+        }
 
-      const targetHistory = await tx.questionHistory.findUnique({
-        where: {
-          questionId_version: {
+        const targetHistory = await tx.questionHistory.findUnique({
+          where: {
+            questionId_version: {
+              questionId: id,
+              version,
+            },
+          },
+        });
+
+        if (!targetHistory) {
+          throw new NotFoundException(
+            `History version ${version} not found.`,
+          );
+        }
+
+        type QuestionSnapshot = {
+          questionText: string;
+          questionType:
+            | 'MCQ'
+            | 'TRUE_FALSE'
+            | 'FILL_IN_THE_BLANKS'
+            | 'WRITTEN';
+          subject: string;
+          topic: string;
+          subjectId?: string | null;
+          topicId?: string | null;
+          correctAnswer: string | null;
+          explanation: string | null;
+          difficulty: 'EASY' | 'MEDIUM' | 'HARD';
+          status: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'ARCHIVED';
+          options: {
+            label: string;
+            optionText: string;
+            isCorrect: boolean;
+            sortOrder: number;
+          }[];
+          occurrences: {
+            institution: string;
+            examName: string;
+            examYear: number;
+            postName: string | null;
+            department: string | null;
+            questionNumber: number | null;
+            source: string | null;
+            sourcePage: number | null;
+            sourceUrl: string | null;
+            institutionId?: string | null;
+            examId?: string | null;
+            postId?: string | null;
+            sourceDocumentId?: string | null;
+          }[];
+        };
+
+        const snapshot =
+          targetHistory.snapshot as unknown as QuestionSnapshot;
+
+        if (
+          !snapshot ||
+          !Array.isArray(snapshot.options) ||
+          !Array.isArray(snapshot.occurrences)
+        ) {
+          throw new BadRequestException(
+            'The selected history snapshot is invalid.',
+          );
+        }
+
+        const latestHistory = await tx.questionHistory.findFirst({
+          where: { questionId: id },
+          orderBy: { version: 'desc' },
+          select: { version: true },
+        });
+
+        const newVersion = (latestHistory?.version ?? 0) + 1;
+
+        await tx.questionHistory.create({
+          data: {
             questionId: id,
-            version,
+            version: newVersion,
+            snapshot: current as unknown as Prisma.InputJsonValue,
+            changeNote: `Saved current state before restoring version ${version}.`,
           },
-        },
+        });
+
+        const restored = await tx.question.update({
+          where: { id },
+          data: {
+            questionText: snapshot.questionText,
+            questionType: snapshot.questionType,
+            subject: snapshot.subject,
+            topic: snapshot.topic,
+            ...(snapshot.subjectId !== undefined
+              ? {
+                  subjectRef: snapshot.subjectId
+                    ? { connect: { id: snapshot.subjectId } }
+                    : { disconnect: true },
+                }
+              : {}),
+            ...(snapshot.topicId !== undefined
+              ? {
+                  topicRef: snapshot.topicId
+                    ? { connect: { id: snapshot.topicId } }
+                    : { disconnect: true },
+                }
+              : {}),
+            correctAnswer: snapshot.correctAnswer,
+            explanation: snapshot.explanation,
+            difficulty: snapshot.difficulty,
+            status: snapshot.status,
+
+            options: {
+              deleteMany: {},
+              create: snapshot.options.map((option) => ({
+                label: option.label,
+                optionText: option.optionText,
+                isCorrect: option.isCorrect,
+                sortOrder: option.sortOrder,
+              })),
+            },
+
+            occurrences: {
+              deleteMany: {},
+              create: snapshot.occurrences.map((occurrence) => ({
+                institution: occurrence.institution,
+                examName: occurrence.examName,
+                examYear: occurrence.examYear,
+                postName: occurrence.postName,
+                department: occurrence.department,
+                questionNumber: occurrence.questionNumber,
+                source: occurrence.source,
+                sourcePage: occurrence.sourcePage,
+                sourceUrl: occurrence.sourceUrl,
+                institutionId: occurrence.institutionId,
+                examId: occurrence.examId,
+                postId: occurrence.postId,
+                sourceDocumentId: occurrence.sourceDocumentId,
+              })),
+            },
+          },
+          include: {
+            options: {
+              orderBy: { sortOrder: 'asc' },
+            },
+            occurrences: {
+              orderBy: { examYear: 'desc' },
+            },
+            histories: {
+              orderBy: { version: 'desc' },
+            },
+          },
+        });
+
+        return {
+          success: true,
+          message: `Question restored from history version ${version}.`,
+          restoredFromVersion: version,
+          savedCurrentVersion: newVersion,
+          data: restored,
+        };
       });
-
-      if (!targetHistory) {
-        throw new NotFoundException(
-          `History version ${version} not found.`,
-        );
-      }
-
-      type QuestionSnapshot = {
-        questionText: string;
-        questionType:
-          | 'MCQ'
-          | 'TRUE_FALSE'
-          | 'FILL_IN_THE_BLANKS'
-          | 'WRITTEN';
-        subject: string;
-        topic: string;
-        subjectId?: string | null;
-        topicId?: string | null;
-        correctAnswer: string | null;
-        explanation: string | null;
-        difficulty: 'EASY' | 'MEDIUM' | 'HARD';
-        status: 'DRAFT' | 'PUBLISHED' | 'HIDDEN' | 'ARCHIVED';
-        options: {
-          label: string;
-          optionText: string;
-          isCorrect: boolean;
-          sortOrder: number;
-        }[];
-        occurrences: {
-          institution: string;
-          examName: string;
-          examYear: number;
-          postName: string | null;
-          department: string | null;
-          questionNumber: number | null;
-          source: string | null;
-          sourcePage: number | null;
-          sourceUrl: string | null;
-          institutionId?: string | null;
-          examId?: string | null;
-          postId?: string | null;
-          sourceDocumentId?: string | null;
-        }[];
-      };
-
-      const snapshot =
-        targetHistory.snapshot as unknown as QuestionSnapshot;
-
-      if (
-        !snapshot ||
-        !Array.isArray(snapshot.options) ||
-        !Array.isArray(snapshot.occurrences)
-      ) {
-        throw new BadRequestException(
-          'The selected history snapshot is invalid.',
-        );
-      }
-
-      const latestHistory = await tx.questionHistory.findFirst({
-        where: { questionId: id },
-        orderBy: { version: 'desc' },
-        select: { version: true },
-      });
-
-      const newVersion = (latestHistory?.version ?? 0) + 1;
-
-      await tx.questionHistory.create({
-        data: {
-          questionId: id,
-          version: newVersion,
-          snapshot: current as unknown as Prisma.InputJsonValue,
-          changeNote: `Saved current state before restoring version ${version}.`,
-        },
-      });
-
-      const restored = await tx.question.update({
-        where: { id },
-        data: {
-          questionText: snapshot.questionText,
-          questionType: snapshot.questionType,
-          subject: snapshot.subject,
-          topic: snapshot.topic,
-          ...(snapshot.subjectId !== undefined
-            ? {
-                subjectRef: snapshot.subjectId
-                  ? { connect: { id: snapshot.subjectId } }
-                  : { disconnect: true },
-              }
-            : {}),
-          ...(snapshot.topicId !== undefined
-            ? {
-                topicRef: snapshot.topicId
-                  ? { connect: { id: snapshot.topicId } }
-                  : { disconnect: true },
-              }
-            : {}),
-          correctAnswer: snapshot.correctAnswer,
-          explanation: snapshot.explanation,
-          difficulty: snapshot.difficulty,
-          status: snapshot.status,
-
-          options: {
-            deleteMany: {},
-            create: snapshot.options.map((option) => ({
-              label: option.label,
-              optionText: option.optionText,
-              isCorrect: option.isCorrect,
-              sortOrder: option.sortOrder,
-            })),
-          },
-
-          occurrences: {
-            deleteMany: {},
-            create: snapshot.occurrences.map((occurrence) => ({
-              institution: occurrence.institution,
-              examName: occurrence.examName,
-              examYear: occurrence.examYear,
-              postName: occurrence.postName,
-              department: occurrence.department,
-              questionNumber: occurrence.questionNumber,
-              source: occurrence.source,
-              sourcePage: occurrence.sourcePage,
-              sourceUrl: occurrence.sourceUrl,
-              institutionId: occurrence.institutionId,
-              examId: occurrence.examId,
-              postId: occurrence.postId,
-              sourceDocumentId: occurrence.sourceDocumentId,
-            })),
-          },
-        },
-        include: {
-          options: {
-            orderBy: { sortOrder: 'asc' },
-          },
-          occurrences: {
-            orderBy: { examYear: 'desc' },
-          },
-          histories: {
-            orderBy: { version: 'desc' },
-          },
-        },
-      });
-
-      return {
-        success: true,
-        message: `Question restored from history version ${version}.`,
-        restoredFromVersion: version,
-        savedCurrentVersion: newVersion,
-        data: restored,
-      };
-    });
+    } catch (error) {
+      this.handleQuestionError(error);
+    }
   }
 
   // ==========================================
