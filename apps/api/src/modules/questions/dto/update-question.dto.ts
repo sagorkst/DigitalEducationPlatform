@@ -19,12 +19,7 @@ import {
   ValidatorConstraintInterface,
   ValidationArguments,
 } from 'class-validator';
-
 import { Type } from 'class-transformer';
-
-// ==========================================
-// ENUMS
-// ==========================================
 
 enum QuestionType {
   MCQ = 'MCQ',
@@ -46,53 +41,7 @@ enum QuestionStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-// ==========================================
-// AT LEAST ONE UPDATE FIELD VALIDATOR
-// ==========================================
-
-@ValidatorConstraint({
-  name: 'atLeastOneUpdateField',
-  async: false,
-})
-class AtLeastOneUpdateFieldConstraint
-  implements ValidatorConstraintInterface
-{
-  validate(
-    _value: unknown,
-    args: ValidationArguments,
-  ): boolean {
-    const dto = args.object as Record<string, unknown>;
-
-    const allowedFields = [
-      'questionText',
-      'questionType',
-      'subject',
-      'topic',
-      'subjectId',
-      'topicId',
-      'correctAnswer',
-      'explanation',
-      'difficulty',
-      'status',
-      'options',
-      'addOccurrences',
-    ];
-
-    return allowedFields.some((field) => {
-      return dto[field] !== undefined && dto[field] !== null;
-    });
-  }
-
-  defaultMessage(): string {
-    return 'At least one question field must be provided for update.';
-  }
-}
-
-// ==========================================
-// QUESTION OPTION DTO
-// ==========================================
-
-class QuestionOptionDto {
+export class UpdateQuestionOptionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(10)
@@ -113,11 +62,7 @@ class QuestionOptionDto {
   sortOrder?: number;
 }
 
-// ==========================================
-// QUESTION OCCURRENCE DTO
-// ==========================================
-
-class QuestionOccurrenceDto {
+export class UpdateQuestionOccurrenceDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
@@ -180,14 +125,45 @@ class QuestionOccurrenceDto {
   sourceDocumentId?: string;
 }
 
-// ==========================================
-// UPDATE QUESTION DTO
-// ==========================================
+@ValidatorConstraint({
+  name: 'atLeastOneUpdateField',
+  async: false,
+})
+class AtLeastOneUpdateFieldConstraint
+  implements ValidatorConstraintInterface
+{
+  validate(
+    _value: unknown,
+    args: ValidationArguments,
+  ): boolean {
+    const dto = args.object as Record<string, unknown>;
+
+    const allowedFields = [
+      'questionText',
+      'questionType',
+      'subject',
+      'topic',
+      'subjectId',
+      'topicId',
+      'correctAnswer',
+      'explanation',
+      'difficulty',
+      'status',
+      'options',
+      'addOccurrences',
+    ];
+
+    return allowedFields.some(
+      (field) => dto[field] !== undefined && dto[field] !== null,
+    );
+  }
+
+  defaultMessage(): string {
+    return 'At least one question field must be provided for update.';
+  }
+}
 
 export class UpdateQuestionDto {
-  // At least one actual update field is required.
-  // changeNote alone does not count as an update.
-
   @Validate(AtLeastOneUpdateFieldConstraint)
   private readonly _atLeastOneUpdateField?: boolean;
 
@@ -201,7 +177,7 @@ export class UpdateQuestionDto {
   @IsEnum(QuestionType)
   questionType?: QuestionType;
 
-  // Legacy text fields retained for compatibility.
+  // Legacy text fields.
   @IsOptional()
   @IsString()
   @IsNotEmpty()
@@ -241,22 +217,20 @@ export class UpdateQuestionDto {
   @IsEnum(QuestionStatus)
   status?: QuestionStatus;
 
-  // Replaces existing options when supplied.
   @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
   @ArrayMaxSize(10)
   @ValidateNested({ each: true })
-  @Type(() => QuestionOptionDto)
-  options?: QuestionOptionDto[];
+  @Type(() => UpdateQuestionOptionDto)
+  options?: UpdateQuestionOptionDto[];
 
-  // Adds new occurrences without replacing existing ones.
   @IsOptional()
   @IsArray()
   @ArrayMinSize(1)
   @ValidateNested({ each: true })
-  @Type(() => QuestionOccurrenceDto)
-  addOccurrences?: QuestionOccurrenceDto[];
+  @Type(() => UpdateQuestionOccurrenceDto)
+  addOccurrences?: UpdateQuestionOccurrenceDto[];
 
   @IsOptional()
   @IsString()

@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   BadRequestException,
@@ -33,6 +32,109 @@ export class QuestionsService {
     }
 
     throw error;
+  }
+
+  // ==========================================
+  // RESOLVE QUESTION OCCURRENCE
+  // EXAM IS SOURCE OF TRUTH WHEN examId EXISTS
+  // ==========================================
+
+  private async resolveOccurrenceData(
+    tx: Prisma.TransactionClient,
+    occurrence: {
+      institution: string;
+      examName: string;
+      examYear: number;
+      postName?: string;
+      department?: string;
+      questionNumber?: number;
+      source?: string;
+      sourcePage?: number;
+      sourceUrl?: string;
+      institutionId?: string;
+      examId?: string;
+      postId?: string;
+      sourceDocumentId?: string;
+    },
+  ) {
+    if (!occurrence.examId) {
+      // Legacy text-based occurrence remains supported.
+      return {
+        institution: occurrence.institution,
+        examName: occurrence.examName,
+        examYear: occurrence.examYear,
+        postName: occurrence.postName,
+        department: occurrence.department,
+        questionNumber: occurrence.questionNumber,
+        source: occurrence.source,
+        sourcePage: occurrence.sourcePage,
+        sourceUrl: occurrence.sourceUrl,
+        institutionId: occurrence.institutionId,
+        examId: undefined,
+        postId: occurrence.postId,
+        sourceDocumentId: occurrence.sourceDocumentId,
+      };
+    }
+
+    // Exam is the source of truth for linked occurrences.
+    const exam = await tx.exam.findUnique({
+      where: {
+        id: occurrence.examId,
+      },
+      select: {
+        id: true,
+        name: true,
+        examYear: true,
+        institutionId: true,
+        postId: true,
+      },
+    });
+
+    if (!exam) {
+      throw new BadRequestException(
+        'Selected Exam does not exist.',
+      );
+    }
+
+    // Validate supplied Institution ID against the selected Exam.
+    if (
+      occurrence.institutionId &&
+      occurrence.institutionId !== exam.institutionId
+    ) {
+      throw new BadRequestException(
+        'The selected Institution does not match the selected Exam.',
+      );
+    }
+
+    // Validate supplied Post ID against the selected Exam.
+    if (
+      occurrence.postId &&
+      occurrence.postId !== exam.postId
+    ) {
+      throw new BadRequestException(
+        'The selected Post does not match the selected Exam.',
+      );
+    }
+
+    return {
+      // Preserve the supplied text values, consistent with ImportsService.
+      institution: occurrence.institution,
+      examName: exam.name,
+      examYear: exam.examYear,
+      postName: occurrence.postName,
+      department: occurrence.department,
+      questionNumber: occurrence.questionNumber,
+      source: occurrence.source,
+      sourcePage: occurrence.sourcePage,
+      sourceUrl: occurrence.sourceUrl,
+
+      // These relations are derived from the selected Exam.
+      institutionId: exam.institutionId,
+      examId: exam.id,
+      postId: exam.postId,
+
+      sourceDocumentId: occurrence.sourceDocumentId,
+    };
   }
 
   // ==========================================
@@ -141,19 +243,38 @@ export class QuestionsService {
           }
         }
 
+        // Resolve every occurrence inside the same transaction.
+        const occurrenceData = await Promise.all(
+          dto.occurrences.map((occurrence) =>
+            this.resolveOccurrenceData(tx, occurrence),
+          ),
+        );
+
         return tx.question.create({
           data: {
             questionCode,
             questionText: dto.questionText,
             questionType,
+
             subject: selectedSubject?.name ?? dto.subject,
             topic: selectedTopic?.name ?? dto.topic,
+
             ...(selectedSubject
-              ? { subjectRef: { connect: { id: selectedSubject.id } } }
+              ? {
+                  subjectRef: {
+                    connect: { id: selectedSubject.id },
+                  },
+                }
               : {}),
+
             ...(selectedTopic
-              ? { topicRef: { connect: { id: selectedTopic.id } } }
+              ? {
+                  topicRef: {
+                    connect: { id: selectedTopic.id },
+                  },
+                }
               : {}),
+
             correctAnswer: dto.correctAnswer,
             explanation: dto.explanation,
             difficulty: dto.difficulty ?? 'MEDIUM',
@@ -169,21 +290,7 @@ export class QuestionsService {
             },
 
             occurrences: {
-              create: dto.occurrences.map((occurrence) => ({
-                institution: occurrence.institution,
-                examName: occurrence.examName,
-                examYear: occurrence.examYear,
-                postName: occurrence.postName,
-                department: occurrence.department,
-                questionNumber: occurrence.questionNumber,
-                source: occurrence.source,
-                sourcePage: occurrence.sourcePage,
-                sourceUrl: occurrence.sourceUrl,
-                institutionId: occurrence.institutionId,
-                examId: occurrence.examId,
-                postId: occurrence.postId,
-                sourceDocumentId: occurrence.sourceDocumentId,
-              })),
+              create: occurrenceData,
             },
           },
           include: {
@@ -753,40 +860,62 @@ export class QuestionsService {
           ...(dto.questionText !== undefined
             ? { questionText: dto.questionText }
             : {}),
+
           ...(dto.questionType !== undefined
             ? { questionType: dto.questionType }
             : {}),
+
           ...(dto.subject !== undefined
             ? { subject: dto.subject }
             : {}),
+
           ...(dto.topic !== undefined
             ? { topic: dto.topic }
             : {}),
+
           ...(relationIdsProvided && relationSubject
             ? {
                 subject: relationSubject.name,
-                subjectRef: { connect: { id: relationSubject.id } },
+                subjectRef: {
+                  connect: { id: relationSubject.id },
+                },
               }
             : {}),
+
           ...(relationIdsProvided && relationTopic
             ? {
                 topic: relationTopic.name,
-                topicRef: { connect: { id: relationTopic.id } },
+                topicRef: {
+                  connect: { id: relationTopic.id },
+                },
               }
             : {}),
+
           ...(dto.correctAnswer !== undefined
             ? { correctAnswer: dto.correctAnswer }
             : {}),
+
           ...(dto.explanation !== undefined
             ? { explanation: dto.explanation }
             : {}),
+
           ...(dto.difficulty !== undefined
             ? { difficulty: dto.difficulty }
             : {}),
+
           ...(dto.status !== undefined
             ? { status: dto.status }
             : {}),
         };
+
+        // Resolve new occurrences before updating.
+        const occurrenceData = dto.addOccurrences?.length
+          ? await Promise.all(
+              dto.addOccurrences.map((occurrence) =>
+                this.resolveOccurrenceData(tx, occurrence),
+              ),
+            )
+          : [];
 
         await tx.question.update({
           where: { id },
@@ -807,24 +936,10 @@ export class QuestionsService {
                 }
               : {}),
 
-            ...(dto.addOccurrences?.length
+            ...(occurrenceData.length
               ? {
                   occurrences: {
-                    create: dto.addOccurrences.map((occurrence) => ({
-                      institution: occurrence.institution,
-                      examName: occurrence.examName,
-                      examYear: occurrence.examYear,
-                      postName: occurrence.postName,
-                      department: occurrence.department,
-                      questionNumber: occurrence.questionNumber,
-                      source: occurrence.source,
-                      sourcePage: occurrence.sourcePage,
-                      sourceUrl: occurrence.sourceUrl,
-                      institutionId: occurrence.institutionId,
-                      examId: occurrence.examId,
-                      postId: occurrence.postId,
-                      sourceDocumentId: occurrence.sourceDocumentId,
-                    })),
+                    create: occurrenceData,
                   },
                 }
               : {}),
@@ -1054,6 +1169,7 @@ export class QuestionsService {
             questionType: snapshot.questionType,
             subject: snapshot.subject,
             topic: snapshot.topic,
+
             ...(snapshot.subjectId !== undefined
               ? {
                   subjectRef: snapshot.subjectId
@@ -1061,6 +1177,7 @@ export class QuestionsService {
                     : { disconnect: true },
                 }
               : {}),
+
             ...(snapshot.topicId !== undefined
               ? {
                   topicRef: snapshot.topicId
@@ -1068,6 +1185,7 @@ export class QuestionsService {
                     : { disconnect: true },
                 }
               : {}),
+
             correctAnswer: snapshot.correctAnswer,
             explanation: snapshot.explanation,
             difficulty: snapshot.difficulty,

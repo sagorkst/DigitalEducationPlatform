@@ -15,12 +15,7 @@ import {
   MaxLength,
   IsUUID,
 } from 'class-validator';
-
 import { Type } from 'class-transformer';
-
-// ==========================================
-// ENUMS
-// ==========================================
 
 enum QuestionType {
   MCQ = 'MCQ',
@@ -42,11 +37,7 @@ enum QuestionStatus {
   ARCHIVED = 'ARCHIVED',
 }
 
-// ==========================================
-// QUESTION OPTION DTO
-// ==========================================
-
-class QuestionOptionDto {
+export class QuestionOptionDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(10)
@@ -67,11 +58,7 @@ class QuestionOptionDto {
   sortOrder?: number;
 }
 
-// ==========================================
-// QUESTION OCCURRENCE DTO
-// ==========================================
-
-class QuestionOccurrenceDto {
+export class QuestionOccurrenceDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
@@ -134,10 +121,6 @@ class QuestionOccurrenceDto {
   sourceDocumentId?: string;
 }
 
-// ==========================================
-// CREATE QUESTION DTO
-// ==========================================
-
 export class CreateQuestionDto {
   @IsString()
   @IsNotEmpty()
@@ -148,7 +131,7 @@ export class CreateQuestionDto {
   @IsEnum(QuestionType)
   questionType?: QuestionType;
 
-  // Legacy text fields retained for compatibility.
+  // Legacy text fields: retained for backward compatibility.
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
