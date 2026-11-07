@@ -383,7 +383,7 @@ model QuestionOccurrence {
 
   question       Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
   institutionRef Institution?    @relation(fields: [institutionId], references: [id])
-  examRef        Exam?           @relation(fields: [examId], references: [id])
+  examRef        Exam?           @relation(fields: [examId], references: [id], onDelete: Restrict)
   postRef        Post?           @relation(fields: [postId], references: [id])
   sourceDocument SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
 
