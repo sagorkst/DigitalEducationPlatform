@@ -47,6 +47,7 @@ const permissions = [
   { key: 'content.manage', description: 'কনটেন্ট পরিচালনা' },
   { key: 'rbac.manage', description: 'Role ও Permission পরিচালনা' },
   { key: 'analytics.read', description: 'প্ল্যাটফর্ম রিপোর্ট দেখা' },
+  { key: 'audit.logs.read', description: 'Read platform audit logs' },
   { key: 'system.settings.manage', description: 'সিস্টেম সেটিংস পরিচালনা' },
 ];
 
