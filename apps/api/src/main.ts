@@ -1,4 +1,3 @@
-
 import { config } from 'dotenv';
 import { resolve } from 'path';
 
@@ -7,14 +6,19 @@ config({ path: resolve(process.cwd(), '../../.env') });
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import helmet from 'helmet';
 
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // Security Headers
+  app.use(helmet());
+
   app.setGlobalPrefix('api');
 
+  // CORS Security
   const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())
@@ -30,6 +34,7 @@ async function bootstrap() {
     origin: allowedOrigins,
   });
 
+  // Global Input Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
