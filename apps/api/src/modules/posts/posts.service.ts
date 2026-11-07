@@ -21,7 +21,7 @@ export class PostsService {
       .normalize('NFKD')
       .toLowerCase()
       .trim()
-      .replace(/[^\p{L}\p{N}]+/gu, '-')
+      .replace(/[^\p{L}\p{M}\p{N}]+/gu, '-')
       .replace(/^-+|-+$/g, '');
   }
 
