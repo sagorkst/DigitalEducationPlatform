@@ -9,16 +9,15 @@ import { ValidationPipe } from '@nestjs/common';
 import helmet from 'helmet';
 
 import { AppModule } from './app.module';
+import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // Security Headers
   app.use(helmet());
 
   app.setGlobalPrefix('api');
 
-  // CORS Security
   const allowedOrigins = (process.env.CORS_ORIGINS ?? '')
     .split(',')
     .map((origin) => origin.trim())
@@ -34,7 +33,6 @@ async function bootstrap() {
     origin: allowedOrigins,
   });
 
-  // Global Input Validation
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -50,6 +48,8 @@ async function bootstrap() {
       },
     }),
   );
+
+  app.useGlobalFilters(new HttpExceptionFilter());
 
   await app.listen(process.env.PORT ?? 4000);
 
