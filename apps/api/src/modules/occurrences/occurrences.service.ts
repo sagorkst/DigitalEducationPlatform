@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   BadRequestException,
@@ -41,7 +40,7 @@ export class OccurrencesService {
   private handleOccurrenceError(error: unknown): never {
     if (this.isUniqueConstraintError(error)) {
       throw new ConflictException(
-        'This question occurrence already exists.',
+        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
       );
     }
 
@@ -52,6 +51,7 @@ export class OccurrencesService {
     data: {
       institution?: string;
       examName?: string;
+      examYear?: number;
       postName?: string | null;
       source?: string | null;
       institutionId?: string | null;
@@ -63,6 +63,7 @@ export class OccurrencesService {
   ) {
     let institution = data.institution;
     let examName = data.examName;
+    let examYear = data.examYear;
     let postName = data.postName;
     let source = data.source;
 
@@ -73,6 +74,10 @@ export class OccurrencesService {
 
     let exam: any = null;
 
+    // ==========================================
+    // RESOLVE EXAM
+    // ==========================================
+
     if (examId) {
       exam = await db.exam.findUnique({
         where: { id: examId },
@@ -80,25 +85,47 @@ export class OccurrencesService {
 
       if (!exam) {
         throw new BadRequestException(
-          'Selected exam does not exist.',
+          'নির্বাচিত Exam পাওয়া যায়নি।',
         );
       }
 
+      // Institution must match the selected Exam.
       if (
         institutionId &&
-        exam.institutionId !== institutionId
+        institutionId !== exam.institutionId
       ) {
         throw new BadRequestException(
-          'Selected exam does not belong to the selected institution.',
+          'নির্বাচিত Exam-এর Institution-এর সঙ্গে প্রদত্ত Institution মিলছে না।',
         );
       }
 
-      if (!institutionId && exam.institutionId) {
-        institutionId = exam.institutionId;
+      // Post must match the selected Exam.
+      if (postId && postId !== exam.postId) {
+        throw new BadRequestException(
+          'নির্বাচিত Exam-এর Post-এর সঙ্গে প্রদত্ত Post মিলছে না।',
+        );
       }
 
+      // Exam Year must match the selected Exam.
+      if (
+        examYear !== undefined &&
+        examYear !== exam.examYear
+      ) {
+        throw new BadRequestException(
+          'প্রদত্ত Exam Year নির্বাচিত Exam-এর Year-এর সঙ্গে মিলছে না।',
+        );
+      }
+
+      // Use the Exam's original information.
+      institutionId = exam.institutionId;
+      postId = exam.postId;
       examName = exam.name;
+      examYear = exam.examYear;
     }
+
+    // ==========================================
+    // RESOLVE INSTITUTION
+    // ==========================================
 
     if (institutionId) {
       const institutionRecord =
@@ -108,18 +135,22 @@ export class OccurrencesService {
 
       if (!institutionRecord) {
         throw new BadRequestException(
-          'Selected institution does not exist.',
+          'নির্বাচিত Institution পাওয়া যায়নি।',
         );
       }
 
       if (!institutionRecord.isActive) {
         throw new BadRequestException(
-          'Cannot assign an inactive institution.',
+          'নিষ্ক্রিয় Institution-এ প্রশ্ন যুক্ত করা যাবে না।',
         );
       }
 
       institution = institutionRecord.name;
     }
+
+    // ==========================================
+    // RESOLVE POST
+    // ==========================================
 
     if (postId) {
       const post = await db.post.findUnique({
@@ -128,12 +159,16 @@ export class OccurrencesService {
 
       if (!post) {
         throw new BadRequestException(
-          'Selected post does not exist.',
+          'নির্বাচিত Post পাওয়া যায়নি।',
         );
       }
 
       postName = post.name;
     }
+
+    // ==========================================
+    // RESOLVE SOURCE DOCUMENT
+    // ==========================================
 
     if (sourceDocumentId) {
       const document = await db.sourceDocument.findUnique({
@@ -142,22 +177,38 @@ export class OccurrencesService {
 
       if (!document) {
         throw new BadRequestException(
-          'Selected source document does not exist.',
+          'নির্বাচিত Source Document পাওয়া যায়নি।',
         );
       }
 
       source = document.title;
     }
 
-    if (!institution || !examName) {
+    // ==========================================
+    // REQUIRED FIELD VALIDATION
+    // ==========================================
+
+    if (!institution?.trim() || !examName?.trim()) {
       throw new BadRequestException(
-        'Institution and exam name are required.',
+        'Institution এবং Exam Name আবশ্যক।',
+      );
+    }
+
+    if (
+      examYear === undefined ||
+      !Number.isInteger(examYear) ||
+      examYear < 1900 ||
+      examYear > 2100
+    ) {
+      throw new BadRequestException(
+        'সঠিক Exam Year প্রদান করতে হবে।',
       );
     }
 
     return {
       institution,
       examName,
+      examYear,
       postName: postName ?? null,
       source: source ?? null,
       institutionId: institutionId ?? null,
@@ -166,6 +217,10 @@ export class OccurrencesService {
       sourceDocumentId: sourceDocumentId ?? null,
     };
   }
+
+  // ==========================================
+  // ENSURE QUESTION EXISTS
+  // ==========================================
 
   private async ensureQuestionExists(
     questionId: string,
@@ -189,6 +244,10 @@ export class OccurrencesService {
 
     return question;
   }
+
+  // ==========================================
+  // DUPLICATE PROTECTION
+  // ==========================================
 
   private async ensureNoDuplicate(
     data: {
@@ -233,7 +292,7 @@ export class OccurrencesService {
 
     if (duplicate) {
       throw new ConflictException(
-        'This question occurrence already exists.',
+        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
       );
     }
   }
@@ -249,7 +308,10 @@ export class OccurrencesService {
           await this.ensureQuestionExists(questionId, tx);
 
           const references = await this.resolveReferences(
-            dto,
+            {
+              ...dto,
+              examYear: dto.examYear,
+            },
             tx,
           );
 
@@ -257,7 +319,6 @@ export class OccurrencesService {
             {
               questionId,
               ...references,
-              examYear: dto.examYear,
               questionNumber: dto.questionNumber,
             },
             undefined,
@@ -269,7 +330,7 @@ export class OccurrencesService {
               questionId,
               institution: references.institution,
               examName: references.examName,
-              examYear: dto.examYear,
+              examYear: references.examYear,
               postName: references.postName,
               department: dto.department,
               questionNumber: dto.questionNumber,
@@ -479,6 +540,18 @@ export class OccurrencesService {
             );
           }
 
+          const requestedExamId =
+            dto.examId !== undefined
+              ? dto.examId
+              : existing.examId;
+
+          const requestedExamYear =
+            dto.examYear !== undefined
+              ? dto.examYear
+              : requestedExamId === existing.examId
+                ? existing.examYear
+                : undefined;
+
           const references = await this.resolveReferences(
             {
               institution:
@@ -486,6 +559,8 @@ export class OccurrencesService {
 
               examName:
                 dto.examName ?? existing.examName,
+
+              examYear: requestedExamYear,
 
               postName:
                 dto.postName !== undefined
@@ -502,15 +577,14 @@ export class OccurrencesService {
                   ? dto.institutionId
                   : existing.institutionId,
 
-              examId:
-                dto.examId !== undefined
-                  ? dto.examId
-                  : existing.examId,
+              examId: requestedExamId,
 
               postId:
                 dto.postId !== undefined
                   ? dto.postId
-                  : existing.postId,
+                  : requestedExamId !== existing.examId
+                    ? null
+                    : existing.postId,
 
               sourceDocumentId:
                 dto.sourceDocumentId !== undefined
@@ -519,9 +593,6 @@ export class OccurrencesService {
             },
             tx,
           );
-
-          const examYear =
-            dto.examYear ?? existing.examYear;
 
           const questionNumber =
             dto.questionNumber !== undefined
@@ -532,7 +603,6 @@ export class OccurrencesService {
             {
               questionId: existing.questionId,
               ...references,
-              examYear,
               questionNumber,
             },
             id,
@@ -544,7 +614,7 @@ export class OccurrencesService {
             data: {
               institution: references.institution,
               examName: references.examName,
-              examYear,
+              examYear: references.examYear,
               postName: references.postName,
               source: references.source,
               institutionId: references.institutionId,

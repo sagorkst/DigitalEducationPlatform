@@ -1,9 +1,11 @@
-
 import {
   IsString,
   IsNotEmpty,
   IsOptional,
   IsUUID,
+  IsInt,
+  Min,
+  Max,
   MaxLength,
 } from 'class-validator';
 
@@ -12,10 +14,19 @@ export class CreateExamDto {
   @IsUUID()
   institutionId?: string;
 
+  @IsOptional()
+  @IsUUID()
+  postId?: string;
+
   @IsString()
   @IsNotEmpty()
   @MaxLength(200)
   name!: string;
+
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
+  examYear!: number;
 
   @IsOptional()
   @IsString()

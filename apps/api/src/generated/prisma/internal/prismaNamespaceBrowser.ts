@@ -252,8 +252,10 @@ export type InstitutionScalarFieldEnum = (typeof InstitutionScalarFieldEnum)[key
 export const ExamScalarFieldEnum = {
   id: 'id',
   institutionId: 'institutionId',
+  postId: 'postId',
   name: 'name',
   slug: 'slug',
+  examYear: 'examYear',
   examType: 'examType',
   description: 'description',
   createdAt: 'createdAt',

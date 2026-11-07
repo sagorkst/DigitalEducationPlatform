@@ -1,9 +1,10 @@
-
 import {
   IsString,
-  IsNotEmpty,
   IsOptional,
   IsUUID,
+  IsInt,
+  Min,
+  Max,
   MaxLength,
 } from 'class-validator';
 
@@ -13,10 +14,19 @@ export class UpdateExamDto {
   institutionId?: string;
 
   @IsOptional()
+  @IsUUID()
+  postId?: string;
+
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
   name?: string;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1900)
+  @Max(2100)
+  examYear?: number;
 
   @IsOptional()
   @IsString()

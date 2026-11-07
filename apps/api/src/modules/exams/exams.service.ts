@@ -15,18 +15,24 @@ import { UpdateExamDto } from './dto/update-exam.dto';
 export class ExamsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  private generateSlug(name: string): string {
-    const slug = name
+  private generateSlug(value: string): string {
+    const slug = value
       .trim()
       .toLowerCase()
       .replace(/[^\p{L}\p{N}]+/gu, '-')
       .replace(/^-+|-+$/g, '');
 
     if (!slug) {
-      throw new BadRequestException('Invalid exam name.');
+      throw new BadRequestException('Invalid exam slug or name.');
     }
 
     return slug;
+  }
+
+  private isValidUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      value,
+    );
   }
 
   private async ensureInstitutionExists(institutionId?: string) {
@@ -51,10 +57,23 @@ export class ExamsService {
     return institution;
   }
 
-  private async ensureUniqueSlug(
-    slug: string,
-    excludeId?: string,
-  ) {
+  private async ensurePostExists(postId?: string) {
+    if (!postId) {
+      return null;
+    }
+
+    const post = await this.prisma.post.findUnique({
+      where: { id: postId },
+    });
+
+    if (!post) {
+      throw new NotFoundException('Post not found.');
+    }
+
+    return post;
+  }
+
+  private async ensureUniqueSlug(slug: string, excludeId?: string) {
     const existing = await this.prisma.exam.findFirst({
       where: {
         slug: {
@@ -76,32 +95,65 @@ export class ExamsService {
     }
   }
 
-  async create(dto: CreateExamDto) {
-    const name = dto.name.trim();
-
-    const institution = await this.ensureInstitutionExists(
-      dto.institutionId,
-    );
-
-    const slug = dto.slug?.trim()
-      ? this.generateSlug(dto.slug)
-      : this.generateSlug(name);
-
+  private async ensureNoDuplicateExam(params: {
+    name: string;
+    institutionId: string | null;
+    postId: string | null;
+    examYear: number;
+    examType: string | null;
+    excludeId?: string;
+  }) {
     const existing = await this.prisma.exam.findFirst({
       where: {
         name: {
-          equals: name,
+          equals: params.name,
           mode: 'insensitive',
         },
-        institutionId: dto.institutionId ?? null,
+        institutionId: params.institutionId,
+        postId: params.postId,
+        examYear: params.examYear,
+        examType: params.examType,
+        ...(params.excludeId
+          ? {
+              NOT: { id: params.excludeId },
+            }
+          : {}),
       },
     });
 
     if (existing) {
       throw new ConflictException(
-        'An exam with this name already exists for this institution.',
+        'এই একই Exam, Institution, Post, Year এবং Exam Type আগে থেকেই যুক্ত আছে।',
       );
     }
+  }
+
+  async create(dto: CreateExamDto) {
+    const name = dto.name.trim();
+
+    if (!name) {
+      throw new BadRequestException('Exam name cannot be empty.');
+    }
+
+    const institution = await this.ensureInstitutionExists(
+      dto.institutionId,
+    );
+
+    const post = await this.ensurePostExists(dto.postId);
+
+    const examType = dto.examType?.trim() || null;
+
+    const slug = dto.slug?.trim()
+      ? this.generateSlug(dto.slug)
+      : this.generateSlug(name);
+
+    await this.ensureNoDuplicateExam({
+      name,
+      institutionId: institution?.id ?? null,
+      postId: post?.id ?? null,
+      examYear: dto.examYear,
+      examType,
+    });
 
     await this.ensureUniqueSlug(slug);
 
@@ -110,8 +162,10 @@ export class ExamsService {
         data: {
           name,
           slug,
-          examType: dto.examType?.trim() || null,
+          examYear: dto.examYear,
+          examType,
           description: dto.description?.trim() || null,
+
           ...(institution
             ? {
                 institution: {
@@ -119,9 +173,18 @@ export class ExamsService {
                 },
               }
             : {}),
+
+          ...(post
+            ? {
+                post: {
+                  connect: { id: post.id },
+                },
+              }
+            : {}),
         },
         include: {
           institution: true,
+          post: true,
           _count: {
             select: {
               occurrences: true,
@@ -140,7 +203,9 @@ export class ExamsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Exam already exists.');
+        throw new ConflictException(
+          'এই Exam-এর তথ্য আগে থেকেই যুক্ত আছে।',
+        );
       }
 
       throw error;
@@ -150,6 +215,8 @@ export class ExamsService {
   async findAll(query: {
     search?: string;
     institutionId?: string;
+    postId?: string;
+    examYear?: number;
     examType?: string;
     page?: number;
     limit?: number;
@@ -158,8 +225,24 @@ export class ExamsService {
     const limit = Math.min(100, Math.max(1, query.limit ?? 20));
     const skip = (page - 1) * limit;
 
-    if (query.institutionId && !this.isValidUuid(query.institutionId)) {
+    if (
+      query.institutionId &&
+      !this.isValidUuid(query.institutionId)
+    ) {
       throw new BadRequestException('Invalid institutionId.');
+    }
+
+    if (query.postId && !this.isValidUuid(query.postId)) {
+      throw new BadRequestException('Invalid postId.');
+    }
+
+    if (
+      query.examYear !== undefined &&
+      (!Number.isInteger(query.examYear) ||
+        query.examYear < 1900 ||
+        query.examYear > 2100)
+    ) {
+      throw new BadRequestException('Invalid examYear.');
     }
 
     const search = query.search?.trim();
@@ -186,13 +269,27 @@ export class ExamsService {
                   mode: 'insensitive',
                 },
               },
+              {
+                examType: {
+                  contains: search,
+                  mode: 'insensitive',
+                },
+              },
             ],
           }
         : {}),
+
       ...(query.institutionId
         ? { institutionId: query.institutionId }
         : {}),
-      ...(query.examType
+
+      ...(query.postId ? { postId: query.postId } : {}),
+
+      ...(query.examYear !== undefined
+        ? { examYear: query.examYear }
+        : {}),
+
+      ...(query.examType?.trim()
         ? {
             examType: {
               equals: query.examType.trim(),
@@ -208,11 +305,13 @@ export class ExamsService {
         skip,
         take: limit,
         orderBy: [
+          { examYear: 'desc' },
           { name: 'asc' },
           { createdAt: 'desc' },
         ],
         include: {
           institution: true,
+          post: true,
           _count: {
             select: {
               occurrences: true,
@@ -241,11 +340,11 @@ export class ExamsService {
       where: { id },
       include: {
         institution: true,
+        post: true,
         occurrences: {
-          orderBy: [
-            { examYear: 'desc' },
-            { createdAt: 'desc' },
-          ],
+          orderBy: {
+            createdAt: 'desc',
+          },
           take: 50,
           select: {
             id: true,
@@ -279,6 +378,13 @@ export class ExamsService {
   async update(id: string, dto: UpdateExamDto) {
     const existing = await this.prisma.exam.findUnique({
       where: { id },
+      include: {
+        _count: {
+          select: {
+            occurrences: true,
+          },
+        },
+      },
     });
 
     if (!existing) {
@@ -303,31 +409,58 @@ export class ExamsService {
 
     const institutionId =
       dto.institutionId !== undefined
-        ? dto.institutionId
+        ? dto.institutionId || null
         : existing.institutionId;
 
-    await this.ensureInstitutionExists(institutionId ?? undefined);
+    const postId =
+      dto.postId !== undefined
+        ? dto.postId || null
+        : existing.postId;
+
+    const examYear = dto.examYear ?? existing.examYear;
+
+    const examType =
+      dto.examType !== undefined
+        ? dto.examType.trim() || null
+        : existing.examType;
+
+    const structuralChanges =
+      institutionId !== existing.institutionId ||
+      postId !== existing.postId ||
+      examYear !== existing.examYear;
+
+    if (
+      structuralChanges &&
+      existing._count.occurrences > 0
+    ) {
+      throw new BadRequestException(
+        'এই Exam-এর সঙ্গে প্রশ্ন যুক্ত আছে। তাই Institution, Post অথবা Exam Year পরিবর্তন করা যাবে না।',
+      );
+    }
+
+    const finalName = name ?? existing.name;
+
+    const institution = await this.ensureInstitutionExists(
+      institutionId ?? undefined,
+    );
+
+    const post = await this.ensurePostExists(postId ?? undefined);
 
     if (
       name !== undefined ||
-      dto.institutionId !== undefined
+      dto.institutionId !== undefined ||
+      dto.postId !== undefined ||
+      dto.examYear !== undefined ||
+      dto.examType !== undefined
     ) {
-      const duplicate = await this.prisma.exam.findFirst({
-        where: {
-          name: {
-            equals: name ?? existing.name,
-            mode: 'insensitive',
-          },
-          institutionId: institutionId ?? null,
-          NOT: { id },
-        },
+      await this.ensureNoDuplicateExam({
+        name: finalName,
+        institutionId: institution?.id ?? null,
+        postId: post?.id ?? null,
+        examYear,
+        examType,
+        excludeId: id,
       });
-
-      if (duplicate) {
-        throw new ConflictException(
-          'An exam with this name already exists for this institution.',
-        );
-      }
     }
 
     const slug =
@@ -351,8 +484,12 @@ export class ExamsService {
       data.slug = slug;
     }
 
+    if (dto.examYear !== undefined) {
+      data.examYear = examYear;
+    }
+
     if (dto.examType !== undefined) {
-      data.examType = dto.examType.trim() || null;
+      data.examType = examType;
     }
 
     if (dto.description !== undefined) {
@@ -360,8 +497,14 @@ export class ExamsService {
     }
 
     if (dto.institutionId !== undefined) {
-      data.institution = dto.institutionId
-        ? { connect: { id: dto.institutionId } }
+      data.institution = institution
+        ? { connect: { id: institution.id } }
+        : { disconnect: true };
+    }
+
+    if (dto.postId !== undefined) {
+      data.post = post
+        ? { connect: { id: post.id } }
         : { disconnect: true };
     }
 
@@ -371,6 +514,7 @@ export class ExamsService {
         data,
         include: {
           institution: true,
+          post: true,
           _count: {
             select: {
               occurrences: true,
@@ -389,7 +533,9 @@ export class ExamsService {
         error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
-        throw new ConflictException('Exam slug already exists.');
+        throw new ConflictException(
+          'এই Exam-এর তথ্য আগে থেকেই যুক্ত আছে।',
+        );
       }
 
       throw error;
@@ -426,11 +572,5 @@ export class ExamsService {
       success: true,
       message: 'Exam deleted successfully.',
     };
-  }
-
-  private isValidUuid(value: string): boolean {
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      value,
-    );
   }
 }

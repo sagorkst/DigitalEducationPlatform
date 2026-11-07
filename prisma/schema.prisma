@@ -270,19 +270,29 @@ model Institution {
 }
 
 model Exam {
-  id            String   @id @default(uuid()) @db.Uuid
-  institutionId String?  @db.Uuid
-  name          String
-  slug          String?
-  examType      String?
-  description   String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id            String  @id @default(uuid()) @db.Uuid
+  institutionId String? @db.Uuid
+  postId        String? @db.Uuid
 
-  institution Institution?         @relation(fields: [institutionId], references: [id])
+  name        String
+  slug        String?
+  examYear    Int
+  examType    String?
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  institution Institution? @relation(fields: [institutionId], references: [id])
+  post        Post?        @relation(fields: [postId], references: [id], onDelete: Restrict)
+
   occurrences QuestionOccurrence[]
 
   @@index([institutionId, name])
+  @@index([postId, examYear])
+  @@index([institutionId, postId, examYear])
+  @@index([examYear])
+  @@index([examType])
 }
 
 model Post {
@@ -293,6 +303,7 @@ model Post {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  exams       Exam[]
   occurrences QuestionOccurrence[]
 
   @@index([name])

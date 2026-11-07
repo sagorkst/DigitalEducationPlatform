@@ -190,6 +190,7 @@ export type PostWhereInput = {
   description?: Prisma.StringNullableFilter<"Post"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Post"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Post"> | Date | string
+  exams?: Prisma.ExamListRelationFilter
   occurrences?: Prisma.QuestionOccurrenceListRelationFilter
 }
 
@@ -200,6 +201,7 @@ export type PostOrderByWithRelationInput = {
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+  exams?: Prisma.ExamOrderByRelationAggregateInput
   occurrences?: Prisma.QuestionOccurrenceOrderByRelationAggregateInput
 }
 
@@ -213,6 +215,7 @@ export type PostWhereUniqueInput = Prisma.AtLeast<{
   description?: Prisma.StringNullableFilter<"Post"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Post"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Post"> | Date | string
+  exams?: Prisma.ExamListRelationFilter
   occurrences?: Prisma.QuestionOccurrenceListRelationFilter
 }, "id" | "slug">
 
@@ -247,6 +250,7 @@ export type PostCreateInput = {
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  exams?: Prisma.ExamCreateNestedManyWithoutPostInput
   occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutPostRefInput
 }
 
@@ -257,6 +261,7 @@ export type PostUncheckedCreateInput = {
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  exams?: Prisma.ExamUncheckedCreateNestedManyWithoutPostInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutPostRefInput
 }
 
@@ -267,6 +272,7 @@ export type PostUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  exams?: Prisma.ExamUpdateManyWithoutPostNestedInput
   occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutPostRefNestedInput
 }
 
@@ -277,6 +283,7 @@ export type PostUncheckedUpdateInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  exams?: Prisma.ExamUncheckedUpdateManyWithoutPostNestedInput
   occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutPostRefNestedInput
 }
 
@@ -307,6 +314,11 @@ export type PostUncheckedUpdateManyInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+export type PostNullableScalarRelationFilter = {
+  is?: Prisma.PostWhereInput | null
+  isNot?: Prisma.PostWhereInput | null
+}
+
 export type PostCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   name?: Prisma.SortOrder
@@ -334,9 +346,20 @@ export type PostMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type PostNullableScalarRelationFilter = {
-  is?: Prisma.PostWhereInput | null
-  isNot?: Prisma.PostWhereInput | null
+export type PostCreateNestedOneWithoutExamsInput = {
+  create?: Prisma.XOR<Prisma.PostCreateWithoutExamsInput, Prisma.PostUncheckedCreateWithoutExamsInput>
+  connectOrCreate?: Prisma.PostCreateOrConnectWithoutExamsInput
+  connect?: Prisma.PostWhereUniqueInput
+}
+
+export type PostUpdateOneWithoutExamsNestedInput = {
+  create?: Prisma.XOR<Prisma.PostCreateWithoutExamsInput, Prisma.PostUncheckedCreateWithoutExamsInput>
+  connectOrCreate?: Prisma.PostCreateOrConnectWithoutExamsInput
+  upsert?: Prisma.PostUpsertWithoutExamsInput
+  disconnect?: Prisma.PostWhereInput | boolean
+  delete?: Prisma.PostWhereInput | boolean
+  connect?: Prisma.PostWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.PostUpdateToOneWithWhereWithoutExamsInput, Prisma.PostUpdateWithoutExamsInput>, Prisma.PostUncheckedUpdateWithoutExamsInput>
 }
 
 export type PostCreateNestedOneWithoutOccurrencesInput = {
@@ -355,6 +378,62 @@ export type PostUpdateOneWithoutOccurrencesNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.PostUpdateToOneWithWhereWithoutOccurrencesInput, Prisma.PostUpdateWithoutOccurrencesInput>, Prisma.PostUncheckedUpdateWithoutOccurrencesInput>
 }
 
+export type PostCreateWithoutExamsInput = {
+  id?: string
+  name: string
+  slug: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  occurrences?: Prisma.QuestionOccurrenceCreateNestedManyWithoutPostRefInput
+}
+
+export type PostUncheckedCreateWithoutExamsInput = {
+  id?: string
+  name: string
+  slug: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  occurrences?: Prisma.QuestionOccurrenceUncheckedCreateNestedManyWithoutPostRefInput
+}
+
+export type PostCreateOrConnectWithoutExamsInput = {
+  where: Prisma.PostWhereUniqueInput
+  create: Prisma.XOR<Prisma.PostCreateWithoutExamsInput, Prisma.PostUncheckedCreateWithoutExamsInput>
+}
+
+export type PostUpsertWithoutExamsInput = {
+  update: Prisma.XOR<Prisma.PostUpdateWithoutExamsInput, Prisma.PostUncheckedUpdateWithoutExamsInput>
+  create: Prisma.XOR<Prisma.PostCreateWithoutExamsInput, Prisma.PostUncheckedCreateWithoutExamsInput>
+  where?: Prisma.PostWhereInput
+}
+
+export type PostUpdateToOneWithWhereWithoutExamsInput = {
+  where?: Prisma.PostWhereInput
+  data: Prisma.XOR<Prisma.PostUpdateWithoutExamsInput, Prisma.PostUncheckedUpdateWithoutExamsInput>
+}
+
+export type PostUpdateWithoutExamsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurrences?: Prisma.QuestionOccurrenceUpdateManyWithoutPostRefNestedInput
+}
+
+export type PostUncheckedUpdateWithoutExamsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  slug?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  occurrences?: Prisma.QuestionOccurrenceUncheckedUpdateManyWithoutPostRefNestedInput
+}
+
 export type PostCreateWithoutOccurrencesInput = {
   id?: string
   name: string
@@ -362,6 +441,7 @@ export type PostCreateWithoutOccurrencesInput = {
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  exams?: Prisma.ExamCreateNestedManyWithoutPostInput
 }
 
 export type PostUncheckedCreateWithoutOccurrencesInput = {
@@ -371,6 +451,7 @@ export type PostUncheckedCreateWithoutOccurrencesInput = {
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  exams?: Prisma.ExamUncheckedCreateNestedManyWithoutPostInput
 }
 
 export type PostCreateOrConnectWithoutOccurrencesInput = {
@@ -396,6 +477,7 @@ export type PostUpdateWithoutOccurrencesInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  exams?: Prisma.ExamUpdateManyWithoutPostNestedInput
 }
 
 export type PostUncheckedUpdateWithoutOccurrencesInput = {
@@ -405,6 +487,7 @@ export type PostUncheckedUpdateWithoutOccurrencesInput = {
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  exams?: Prisma.ExamUncheckedUpdateManyWithoutPostNestedInput
 }
 
 
@@ -413,10 +496,12 @@ export type PostUncheckedUpdateWithoutOccurrencesInput = {
  */
 
 export type PostCountOutputType = {
+  exams: number
   occurrences: number
 }
 
 export type PostCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  exams?: boolean | PostCountOutputTypeCountExamsArgs
   occurrences?: boolean | PostCountOutputTypeCountOccurrencesArgs
 }
 
@@ -428,6 +513,13 @@ export type PostCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensi
    * Select specific fields to fetch from the PostCountOutputType
    */
   select?: Prisma.PostCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * PostCountOutputType without action
+ */
+export type PostCountOutputTypeCountExamsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ExamWhereInput
 }
 
 /**
@@ -445,6 +537,7 @@ export type PostSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   description?: boolean
   createdAt?: boolean
   updatedAt?: boolean
+  exams?: boolean | Prisma.Post$examsArgs<ExtArgs>
   occurrences?: boolean | Prisma.Post$occurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.PostCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["post"]>
@@ -478,6 +571,7 @@ export type PostSelectScalar = {
 
 export type PostOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "name" | "slug" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["post"]>
 export type PostInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  exams?: boolean | Prisma.Post$examsArgs<ExtArgs>
   occurrences?: boolean | Prisma.Post$occurrencesArgs<ExtArgs>
   _count?: boolean | Prisma.PostCountOutputTypeDefaultArgs<ExtArgs>
 }
@@ -487,6 +581,7 @@ export type PostIncludeUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensi
 export type $PostPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   name: "Post"
   objects: {
+    exams: Prisma.$ExamPayload<ExtArgs>[]
     occurrences: Prisma.$QuestionOccurrencePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
@@ -890,6 +985,7 @@ readonly fields: PostFieldRefs;
  */
 export interface Prisma__PostClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
+  exams<T extends Prisma.Post$examsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Post$examsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ExamPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   occurrences<T extends Prisma.Post$occurrencesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Post$occurrencesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$QuestionOccurrencePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
@@ -1316,6 +1412,30 @@ export type PostDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.Internal
    * Limit how many Posts to delete.
    */
   limit?: number
+}
+
+/**
+ * Post.exams
+ */
+export type Post$examsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Exam
+   */
+  select?: Prisma.ExamSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Exam
+   */
+  omit?: Prisma.ExamOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ExamInclude<ExtArgs> | null
+  where?: Prisma.ExamWhereInput
+  orderBy?: Prisma.ExamOrderByWithRelationInput | Prisma.ExamOrderByWithRelationInput[]
+  cursor?: Prisma.ExamWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ExamScalarFieldEnum | Prisma.ExamScalarFieldEnum[]
 }
 
 /**

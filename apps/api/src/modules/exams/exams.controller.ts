@@ -30,14 +30,35 @@ export class ExamsController {
   @Get()
   findAll(
     @Query('search') search?: string,
-    @Query('institutionId') institutionId?: string,
+
+    @Query(
+      'institutionId',
+      new ParseUUIDPipe({ optional: true }),
+    )
+    institutionId?: string,
+
+    @Query(
+      'postId',
+      new ParseUUIDPipe({ optional: true }),
+    )
+    postId?: string,
+
+    @Query('examYear', new ParseIntPipe({ optional: true }))
+    examYear?: number,
+
     @Query('examType') examType?: string,
-    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page?: number,
-    @Query('limit', new DefaultValuePipe(20), ParseIntPipe) limit?: number,
+
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe)
+    page?: number,
+
+    @Query('limit', new DefaultValuePipe(20), ParseIntPipe)
+    limit?: number,
   ) {
     return this.examsService.findAll({
       search,
       institutionId,
+      postId,
+      examYear,
       examType,
       page,
       limit,
