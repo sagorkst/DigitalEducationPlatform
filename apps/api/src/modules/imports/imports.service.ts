@@ -1,12 +1,13 @@
+
 import {
   Injectable,
   BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 
+import { randomBytes } from 'crypto';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { QuestionsService } from '../questions/questions.service';
 import { CreateQuestionDto } from '../questions/dto/create-question.dto';
 
 import { parse } from 'csv-parse/sync';
@@ -17,10 +18,7 @@ type ImportData = Record<string, unknown>;
 
 @Injectable()
 export class ImportsService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly questionsService: QuestionsService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private normalizeText(value: string): string {
     return value
@@ -50,21 +48,14 @@ export class ImportsService {
   }
 
   private parseFile(file: ImportFile): ImportData[] {
-    const extension = file.originalname
-      .split('.')
-      .pop()
-      ?.toLowerCase();
+    const extension = file.originalname.split('.').pop()?.toLowerCase();
 
     let rows: unknown[];
 
     try {
       if (extension === 'json') {
         const parsed = JSON.parse(file.buffer.toString('utf8'));
-
-        rows = Array.isArray(parsed)
-          ? parsed
-          : parsed?.questions;
-
+        rows = Array.isArray(parsed) ? parsed : parsed?.questions;
       } else if (extension === 'csv') {
         rows = parse(file.buffer, {
           columns: true,
@@ -73,12 +64,8 @@ export class ImportsService {
           trim: true,
           relax_column_count: false,
         });
-
       } else if (extension === 'xlsx' || extension === 'xls') {
-        const workbook = XLSX.read(file.buffer, {
-          type: 'buffer',
-        });
-
+        const workbook = XLSX.read(file.buffer, { type: 'buffer' });
         const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
 
         if (!firstSheet) {
@@ -91,7 +78,6 @@ export class ImportsService {
           defval: '',
           raw: false,
         });
-
       } else {
         throw new BadRequestException(
           'Unsupported file format. Use JSON, CSV or XLSX.',
@@ -166,19 +152,13 @@ export class ImportsService {
       errors.push('Question text cannot exceed 1000 characters.');
     }
 
-    if (
-      typeof subject !== 'string' ||
-      !subject.trim()
-    ) {
+    if (typeof subject !== 'string' || !subject.trim()) {
       errors.push('Subject is required.');
     } else if (subject.length > 200) {
       errors.push('Subject cannot exceed 200 characters.');
     }
 
-    if (
-      typeof topic !== 'string' ||
-      !topic.trim()
-    ) {
+    if (typeof topic !== 'string' || !topic.trim()) {
       errors.push('Topic is required.');
     } else if (topic.length > 200) {
       errors.push('Topic cannot exceed 200 characters.');
@@ -202,11 +182,7 @@ export class ImportsService {
 
     const difficulty = data.difficulty ?? 'MEDIUM';
 
-    if (
-      !['EASY', 'MEDIUM', 'HARD'].includes(
-        String(difficulty),
-      )
-    ) {
+    if (!['EASY', 'MEDIUM', 'HARD'].includes(String(difficulty))) {
       errors.push('Invalid difficulty.');
     }
 
@@ -222,10 +198,7 @@ export class ImportsService {
 
     const options = data.options;
 
-    if (
-      options !== undefined &&
-      options !== null
-    ) {
+    if (options !== undefined && options !== null) {
       if (!Array.isArray(options)) {
         errors.push('Options must be an array.');
       } else {
@@ -308,9 +281,7 @@ export class ImportsService {
           occurrence === null ||
           Array.isArray(occurrence)
         ) {
-          errors.push(
-            `Occurrence ${index + 1} is invalid.`,
-          );
+          errors.push(`Occurrence ${index + 1} is invalid.`);
           return;
         }
 
@@ -365,6 +336,158 @@ export class ImportsService {
     return errors;
   }
 
+  /**
+   * Creates a question using the current transaction.
+   * Question, options and occurrences are committed together.
+   */
+  private async createQuestionInTransaction(
+    tx: Prisma.TransactionClient,
+    dto: CreateQuestionDto,
+  ) {
+    const questionType = dto.questionType ?? 'MCQ';
+
+    if (
+      questionType === 'MCQ' &&
+      (!dto.options || dto.options.length < 2)
+    ) {
+      throw new BadRequestException(
+        'MCQ questions must have at least two options.',
+      );
+    }
+
+    if (questionType === 'MCQ') {
+      const correctOptions =
+        dto.options?.filter((option) => option.isCorrect) ?? [];
+
+      if (correctOptions.length !== 1) {
+        throw new BadRequestException(
+          'MCQ questions must have exactly one correct option.',
+        );
+      }
+    }
+
+    const questionCode =
+      `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
+
+    let selectedSubject: {
+      id: string;
+      name: string;
+      isActive: boolean;
+    } | null = null;
+
+    let selectedTopic: {
+      id: string;
+      name: string;
+      subjectId: string;
+      isActive: boolean;
+      subject: {
+        id: string;
+        name: string;
+        isActive: boolean;
+      };
+    } | null = null;
+
+    if (dto.subjectId) {
+      selectedSubject = await tx.subject.findFirst({
+        where: {
+          id: dto.subjectId,
+          isActive: true,
+        },
+        select: {
+          id: true,
+          name: true,
+          isActive: true,
+        },
+      });
+
+      if (!selectedSubject) {
+        throw new BadRequestException(
+          'Selected Subject does not exist or is inactive.',
+        );
+      }
+    }
+
+    if (dto.topicId) {
+      selectedTopic = await tx.topic.findFirst({
+        where: {
+          id: dto.topicId,
+          isActive: true,
+        },
+        include: {
+          subject: {
+            select: {
+              id: true,
+              name: true,
+              isActive: true,
+            },
+          },
+        },
+      });
+
+      if (!selectedTopic || !selectedTopic.subject.isActive) {
+        throw new BadRequestException(
+          'Selected Topic does not exist or its Subject is inactive.',
+        );
+      }
+
+      if (
+        selectedSubject &&
+        selectedTopic.subjectId !== selectedSubject.id
+      ) {
+        throw new BadRequestException(
+          'Selected Topic must belong to the selected Subject.',
+        );
+      }
+
+      if (!selectedSubject) {
+        selectedSubject = selectedTopic.subject;
+      }
+    }
+
+    return tx.question.create({
+      data: {
+        questionCode,
+        questionText: dto.questionText,
+        questionType,
+        subject: selectedSubject?.name ?? dto.subject,
+        topic: selectedTopic?.name ?? dto.topic,
+        ...(selectedSubject
+          ? { subjectRef: { connect: { id: selectedSubject.id } } }
+          : {}),
+        ...(selectedTopic
+          ? { topicRef: { connect: { id: selectedTopic.id } } }
+          : {}),
+        correctAnswer: dto.correctAnswer,
+        explanation: dto.explanation,
+        difficulty: dto.difficulty ?? 'MEDIUM',
+        status: dto.status ?? 'DRAFT',
+
+        options: {
+          create: (dto.options ?? []).map((option) => ({
+            label: option.label,
+            optionText: option.optionText,
+            isCorrect: option.isCorrect ?? false,
+            sortOrder: option.sortOrder ?? 0,
+          })),
+        },
+
+        occurrences: {
+          create: dto.occurrences.map((occurrence) => ({
+            institution: occurrence.institution,
+            examName: occurrence.examName,
+            examYear: occurrence.examYear,
+            postName: occurrence.postName,
+            department: occurrence.department,
+            questionNumber: occurrence.questionNumber,
+            source: occurrence.source,
+            sourcePage: occurrence.sourcePage,
+            sourceUrl: occurrence.sourceUrl,
+          })),
+        },
+      },
+    });
+  }
+
   async preview(file: ImportFile) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
@@ -379,10 +502,9 @@ export class ImportsService {
     const batch = await this.prisma.importBatch.create({
       data: {
         fileName: file.originalname,
-        fileType: file.originalname
-          .split('.')
-          .pop()
-          ?.toLowerCase() ?? 'unknown',
+        fileType:
+          file.originalname.split('.').pop()?.toLowerCase() ??
+          'unknown',
         status: 'PROCESSING',
         totalRows: rows.length,
         startedAt: new Date(),
@@ -400,13 +522,9 @@ export class ImportsService {
     try {
       for (let index = 0; index < rows.length; index++) {
         const row = rows[index];
-
         const errors = this.validateRow(row);
 
-        let rowStatus:
-          | 'VALID'
-          | 'INVALID'
-          | 'DUPLICATE' = 'VALID';
+        let rowStatus: 'VALID' | 'INVALID' | 'DUPLICATE' = 'VALID';
 
         if (errors.length > 0) {
           rowStatus = 'INVALID';
@@ -461,22 +579,26 @@ export class ImportsService {
         });
       }
 
-      await this.prisma.importRow.createMany({
-        data: preparedRows,
-      });
+      const updatedBatch = await this.prisma.$transaction(
+        async (tx) => {
+          await tx.importRow.createMany({
+            data: preparedRows,
+          });
 
-      const updatedBatch = await this.prisma.importBatch.update({
-        where: {
-          id: batch.id,
+          return tx.importBatch.update({
+            where: {
+              id: batch.id,
+            },
+            data: {
+              status: 'REVIEW',
+              validRows,
+              invalidRows,
+              duplicateRows,
+              completedAt: new Date(),
+            },
+          });
         },
-        data: {
-          status: 'REVIEW',
-          validRows,
-          invalidRows,
-          duplicateRows,
-          completedAt: new Date(),
-        },
-      });
+      );
 
       return {
         success: true,
@@ -612,7 +734,8 @@ export class ImportsService {
         );
       }
 
-      where.status = status as Prisma.EnumImportRowStatusFilter['equals'];
+      where.status =
+        status as Prisma.EnumImportRowStatusFilter['equals'];
     }
 
     const [data, total] = await this.prisma.$transaction([
@@ -642,22 +765,6 @@ export class ImportsService {
   }
 
   async commit(batchId: string, rowIds?: string[]) {
-    const batch = await this.prisma.importBatch.findUnique({
-      where: {
-        id: batchId,
-      },
-    });
-
-    if (!batch) {
-      throw new NotFoundException('Import batch not found.');
-    }
-
-    if (batch.status !== 'REVIEW') {
-      throw new BadRequestException(
-        'Only batches in REVIEW status can be imported.',
-      );
-    }
-
     const where: Prisma.ImportRowWhereInput = {
       batchId,
       status: 'VALID',
@@ -669,27 +776,54 @@ export class ImportsService {
       };
     }
 
-    const rows = await this.prisma.importRow.findMany({
-      where,
-      orderBy: {
-        rowNumber: 'asc',
-      },
-    });
+    // Atomically claim the batch. Only one request can move
+    // a REVIEW batch into PROCESSING.
+    const rows = await this.prisma.$transaction(async (tx) => {
+      const claimed = await tx.importBatch.updateMany({
+        where: {
+          id: batchId,
+          status: 'REVIEW',
+        },
+        data: {
+          status: 'PROCESSING',
+          startedAt: new Date(),
+          completedAt: null,
+        },
+      });
 
-    if (rows.length === 0) {
-      throw new BadRequestException(
-        'No valid rows available for import.',
-      );
-    }
+      if (claimed.count !== 1) {
+        const existing = await tx.importBatch.findUnique({
+          where: {
+            id: batchId,
+          },
+          select: {
+            id: true,
+          },
+        });
 
-    await this.prisma.importBatch.update({
-      where: {
-        id: batchId,
-      },
-      data: {
-        status: 'PROCESSING',
-        startedAt: new Date(),
-      },
+        if (!existing) {
+          throw new NotFoundException('Import batch not found.');
+        }
+
+        throw new BadRequestException(
+          'This batch is not available for processing. It may already be processing.',
+        );
+      }
+
+      const selectedRows = await tx.importRow.findMany({
+        where,
+        orderBy: {
+          rowNumber: 'asc',
+        },
+      });
+
+      if (selectedRows.length === 0) {
+        throw new BadRequestException(
+          'No valid rows available for import.',
+        );
+      }
+
+      return selectedRows;
     });
 
     let importedRows = 0;
@@ -699,67 +833,99 @@ export class ImportsService {
       try {
         const dto = row.rawData as unknown as CreateQuestionDto;
 
-        const result = await this.questionsService.create(dto);
-
-        const questionId = result.data?.id;
-
-        if (!questionId) {
-          throw new Error(
-            'Question creation did not return an ID.',
+        await this.prisma.$transaction(async (tx) => {
+          const question = await this.createQuestionInTransaction(
+            tx,
+            dto,
           );
-        }
 
-        await this.prisma.importRow.update({
-          where: {
-            id: row.id,
-          },
-          data: {
-            status: 'IMPORTED',
-            questionId,
-            errorMessages: Prisma.JsonNull,
-          },
+          const updatedRow = await tx.importRow.updateMany({
+            where: {
+              id: row.id,
+              batchId,
+              status: 'VALID',
+            },
+            data: {
+              status: 'IMPORTED',
+              questionId: question.id,
+              errorMessages: Prisma.JsonNull,
+            },
+          });
+
+          if (updatedRow.count !== 1) {
+            throw new BadRequestException(
+              'Import row is no longer available for processing.',
+            );
+          }
         });
 
         importedRows++;
       } catch (error) {
-        failedRows++;
+        const errorMessage =
+          error instanceof Error
+            ? error.message
+            : 'Question import failed.';
 
-        await this.prisma.importRow.update({
+        const failedUpdate = await this.prisma.importRow.updateMany({
           where: {
             id: row.id,
+            batchId,
+            status: 'VALID',
           },
           data: {
             status: 'INVALID',
-            errorMessages: [
-              error instanceof Error
-                ? error.message
-                : 'Question import failed.',
-            ],
+            errorMessages: [errorMessage],
           },
         });
+
+        if (failedUpdate.count === 1) {
+          failedRows++;
+        }
       }
     }
 
-    const remainingValid = await this.prisma.importRow.count({
+    const finalBatch = await this.prisma.$transaction(async (tx) => {
+      const remainingValid = await tx.importRow.count({
+        where: {
+          batchId,
+          status: 'VALID',
+        },
+      });
+
+      const updated = await tx.importBatch.updateMany({
+        where: {
+          id: batchId,
+          status: 'PROCESSING',
+        },
+        data: {
+          status: remainingValid > 0 ? 'REVIEW' : 'COMPLETED',
+          importedRows: {
+            increment: importedRows,
+          },
+          invalidRows: {
+            increment: failedRows,
+          },
+          completedAt: new Date(),
+        },
+      });
+
+      if (updated.count !== 1) {
+        throw new BadRequestException(
+          'Import batch status changed unexpectedly.',
+        );
+      }
+
+      return tx.importBatch.findUniqueOrThrow({
+        where: {
+          id: batchId,
+        },
+      });
+    });
+
+    const remainingValidRows = await this.prisma.importRow.count({
       where: {
         batchId,
         status: 'VALID',
-      },
-    });
-
-    const finalBatch = await this.prisma.importBatch.update({
-      where: {
-        id: batchId,
-      },
-      data: {
-        status: remainingValid > 0 ? 'REVIEW' : 'COMPLETED',
-        importedRows: {
-          increment: importedRows,
-        },
-        invalidRows: {
-          increment: failedRows,
-        },
-        completedAt: new Date(),
       },
     });
 
@@ -770,60 +936,86 @@ export class ImportsService {
         batch: finalBatch,
         importedRows,
         failedRows,
-        remainingValidRows: remainingValid,
+        remainingValidRows,
       },
     };
   }
 
   async skipRows(batchId: string, rowIds: string[]) {
-    const batch = await this.prisma.importBatch.findUnique({
-      where: {
-        id: batchId,
-      },
-    });
-
-    if (!batch) {
-      throw new NotFoundException('Import batch not found.');
-    }
-
-    if (batch.status !== 'REVIEW') {
+    if (!Array.isArray(rowIds) || rowIds.length === 0) {
       throw new BadRequestException(
-        'Rows can only be skipped while the batch is in REVIEW status.',
+        'At least one row ID must be provided.',
       );
     }
 
-    const result = await this.prisma.importRow.updateMany({
-      where: {
-        batchId,
-        id: {
-          in: rowIds,
+    return this.prisma.$transaction(async (tx) => {
+      // Lock/claim the REVIEW batch before changing its rows.
+      const claimed = await tx.importBatch.updateMany({
+        where: {
+          id: batchId,
+          status: 'REVIEW',
         },
-        status: {
-          in: ['VALID', 'INVALID', 'DUPLICATE'],
+        data: {
+          skippedRows: {
+            increment: 0,
+          },
         },
-      },
-      data: {
-        status: 'SKIPPED',
-      },
-    });
+      });
 
-    await this.prisma.importBatch.update({
-      where: {
-        id: batchId,
-      },
-      data: {
-        skippedRows: {
-          increment: result.count,
-        },
-      },
-    });
+      if (claimed.count !== 1) {
+        const batch = await tx.importBatch.findUnique({
+          where: {
+            id: batchId,
+          },
+          select: {
+            id: true,
+          },
+        });
 
-    return {
-      success: true,
-      message: 'Selected rows skipped successfully.',
-      data: {
-        skippedRows: result.count,
-      },
-    };
+        if (!batch) {
+          throw new NotFoundException('Import batch not found.');
+        }
+
+        throw new BadRequestException(
+          'Rows can only be skipped while the batch is in REVIEW status.',
+        );
+      }
+
+      const result = await tx.importRow.updateMany({
+        where: {
+          batchId,
+          id: {
+            in: rowIds,
+          },
+          status: {
+            in: ['VALID', 'INVALID', 'DUPLICATE'],
+          },
+        },
+        data: {
+          status: 'SKIPPED',
+        },
+      });
+
+      if (result.count > 0) {
+        await tx.importBatch.update({
+          where: {
+            id: batchId,
+          },
+          data: {
+            skippedRows: {
+              increment: result.count,
+            },
+          },
+        });
+      }
+
+      return {
+        success: true,
+        message: 'Selected rows skipped successfully.',
+        data: {
+          skippedRows: result.count,
+        },
+      };
+    });
   }
 }
