@@ -10,7 +10,12 @@ import {
   Param,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
+
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { TopicsService } from './topics.service';
 import { CreateTopicDto } from './dto/topics/create-topic.dto';
@@ -20,14 +25,15 @@ import { UpdateTopicDto } from './dto/topics/update-topic.dto';
 export class TopicsController {
   constructor(private readonly topicsService: TopicsService) {}
 
-  // CREATE TOPIC
   @Post()
   @HttpCode(HttpStatus.CREATED)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('topics.manage')
   async create(@Body() dto: CreateTopicDto) {
     return this.topicsService.create(dto);
   }
 
-  // GET ALL TOPICS
+  // Public API
   @Get()
   async findAll(
     @Query('page') page?: string,
@@ -47,14 +53,15 @@ export class TopicsController {
     });
   }
 
-  // GET TOPIC DETAILS
+  // Public API
   @Get(':id')
   async findOne(@Param('id') id: string) {
     return this.topicsService.findOne(id);
   }
 
-  // UPDATE TOPIC
   @Put(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('topics.manage')
   async update(
     @Param('id') id: string,
     @Body() dto: UpdateTopicDto,
@@ -62,9 +69,10 @@ export class TopicsController {
     return this.topicsService.update(id, dto);
   }
 
-  // DELETE TOPIC
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('topics.manage')
   async remove(@Param('id') id: string) {
     return this.topicsService.remove(id);
   }

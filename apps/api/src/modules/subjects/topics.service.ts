@@ -16,19 +16,11 @@ import { UpdateTopicDto } from './dto/topics/update-topic.dto';
 export class TopicsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // =========================================
-  // UUID VALIDATION
-  // =========================================
-
   private isValidUuid(value: string): boolean {
     return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
       value,
     );
   }
-
-  // =========================================
-  // SLUG GENERATOR
-  // =========================================
 
   private generateSlug(name: string): string {
     return name
@@ -37,10 +29,6 @@ export class TopicsService {
       .replace(/[^\p{L}\p{N}]+/gu, '-')
       .replace(/^-+|-+$/g, '');
   }
-
-  // =========================================
-  // DUPLICATE NAME CHECK
-  // =========================================
 
   private async checkDuplicateName(
     subjectId: string,
@@ -65,10 +53,6 @@ export class TopicsService {
     }
   }
 
-  // =========================================
-  // VALIDATE SUBJECT
-  // =========================================
-
   private async validateSubject(subjectId: string) {
     const subject = await this.prisma.subject.findUnique({
       where: { id: subjectId },
@@ -86,10 +70,6 @@ export class TopicsService {
 
     return subject;
   }
-
-  // =========================================
-  // VALIDATE PARENT TOPIC
-  // =========================================
 
   private async validateParent(
     parentId: string | null | undefined,
@@ -122,6 +102,7 @@ export class TopicsService {
 
     if (currentTopicId) {
       let ancestorId: string | null = parent.id;
+      const visited = new Set<string>();
 
       while (ancestorId) {
         if (ancestorId === currentTopicId) {
@@ -129,6 +110,14 @@ export class TopicsService {
             'Circular topic hierarchy is not allowed.',
           );
         }
+
+        if (visited.has(ancestorId)) {
+          throw new BadRequestException(
+            'Invalid circular topic hierarchy already exists.',
+          );
+        }
+
+        visited.add(ancestorId);
 
         const ancestor: { parentId: string | null } | null =
           await this.prisma.topic.findUnique({
@@ -143,16 +132,12 @@ export class TopicsService {
     return parent;
   }
 
-  // =========================================
-  // CREATE TOPIC
-  // =========================================
-
   async create(dto: CreateTopicDto) {
     const subjectId = dto.subjectId;
     const name = dto.name.trim();
     const slug = this.generateSlug(name);
 
-    if (!slug) {
+    if (!name || !slug) {
       throw new BadRequestException(
         'Topic name must contain valid characters.',
       );
@@ -214,10 +199,6 @@ export class TopicsService {
     }
   }
 
-  // =========================================
-  // GET ALL TOPICS
-  // =========================================
-
   async findAll(query: {
     page?: string;
     limit?: string;
@@ -246,19 +227,37 @@ export class TopicsService {
       throw new BadRequestException('Invalid parentId.');
     }
 
-    let isActive: boolean | undefined;
+    if (
+      query.isActive !== undefined &&
+      !['true', 'false'].includes(query.isActive)
+    ) {
+      throw new BadRequestException(
+        'isActive must be either true or false.',
+      );
+    }
 
-    if (query.isActive !== undefined) {
-      if (!['true', 'false'].includes(query.isActive)) {
-        throw new BadRequestException(
-          'isActive must be either true or false.',
-        );
-      }
-
-      isActive = query.isActive === 'true';
+    // Public API never returns inactive topics.
+    // An explicit isActive=false filter returns an empty result.
+    if (query.isActive === 'false') {
+      return {
+        success: true,
+        data: [],
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: page > 1,
+        },
+      };
     }
 
     const where: Prisma.TopicWhereInput = {
+      isActive: true,
+      subject: {
+        isActive: true,
+      },
       ...(query.subjectId ? { subjectId: query.subjectId } : {}),
       ...(query.parentId
         ? {
@@ -266,7 +265,6 @@ export class TopicsService {
               query.parentId === 'null' ? null : query.parentId,
           }
         : {}),
-      ...(isActive !== undefined ? { isActive } : {}),
       ...(query.search
         ? {
             OR: [
@@ -341,10 +339,6 @@ export class TopicsService {
     };
   }
 
-  // =========================================
-  // GET TOPIC DETAILS
-  // =========================================
-
   async findOne(id: string) {
     if (!this.isValidUuid(id)) {
       throw new BadRequestException('Invalid topic ID.');
@@ -358,6 +352,7 @@ export class TopicsService {
             id: true,
             name: true,
             slug: true,
+            isActive: true,
           },
         },
         parent: {
@@ -367,6 +362,9 @@ export class TopicsService {
           },
         },
         children: {
+          where: {
+            isActive: true,
+          },
           orderBy: {
             name: 'asc',
           },
@@ -380,7 +378,7 @@ export class TopicsService {
       },
     });
 
-    if (!topic) {
+    if (!topic || !topic.isActive || !topic.subject?.isActive) {
       throw new NotFoundException('Topic not found.');
     }
 
@@ -389,10 +387,6 @@ export class TopicsService {
       data: topic,
     };
   }
-
-  // =========================================
-  // UPDATE TOPIC
-  // =========================================
 
   async update(id: string, dto: UpdateTopicDto) {
     if (!this.isValidUuid(id)) {
@@ -543,10 +537,6 @@ export class TopicsService {
       throw error;
     }
   }
-
-  // =========================================
-  // DELETE TOPIC
-  // =========================================
 
   async remove(id: string) {
     if (!this.isValidUuid(id)) {

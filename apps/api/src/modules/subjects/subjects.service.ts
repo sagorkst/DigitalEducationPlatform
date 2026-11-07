@@ -15,9 +15,11 @@ import { UpdateSubjectDto } from './dto/update-subject.dto';
 export class SubjectsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  // ==========================================
-  // GENERATE SLUG
-  // ==========================================
+  private isValidUuid(value: string): boolean {
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      value,
+    );
+  }
 
   private generateSlug(name: string): string {
     const slug = name
@@ -35,10 +37,22 @@ export class SubjectsService {
     return slug;
   }
 
-  // ==========================================
-  // CREATE SUBJECT
-  // ==========================================
+  private handleDatabaseError(error: unknown): never {
+    if (
+      typeof error === 'object' &&
+      error !== null &&
+      'code' in error &&
+      (error as { code?: unknown }).code === 'P2002'
+    ) {
+      throw new ConflictException(
+        'A subject with this name or slug already exists.',
+      );
+    }
 
+    throw error;
+  }
+
+  // CREATE SUBJECT
   async create(dto: CreateSubjectDto) {
     const name = dto.name.trim();
 
@@ -97,24 +111,11 @@ export class SubjectsService {
         data: subject,
       };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'A subject with this name or slug already exists.',
-        );
-      }
-
-      throw error;
+      this.handleDatabaseError(error);
     }
   }
 
-  // ==========================================
-  // GET ALL SUBJECTS
-  // SEARCH + FILTER + PAGINATION
-  // ==========================================
-
+  // PUBLIC: ACTIVE SUBJECTS ONLY
   async findAll(query: {
     page?: string;
     limit?: string;
@@ -127,9 +128,37 @@ export class SubjectsService {
       Math.max(1, Number(query.limit) || 20),
     );
 
+    if (
+      query.isActive !== undefined &&
+      !['true', 'false'].includes(query.isActive)
+    ) {
+      throw new BadRequestException(
+        'isActive must be either true or false.',
+      );
+    }
+
     const skip = (page - 1) * limit;
 
-    const where: Prisma.SubjectWhereInput = {};
+    // Public API never returns inactive subjects.
+    // Explicit isActive=false returns an empty result.
+    if (query.isActive === 'false') {
+      return {
+        success: true,
+        data: [],
+        pagination: {
+          total: 0,
+          page,
+          limit,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: false,
+        },
+      };
+    }
+
+    const where: Prisma.SubjectWhereInput = {
+      isActive: true,
+    };
 
     if (query.search?.trim()) {
       const search = query.search.trim();
@@ -154,16 +183,6 @@ export class SubjectsService {
           },
         },
       ];
-    }
-
-    if (query.isActive !== undefined) {
-      if (!['true', 'false'].includes(query.isActive)) {
-        throw new BadRequestException(
-          'isActive must be either true or false.',
-        );
-      }
-
-      where.isActive = query.isActive === 'true';
     }
 
     const [subjects, total] = await this.prisma.$transaction([
@@ -200,23 +219,31 @@ export class SubjectsService {
     };
   }
 
-  // ==========================================
-  // GET SUBJECT BY ID
-  // ==========================================
-
+  // PUBLIC: ACTIVE SUBJECT DETAILS ONLY
   async findOne(id: string) {
-    const subject = await this.prisma.subject.findUnique({
-      where: { id },
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('Invalid subject ID.');
+    }
+
+    const subject = await this.prisma.subject.findFirst({
+      where: {
+        id,
+        isActive: true,
+      },
       include: {
         topics: {
           where: {
             parentId: null,
+            isActive: true,
           },
           orderBy: {
             name: 'asc',
           },
           include: {
             children: {
+              where: {
+                isActive: true,
+              },
               orderBy: {
                 name: 'asc',
               },
@@ -242,11 +269,12 @@ export class SubjectsService {
     };
   }
 
-  // ==========================================
-  // UPDATE SUBJECT
-  // ==========================================
-
+  // ADMIN: UPDATE SUBJECT
   async update(id: string, dto: UpdateSubjectDto) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('Invalid subject ID.');
+    }
+
     const existing = await this.prisma.subject.findUnique({
       where: { id },
     });
@@ -335,24 +363,16 @@ export class SubjectsService {
         data: updated,
       };
     } catch (error) {
-      if (
-        error instanceof Prisma.PrismaClientKnownRequestError &&
-        error.code === 'P2002'
-      ) {
-        throw new ConflictException(
-          'A subject with this name or slug already exists.',
-        );
-      }
-
-      throw error;
+      this.handleDatabaseError(error);
     }
   }
 
-  // ==========================================
-  // DELETE SUBJECT
-  // ==========================================
-
+  // ADMIN: DELETE SUBJECT
   async remove(id: string) {
+    if (!this.isValidUuid(id)) {
+      throw new BadRequestException('Invalid subject ID.');
+    }
+
     const subject = await this.prisma.subject.findUnique({
       where: { id },
       include: {

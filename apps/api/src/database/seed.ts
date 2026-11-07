@@ -1,3 +1,4 @@
+
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -47,8 +48,12 @@ const permissions = [
   { key: 'content.manage', description: 'কনটেন্ট পরিচালনা' },
   { key: 'rbac.manage', description: 'Role ও Permission পরিচালনা' },
   { key: 'analytics.read', description: 'প্ল্যাটফর্ম রিপোর্ট দেখা' },
-  { key: 'audit.logs.read', description: 'Read platform audit logs' },
+  { key: 'audit.logs.read', description: 'অডিট লগ দেখা' },
   { key: 'system.settings.manage', description: 'সিস্টেম সেটিংস পরিচালনা' },
+
+  // Subject and Topic management
+  { key: 'subjects.manage', description: 'বিষয় পরিচালনা' },
+  { key: 'topics.manage', description: 'বিষয়ভিত্তিক টপিক পরিচালনা' },
 ];
 
 async function main() {
@@ -148,6 +153,9 @@ async function main() {
   console.log(`Roles: ${roleRecords.length}`);
   console.log(`Permissions: ${permissionRecords.length}`);
   console.log(`Role-Permission links processed: ${assignments.length}`);
+  console.log('Subject management: ADMIN, SUPER_ADMIN');
+  console.log('Topic management: ADMIN, SUPER_ADMIN');
+  console.log('Subject and Topic read APIs: PUBLIC');
   console.log('SUPER_ADMIN assigned to users: NO');
   console.log('ADMIN assigned to users: NO');
   console.log('\nDefault roles and permissions seeded successfully.');
