@@ -1,4 +1,3 @@
-
 import {
   Injectable,
   BadRequestException,
@@ -27,6 +26,15 @@ export class ImportsService {
       .replace(/[^\p{L}\p{N}\s]/gu, '')
       .replace(/\s+/g, ' ')
       .trim();
+  }
+
+  private isValidUuid(value: unknown): value is string {
+    return (
+      typeof value === 'string' &&
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+        value,
+      )
+    );
   }
 
   private parseJsonValue(value: unknown): unknown {
@@ -286,6 +294,8 @@ export class ImportsService {
         }
 
         const item = occurrence as ImportData;
+        const hasExamId =
+          typeof item.examId === 'string' && item.examId.trim() !== '';
 
         if (
           typeof item.institution !== 'string' ||
@@ -296,24 +306,65 @@ export class ImportsService {
           );
         }
 
-        if (
-          typeof item.examName !== 'string' ||
-          !item.examName.trim()
-        ) {
+        // Exam-linked occurrences get examName and examYear
+        // directly from the Exam record.
+        if (!hasExamId) {
+          if (
+            typeof item.examName !== 'string' ||
+            !item.examName.trim()
+          ) {
+            errors.push(
+              `Occurrence ${index + 1}: exam name is required.`,
+            );
+          }
+
+          const year = Number(item.examYear);
+
+          if (
+            !Number.isInteger(year) ||
+            year < 1900 ||
+            year > 2100
+          ) {
+            errors.push(
+              `Occurrence ${index + 1}: exam year must be between 1900 and 2100.`,
+            );
+          }
+        } else if (!this.isValidUuid(item.examId)) {
           errors.push(
-            `Occurrence ${index + 1}: exam name is required.`,
+            `Occurrence ${index + 1}: invalid Exam ID.`,
           );
         }
 
-        const year = Number(item.examYear);
-
         if (
-          !Number.isInteger(year) ||
-          year < 1900 ||
-          year > 2100
+          item.institutionId !== undefined &&
+          item.institutionId !== null &&
+          item.institutionId !== '' &&
+          !this.isValidUuid(item.institutionId)
         ) {
           errors.push(
-            `Occurrence ${index + 1}: exam year must be between 1900 and 2100.`,
+            `Occurrence ${index + 1}: invalid Institution ID.`,
+          );
+        }
+
+        if (
+          item.postId !== undefined &&
+          item.postId !== null &&
+          item.postId !== '' &&
+          !this.isValidUuid(item.postId)
+        ) {
+          errors.push(
+            `Occurrence ${index + 1}: invalid Post ID.`,
+          );
+        }
+
+        if (
+          item.sourceDocumentId !== undefined &&
+          item.sourceDocumentId !== null &&
+          item.sourceDocumentId !== '' &&
+          !this.isValidUuid(item.sourceDocumentId)
+        ) {
+          errors.push(
+            `Occurrence ${index + 1}: invalid Source Document ID.`,
           );
         }
       });
@@ -334,6 +385,162 @@ export class ImportsService {
     }
 
     return errors;
+  }
+
+  /**
+   * Validates Exam references during preview.
+   * The Exam record is the source of truth for linked occurrences.
+   */
+  private async validateOccurrenceReferences(
+    data: ImportData,
+  ): Promise<string[]> {
+    const errors: string[] = [];
+
+    if (!Array.isArray(data.occurrences)) {
+      return errors;
+    }
+
+    for (let index = 0; index < data.occurrences.length; index++) {
+      const occurrence = data.occurrences[index];
+
+      if (
+        typeof occurrence !== 'object' ||
+        occurrence === null ||
+        Array.isArray(occurrence)
+      ) {
+        continue;
+      }
+
+      const item = occurrence as ImportData;
+
+      if (
+        typeof item.examId !== 'string' ||
+        !item.examId.trim() ||
+        !this.isValidUuid(item.examId)
+      ) {
+        continue;
+      }
+
+      const exam = await this.prisma.exam.findUnique({
+        where: {
+          id: item.examId,
+        },
+        select: {
+          id: true,
+          institutionId: true,
+          postId: true,
+          name: true,
+          examYear: true,
+        },
+      });
+
+      if (!exam) {
+        errors.push(
+          `Occurrence ${index + 1}: selected Exam does not exist.`,
+        );
+        continue;
+      }
+
+      if (
+        item.institutionId &&
+        item.institutionId !== exam.institutionId
+      ) {
+        errors.push(
+          `Occurrence ${index + 1}: Institution ID does not match the selected Exam.`,
+        );
+      }
+
+      if (
+        item.postId &&
+        item.postId !== exam.postId
+      ) {
+        errors.push(
+          `Occurrence ${index + 1}: Post ID does not match the selected Exam.`,
+        );
+      }
+    }
+
+    return errors;
+  }
+
+  /**
+   * Resolves an occurrence from its Exam record.
+   * Legacy occurrences without examId remain unchanged.
+   */
+  private async resolveOccurrenceForImport(
+    tx: Prisma.TransactionClient,
+    occurrence: CreateQuestionDto['occurrences'][number],
+  ) {
+    if (!occurrence.examId) {
+      return {
+        institution: occurrence.institution,
+        examName: occurrence.examName,
+        examYear: occurrence.examYear,
+        postName: occurrence.postName,
+        department: occurrence.department,
+        questionNumber: occurrence.questionNumber,
+        source: occurrence.source,
+        sourcePage: occurrence.sourcePage,
+        sourceUrl: occurrence.sourceUrl,
+        institutionId: occurrence.institutionId,
+        examId: null,
+        postId: occurrence.postId,
+        sourceDocumentId: occurrence.sourceDocumentId,
+      };
+    }
+
+    const exam = await tx.exam.findUnique({
+      where: {
+        id: occurrence.examId,
+      },
+      select: {
+        id: true,
+        institutionId: true,
+        postId: true,
+        name: true,
+        examYear: true,
+      },
+    });
+
+    if (!exam) {
+      throw new BadRequestException(
+        'Selected Exam does not exist.',
+      );
+    }
+
+    if (
+      occurrence.institutionId &&
+      occurrence.institutionId !== exam.institutionId
+    ) {
+      throw new BadRequestException(
+        'Institution ID does not match the selected Exam.',
+      );
+    }
+
+    if (
+      occurrence.postId &&
+      occurrence.postId !== exam.postId
+    ) {
+      throw new BadRequestException(
+        'Post ID does not match the selected Exam.',
+      );
+    }
+
+    return {
+      institution: occurrence.institution,
+      examName: exam.name,
+      examYear: exam.examYear,
+      postName: occurrence.postName,
+      department: occurrence.department,
+      questionNumber: occurrence.questionNumber,
+      source: occurrence.source,
+      sourcePage: occurrence.sourcePage,
+      sourceUrl: occurrence.sourceUrl,
+      institutionId: exam.institutionId,
+      examId: exam.id,
+      postId: exam.postId,
+      sourceDocumentId: occurrence.sourceDocumentId,
+    };
   }
 
   /**
@@ -444,6 +651,13 @@ export class ImportsService {
       }
     }
 
+    // Resolve all occurrence references inside the same transaction.
+    const resolvedOccurrences = await Promise.all(
+      dto.occurrences.map((occurrence) =>
+        this.resolveOccurrenceForImport(tx, occurrence),
+      ),
+    );
+
     return tx.question.create({
       data: {
         questionCode,
@@ -472,17 +686,7 @@ export class ImportsService {
         },
 
         occurrences: {
-          create: dto.occurrences.map((occurrence) => ({
-            institution: occurrence.institution,
-            examName: occurrence.examName,
-            examYear: occurrence.examYear,
-            postName: occurrence.postName,
-            department: occurrence.department,
-            questionNumber: occurrence.questionNumber,
-            source: occurrence.source,
-            sourcePage: occurrence.sourcePage,
-            sourceUrl: occurrence.sourceUrl,
-          })),
+          create: resolvedOccurrences,
         },
       },
     });
@@ -522,7 +726,15 @@ export class ImportsService {
     try {
       for (let index = 0; index < rows.length; index++) {
         const row = rows[index];
+
         const errors = this.validateRow(row);
+
+        if (errors.length === 0) {
+          const referenceErrors =
+            await this.validateOccurrenceReferences(row);
+
+          errors.push(...referenceErrors);
+        }
 
         let rowStatus: 'VALID' | 'INVALID' | 'DUPLICATE' = 'VALID';
 
