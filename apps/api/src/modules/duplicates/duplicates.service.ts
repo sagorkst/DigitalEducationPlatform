@@ -119,7 +119,7 @@ export class DuplicatesService {
       );
     }
 
-    const [questionA, questionB] = await Promise.all([
+    await Promise.all([
       this.ensureActiveQuestion(dto.questionAId),
       this.ensureActiveQuestion(dto.questionBId),
     ]);
@@ -562,12 +562,43 @@ export class DuplicatesService {
         });
       }
 
-      // Preserve a shared repeat group for both records.
+      // ==========================================
+      // UNIFY ALL MEMBERS OF BOTH REPEAT GROUPS
+      // ==========================================
+
+      // Prefer the primary question's group.
+      // If it has no group, use the secondary question's group.
+      // If neither has a group, create a new group ID.
       const repeatGroupId =
         primary.repeatGroupId ??
         secondary.repeatGroupId ??
         randomUUID();
 
+      const existingRepeatGroupIds = [
+        ...new Set(
+          [primary.repeatGroupId, secondary.repeatGroupId].filter(
+            (groupId): groupId is string => groupId !== null,
+          ),
+        ),
+      ];
+
+      // Move every question belonging to either old group
+      // into the selected canonical repeat group.
+      // This also updates soft-deleted historical questions.
+      if (existingRepeatGroupIds.length > 0) {
+        await tx.question.updateMany({
+          where: {
+            repeatGroupId: {
+              in: existingRepeatGroupIds,
+            },
+          },
+          data: {
+            repeatGroupId,
+          },
+        });
+      }
+
+      // Ensure both merged questions belong to the same group.
       await tx.question.update({
         where: {
           id: primaryQuestionId,
@@ -609,6 +640,8 @@ export class DuplicatesService {
           secondaryQuestionId,
           movedOccurrences: movedOccurrences.count,
           copiedTags: secondaryTags.length,
+          repeatGroupId,
+          unifiedRepeatGroups: existingRepeatGroupIds.length,
           secondaryQuestionSoftDeleted: true,
           secondaryOptionsPreserved: true,
           secondaryHistoryPreserved: true,
