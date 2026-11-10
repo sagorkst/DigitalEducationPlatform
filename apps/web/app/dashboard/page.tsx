@@ -1,7 +1,28 @@
-"use client";
-import { useState } from "react";
 
-﻿const menuItems = [
+"use client";
+
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+
+type UserProfile = {
+  id: string;
+  name: string;
+  email: string | null;
+  phone: string | null;
+  status: string;
+};
+
+type SessionResponse = {
+  success: boolean;
+  message?: string;
+  data?: {
+    user?: UserProfile;
+    roles?: { id: string; name: string }[];
+    permissions?: string[];
+  };
+};
+
+const menuItems = [
   { icon: "🏠", label: "ড্যাশবোর্ড", active: true },
   { icon: "📚", label: "আমার কোর্স", href: "/courses" },
   { icon: "📝", label: "অনলাইন পরীক্ষা", href: "/exams" },
@@ -31,9 +52,120 @@ const exams = [
 ];
 
 export default function DashboardPage() {
+  const router = useRouter();
+
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
+
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [authError, setAuthError] = useState("");
+  const [logoutLoading, setLogoutLoading] = useState(false);
+
+  async function verifySession() {
+    setAuthLoading(true);
+    setAuthError("");
+
+    try {
+      const response = await fetch("/api/auth/me", {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const result = (await response.json()) as SessionResponse;
+
+      if (response.status === 401 || response.status === 403) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!response.ok || !result.success || !result.data?.user) {
+        setAuthError(
+          result.message ?? "আপনার Session যাচাই করা যায়নি।",
+        );
+        return;
+      }
+
+      setUser(result.data.user);
+    } catch {
+      setAuthError(
+        "সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। আবার চেষ্টা করুন।",
+      );
+    } finally {
+      setAuthLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    void verifySession();
+  }, []);
+
+  async function handleLogout() {
+    if (logoutLoading) return;
+
+    setLogoutLoading(true);
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        cache: "no-store",
+      });
+
+      router.replace("/login");
+      router.refresh();
+    } catch {
+      setAuthError(
+        "Logout সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।",
+      );
+      setLogoutLoading(false);
+    }
+  }
+
+  if (authLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5">
+        <div className="text-center">
+          <div className="mx-auto h-10 w-10 animate-spin rounded-full border-4 border-blue-100 border-t-blue-600" />
+          <p className="mt-4 text-sm font-semibold text-slate-600">
+            আপনার অ্যাকাউন্ট যাচাই করা হচ্ছে...
+          </p>
+        </div>
+      </main>
+    );
+  }
+
+  if (authError || !user) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-slate-50 px-5">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+          <div className="text-4xl">⚠️</div>
+          <h1 className="mt-4 text-xl font-black text-slate-900">
+            Dashboard লোড করা যায়নি
+          </h1>
+          <p className="mt-3 text-sm leading-7 text-slate-500">
+            {authError || "আপনার Login Session পাওয়া যায়নি।"}
+          </p>
+          <button
+            type="button"
+            onClick={() => void verifySession()}
+            className="mt-6 rounded-xl bg-blue-700 px-6 py-3 text-sm font-bold text-white hover:bg-blue-800"
+          >
+            আবার চেষ্টা করুন
+          </button>
+          <button
+            type="button"
+            onClick={() => router.replace("/login")}
+            className="ml-3 mt-6 rounded-xl border border-slate-200 px-6 py-3 text-sm font-bold text-slate-600 hover:bg-slate-50"
+          >
+            Login পেজে যান
+          </button>
+        </div>
+      </main>
+    );
+  }
+
+  const userInitial = user.name.trim().charAt(0) || "শি";
 
   return (
     <main className="min-h-screen bg-slate-50">
@@ -48,25 +180,52 @@ export default function DashboardPage() {
             />
             <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-white p-5 shadow-xl">
               <div className="mb-8 flex items-center justify-between">
-                <a href="/" className="text-xl font-black text-blue-700">🎓 শিক্ষাসেতু</a>
-                <button type="button" onClick={() => setMobileMenuOpen(false)} className="rounded-lg p-2 text-xl text-slate-500">✕</button>
+                <a href="/" className="text-xl font-black text-blue-700">
+                  🎓 শিক্ষাসেতু
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg p-2 text-xl text-slate-500"
+                >
+                  ✕
+                </button>
               </div>
-              <p className="mb-4 text-xs font-bold tracking-wider text-slate-400">MAIN MENU</p>
+              <p className="mb-4 text-xs font-bold tracking-wider text-slate-400">
+                MAIN MENU
+              </p>
               <nav className="space-y-2">
                 {menuItems.map((item) => (
-                  <a key={item.label} href={item.href || "/dashboard"}
+                  <a
+                    key={item.label}
+                    href={item.href || "/dashboard"}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${item.active ? "bg-blue-600 text-white" : "text-slate-600 hover:bg-slate-100"}`}>
-                    <span>{item.icon}</span>{item.label}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold ${
+                      item.active
+                        ? "bg-blue-600 text-white"
+                        : "text-slate-600 hover:bg-slate-100"
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    {item.label}
                   </a>
                 ))}
               </nav>
-              <a href="/" className="mt-10 block text-sm font-semibold text-slate-500">← মূল ওয়েবসাইটে ফিরুন</a>
+              <a
+                href="/"
+                className="mt-10 block text-sm font-semibold text-slate-500"
+              >
+                ← মূল ওয়েবসাইটে ফিরুন
+              </a>
             </aside>
           </div>
         )}
+
         <aside className="hidden min-h-screen w-64 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
-          <a href="/" className="mb-10 flex items-center gap-2 text-xl font-black text-blue-700">
+          <a
+            href="/"
+            className="mb-10 flex items-center gap-2 text-xl font-black text-blue-700"
+          >
             🎓 শিক্ষাসেতু
           </a>
 
@@ -96,27 +255,39 @@ export default function DashboardPage() {
             <p className="mt-2 text-xs leading-6 text-slate-500">
               নিয়মিত অনুশীলন করুন এবং নিজের দক্ষতা বাড়ান।
             </p>
-            <a href="/courses" className="mt-3 inline-block text-sm font-bold text-blue-700">
+            <a
+              href="/courses"
+              className="mt-3 inline-block text-sm font-bold text-blue-700"
+            >
               কোর্স দেখুন →
             </a>
           </div>
 
-          <a href="/" className="mt-10 block text-sm font-semibold text-slate-500 hover:text-blue-700">
+          <a
+            href="/"
+            className="mt-10 block text-sm font-semibold text-slate-500 hover:text-blue-700"
+          >
             ← মূল ওয়েবসাইটে ফিরুন
           </a>
         </aside>
 
         <div className="min-w-0 flex-1 p-5 sm:p-8">
           <header className="mb-8 flex flex-wrap items-center justify-between gap-4">
-            <button type="button" onClick={() => setMobileMenuOpen(true)}
+            <button
+              type="button"
+              onClick={() => setMobileMenuOpen(true)}
               aria-label="মেনু খুলুন"
-              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xl text-slate-700 lg:hidden">
+              className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xl text-slate-700 lg:hidden"
+            >
               ☰
             </button>
+
             <div>
-              <p className="text-sm font-medium text-slate-500">সোমবার, ২ নভেম্বর ২০২৬</p>
+              <p className="text-sm font-medium text-slate-500">
+                শিক্ষাসেতু ড্যাশবোর্ড
+              </p>
               <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
-                স্বাগতম, শিক্ষার্থী! 👋
+                স্বাগতম, {user.name}! 👋
               </h1>
               <p className="mt-2 text-sm text-slate-500">
                 আজকের পড়াশোনা ও অগ্রগতির সংক্ষিপ্ত চিত্র।
@@ -125,69 +296,131 @@ export default function DashboardPage() {
 
             <div className="flex items-center gap-3">
               <div className="relative">
-                <button type="button"
+                <button
+                  type="button"
                   onClick={() => setNotificationOpen(!notificationOpen)}
                   aria-label="নোটিফিকেশন"
                   aria-expanded={notificationOpen}
-                  className="relative rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50">
+                  className="relative rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
+                >
                   🔔
                   <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
                 </button>
+
                 {notificationOpen && (
                   <div className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[90vw] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
                     <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <h3 className="font-black text-slate-900">নোটিফিকেশন</h3>
-                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">৩টি নতুন</span>
+                      <h3 className="font-black text-slate-900">
+                        নোটিফিকেশন
+                      </h3>
+                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                        ৩টি নতুন
+                      </span>
                     </div>
                     <div className="divide-y divide-slate-100">
                       <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50">📝</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50">
+                          📝
+                        </span>
                         <div>
-                          <p className="text-sm font-bold text-slate-800">নতুন মডেল টেস্ট উপলভ্য</p>
-                          <p className="mt-1 text-xs text-slate-500">বাংলা মডেল টেস্ট - ০২ এখন অনুশীলন করতে পারবেন।</p>
-                          <p className="mt-1 text-xs text-slate-400">১০ মিনিট আগে</p>
+                          <p className="text-sm font-bold text-slate-800">
+                            নতুন মডেল টেস্ট উপলভ্য
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            বাংলা মডেল টেস্ট - ০২ এখন অনুশীলন করতে পারবেন।
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            ১০ মিনিট আগে
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50">📚</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                          📚
+                        </span>
                         <div>
-                          <p className="text-sm font-bold text-slate-800">কোর্সের নতুন পাঠ যোগ হয়েছে</p>
-                          <p className="mt-1 text-xs text-slate-500">English Grammar কোর্সে নতুন পাঠ যুক্ত হয়েছে।</p>
-                          <p className="mt-1 text-xs text-slate-400">গতকাল</p>
+                          <p className="text-sm font-bold text-slate-800">
+                            কোর্সের নতুন পাঠ যোগ হয়েছে
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            English Grammar কোর্সে নতুন পাঠ যুক্ত হয়েছে।
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            গতকাল
+                          </p>
                         </div>
                       </div>
                       <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50">📢</span>
+                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50">
+                          📢
+                        </span>
                         <div>
-                          <p className="text-sm font-bold text-slate-800">নতুন নোটিশ প্রকাশিত</p>
-                          <p className="mt-1 text-xs text-slate-500">শিক্ষাসেতুর সর্বশেষ নোটিশ দেখে নিন।</p>
-                          <p className="mt-1 text-xs text-slate-400">২ দিন আগে</p>
+                          <p className="text-sm font-bold text-slate-800">
+                            নতুন নোটিশ প্রকাশিত
+                          </p>
+                          <p className="mt-1 text-xs text-slate-500">
+                            শিক্ষাসেতুর সর্বশেষ নোটিশ দেখে নিন।
+                          </p>
+                          <p className="mt-1 text-xs text-slate-400">
+                            ২ দিন আগে
+                          </p>
                         </div>
                       </div>
                     </div>
-                    <a href="/notices" className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-sm font-bold text-blue-700 hover:bg-blue-100">
+                    <a
+                      href="/notices"
+                      className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-sm font-bold text-blue-700 hover:bg-blue-100"
+                    >
                       সব নোটিশ দেখুন →
                     </a>
                   </div>
                 )}
               </div>
+
               <div className="relative">
-                <button type="button" onClick={() => setProfileOpen(!profileOpen)}
+                <button
+                  type="button"
+                  onClick={() => setProfileOpen(!profileOpen)}
                   aria-expanded={profileOpen}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 pr-4 text-left hover:bg-slate-50">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">শি</span>
+                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 pr-4 text-left hover:bg-slate-50"
+                >
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
+                    {userInitial}
+                  </span>
                   <span>
-                    <span className="block text-sm font-bold text-slate-800">শিক্ষার্থী</span>
-                    <span className="block text-xs text-slate-500">সাধারণ অ্যাকাউন্ট</span>
+                    <span className="block max-w-36 truncate text-sm font-bold text-slate-800">
+                      {user.name}
+                    </span>
+                    <span className="block text-xs text-slate-500">
+                      {user.email || user.phone || "সাধারণ অ্যাকাউন্ট"}
+                    </span>
                   </span>
                   <span className="text-slate-400">⌄</span>
                 </button>
+
                 {profileOpen && (
-                  <div className="absolute right-0 top-full z-40 mt-2 w-48 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                    <a href="/dashboard" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">👤 আমার প্রোফাইল</a>
-                    <a href="/dashboard" className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50">⚙️ সেটিংস</a>
+                  <div className="absolute right-0 top-full z-40 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+                    <a
+                      href="/dashboard/profile"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      👤 আমার প্রোফাইল
+                    </a>
+                    <a
+                      href="/dashboard/settings"
+                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
+                    >
+                      ⚙️ সেটিংস
+                    </a>
                     <div className="my-1 border-t border-slate-100" />
-                    <a href="/login" className="block rounded-lg px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">↪ লগআউট</a>
+                    <button
+                      type="button"
+                      onClick={() => void handleLogout()}
+                      disabled={logoutLoading}
+                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      {logoutLoading ? "Logout হচ্ছে..." : "↪ লগআউট"}
+                    </button>
                   </div>
                 )}
               </div>
@@ -196,51 +429,82 @@ export default function DashboardPage() {
 
           <section className="mb-8 grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
             {stats.map((stat) => (
-              <div key={stat.label} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${stat.color}`}>
+              <div
+                key={stat.label}
+                className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
+              >
+                <div
+                  className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${stat.color}`}
+                >
                   {stat.icon}
                 </div>
-                <p className="mt-5 text-sm font-medium text-slate-500">{stat.label}</p>
-                <p className="mt-1 text-2xl font-black text-slate-900">{stat.value}</p>
+                <p className="mt-5 text-sm font-medium text-slate-500">
+                  {stat.label}
+                </p>
+                <p className="mt-1 text-2xl font-black text-slate-900">
+                  {stat.value}
+                </p>
               </div>
             ))}
           </section>
 
           <section className="mb-8 grid gap-6 xl:grid-cols-[1.5fr_1fr]">
             <div className="rounded-2xl bg-gradient-to-r from-blue-700 to-indigo-700 p-7 text-white shadow-lg">
-              <p className="text-sm font-bold text-blue-100">YOUR LEARNING JOURNEY</p>
-              <h2 className="mt-3 text-2xl font-black">প্রতিদিন একটু একটু করে এগিয়ে যান!</h2>
-              <p className="mt-3 max-w-xl text-sm leading-7 text-blue-100">
-                নিয়মিত পড়াশোনা, অনুশীলন ও পরীক্ষার মাধ্যমে আপনার লক্ষ্যে পৌঁছানোর প্রস্তুতি নিন।
+              <p className="text-sm font-bold text-blue-100">
+                YOUR LEARNING JOURNEY
               </p>
-              <a href="/courses" className="mt-6 inline-block rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50">
+              <h2 className="mt-3 text-2xl font-black">
+                প্রতিদিন একটু একটু করে এগিয়ে যান!
+              </h2>
+              <p className="mt-3 max-w-xl text-sm leading-7 text-blue-100">
+                নিয়মিত পড়াশোনা, অনুশীলন ও পরীক্ষার মাধ্যমে আপনার লক্ষ্যে
+                পৌঁছানোর প্রস্তুতি নিন।
+              </p>
+              <a
+                href="/courses"
+                className="mt-6 inline-block rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
+              >
                 শেখা শুরু করুন →
               </a>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
               <h2 className="font-black text-slate-900">আজকের লক্ষ্য</h2>
-              <p className="mt-2 text-sm text-slate-500">আপনার দৈনিক পড়াশোনার লক্ষ্য</p>
+              <p className="mt-2 text-sm text-slate-500">
+                আপনার দৈনিক পড়াশোনার লক্ষ্য
+              </p>
               <div className="my-6 flex items-center gap-5">
                 <div className="flex h-24 w-24 items-center justify-center rounded-full border-[8px] border-blue-100 border-t-blue-600 text-xl font-black text-slate-800">
                   60%
                 </div>
                 <div>
-                  <p className="text-lg font-black text-slate-900">৩ / ৫ ঘণ্টা</p>
-                  <p className="mt-1 text-xs text-slate-500">আজকের পড়াশোনা</p>
+                  <p className="text-lg font-black text-slate-900">
+                    ৩ / ৫ ঘণ্টা
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    আজকের পড়াশোনা
+                  </p>
                 </div>
               </div>
-              <p className="text-xs font-medium text-emerald-600">আরও ২ ঘণ্টা পড়াশোনা বাকি</p>
+              <p className="text-xs font-medium text-emerald-600">
+                আরও ২ ঘণ্টা পড়াশোনা বাকি
+              </p>
             </div>
           </section>
 
           <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-black text-slate-900">চলমান কোর্স</h2>
-                <p className="mt-1 text-sm text-slate-500">আপনার শেখার অগ্রগতি</p>
+                <h2 className="text-xl font-black text-slate-900">
+                  চলমান কোর্স
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  আপনার শেখার অগ্রগতি
+                </p>
               </div>
-              <a href="/courses" className="text-sm font-bold text-blue-700">সব কোর্স দেখুন →</a>
+              <a href="/courses" className="text-sm font-bold text-blue-700">
+                সব কোর্স দেখুন →
+              </a>
             </div>
 
             <div className="space-y-6">
@@ -248,13 +512,22 @@ export default function DashboardPage() {
                 <div key={course.title}>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
                     <div>
-                      <h3 className="font-bold text-slate-800">{course.title}</h3>
-                      <p className="mt-1 text-xs text-slate-500">{course.category}</p>
+                      <h3 className="font-bold text-slate-800">
+                        {course.title}
+                      </h3>
+                      <p className="mt-1 text-xs text-slate-500">
+                        {course.category}
+                      </p>
                     </div>
-                    <span className="text-sm font-black text-slate-700">{course.progress}%</span>
+                    <span className="text-sm font-black text-slate-700">
+                      {course.progress}%
+                    </span>
                   </div>
                   <div className="h-2.5 overflow-hidden rounded-full bg-slate-100">
-                    <div className={`h-full rounded-full ${course.color}`} style={{ width: `${course.progress}%` }} />
+                    <div
+                      className={`h-full rounded-full ${course.color}`}
+                      style={{ width: `${course.progress}%` }}
+                    />
                   </div>
                 </div>
               ))}
@@ -264,10 +537,16 @@ export default function DashboardPage() {
           <section className="mb-8 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
             <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
               <div>
-                <h2 className="text-xl font-black text-slate-900">সাম্প্রতিক পরীক্ষার ফলাফল</h2>
-                <p className="mt-1 text-sm text-slate-500">আপনার সর্বশেষ অনুশীলনের ফলাফল</p>
+                <h2 className="text-xl font-black text-slate-900">
+                  সাম্প্রতিক পরীক্ষার ফলাফল
+                </h2>
+                <p className="mt-1 text-sm text-slate-500">
+                  আপনার সর্বশেষ অনুশীলনের ফলাফল
+                </p>
               </div>
-              <a href="/exams" className="text-sm font-bold text-blue-700">সব পরীক্ষা →</a>
+              <a href="/exams" className="text-sm font-bold text-blue-700">
+                সব পরীক্ষা →
+              </a>
             </div>
 
             <div className="overflow-x-auto">
@@ -282,10 +561,19 @@ export default function DashboardPage() {
                 </thead>
                 <tbody>
                   {exams.map((exam) => (
-                    <tr key={exam.title} className="border-b border-slate-50 last:border-0">
-                      <td className="px-3 py-4 font-bold text-slate-800">{exam.title}</td>
-                      <td className="px-3 py-4 text-slate-500">{exam.date}</td>
-                      <td className="px-3 py-4 font-bold text-slate-800">{exam.score}</td>
+                    <tr
+                      key={exam.title}
+                      className="border-b border-slate-50 last:border-0"
+                    >
+                      <td className="px-3 py-4 font-bold text-slate-800">
+                        {exam.title}
+                      </td>
+                      <td className="px-3 py-4 text-slate-500">
+                        {exam.date}
+                      </td>
+                      <td className="px-3 py-4 font-bold text-slate-800">
+                        {exam.score}
+                      </td>
                       <td className="px-3 py-4">
                         <span className="rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">
                           {exam.result}
@@ -300,36 +588,68 @@ export default function DashboardPage() {
 
           <section className="grid gap-6 lg:grid-cols-2">
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-black text-slate-900">দ্রুত প্রবেশ</h2>
+              <h2 className="text-lg font-black text-slate-900">
+                দ্রুত প্রবেশ
+              </h2>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <a href="/question-bank" className="rounded-xl bg-blue-50 p-4 text-sm font-bold text-blue-700 hover:bg-blue-100">📖 প্রশ্নব্যাংক</a>
-                <a href="/exams" className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100">📝 পরীক্ষা</a>
-                <a href="/library" className="rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-700 hover:bg-amber-100">📚 লাইব্রেরি</a>
-                <a href="/notices" className="rounded-xl bg-purple-50 p-4 text-sm font-bold text-purple-700 hover:bg-purple-100">📢 নোটিশ</a>
+                <a
+                  href="/question-bank"
+                  className="rounded-xl bg-blue-50 p-4 text-sm font-bold text-blue-700 hover:bg-blue-100"
+                >
+                  📖 প্রশ্নব্যাংক
+                </a>
+                <a
+                  href="/exams"
+                  className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
+                >
+                  📝 পরীক্ষা
+                </a>
+                <a
+                  href="/library"
+                  className="rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-700 hover:bg-amber-100"
+                >
+                  📚 লাইব্রেরি
+                </a>
+                <a
+                  href="/notices"
+                  className="rounded-xl bg-purple-50 p-4 text-sm font-bold text-purple-700 hover:bg-purple-100"
+                >
+                  📢 নোটিশ
+                </a>
               </div>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-              <h2 className="text-lg font-black text-slate-900">সাম্প্রতিক কার্যক্রম</h2>
+              <h2 className="text-lg font-black text-slate-900">
+                সাম্প্রতিক কার্যক্রম
+              </h2>
               <div className="mt-5 space-y-5">
                 <div className="flex gap-3">
                   <span className="text-xl">✅</span>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">বাংলা মডেল টেস্ট সম্পন্ন করেছেন</p>
-                    <p className="mt-1 text-xs text-slate-400">আজ, সকাল ১০:৩০</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      বাংলা মডেল টেস্ট সম্পন্ন করেছেন
+                    </p>
+                    <p className="mt-1 text-xs text-slate-400">
+                      আজ, সকাল ১০:৩০
+                    </p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <span className="text-xl">📚</span>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">English Grammar কোর্সে অগ্রগতি</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      English Grammar কোর্সে অগ্রগতি
+                    </p>
                     <p className="mt-1 text-xs text-slate-400">গতকাল</p>
                   </div>
                 </div>
                 <div className="flex gap-3">
                   <span className="text-xl">🎯</span>
                   <div>
-                    <p className="text-sm font-bold text-slate-800">দৈনিক পড়াশোনার লক্ষ্য নির্ধারণ</p>
+                    <p className="text-sm font-bold text-slate-800">
+                      দৈনিক পড়াশোনার লক্ষ্য নির্ধারণ
+                    </p>
                     <p className="mt-1 text-xs text-slate-400">২ দিন আগে</p>
                   </div>
                 </div>

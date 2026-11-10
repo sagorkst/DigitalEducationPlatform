@@ -1,0 +1,46 @@
+
+[
+  {
+    "questionText": "Import integration test question 001 - What is the capital of Bangladesh?",
+    "subject": "English",
+    "topic": "Grammar",
+    "questionType": "MCQ",
+    "difficulty": "EASY",
+    "status": "DRAFT",
+    "options": [
+      {
+        "label": "A",
+        "optionText": "Dhaka",
+        "isCorrect": true,
+        "sortOrder": 1
+      },
+      {
+        "label": "B",
+        "optionText": "Chittagong",
+        "isCorrect": false,
+        "sortOrder": 2
+      },
+      {
+        "label": "C",
+        "optionText": "Rajshahi",
+        "isCorrect": false,
+        "sortOrder": 3
+      },
+      {
+        "label": "D",
+        "optionText": "Khulna",
+        "isCorrect": false,
+        "sortOrder": 4
+      }
+    ],
+    "correctAnswer": "A",
+    "explanation": "Dhaka is the capital of Bangladesh.",
+    "occurrences": [
+      {
+        "institution": "Import Test Institution",
+        "examName": "Import Integration Test 2025",
+        "examYear": 2025
+      }
+    ]
+  }
+]

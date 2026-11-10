@@ -1,0 +1,212 @@
+﻿              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelected(null);
+                    setRows([]);
+                    setError("");
+                  }}
+                  className="mb-4 text-sm font-semibold text-blue-600"
+                >
+                  â† Back to History
+                </button>
+
+                <div className="mb-4 rounded-lg border p-4">
+                  <h3 className="font-bold">{selected.fileName}</h3>
+                  <p className="mt-1 break-all text-xs text-gray-500">
+                    Batch ID: {selected.id}
+                  </p>
+                  <p className="mt-2 text-sm">
+                    Status: <strong>{selected.status}</strong>
+                    {" Â· "}Type: {selected.fileType}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    Created: {formatDate(selected.createdAt)}
+                  </p>
+
+                  <div className="mt-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+                    {[
+                      ["Total", selected.totalRows],
+                      ["Valid", selected.validRows],
+                      ["Invalid", selected.invalidRows],
+                      ["Duplicate", selected.duplicateRows],
+                      ["Imported", selected.importedRows],
+                      ["Skipped", selected.skippedRows],
+                    ].map(([label, value]) => (
+                      <div key={label} className="rounded-lg bg-gray-50 p-3">
+                        <p className="text-xs text-gray-500">{label}</p>
+                        <p className="text-xl font-bold">{value}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {(selected.invalidRows > 0 ||
+                    selected.duplicateRows > 0) && (
+                    <a
+                      href={`/api/imports/${selected.id}/error-report?format=csv`}
+                      className="mt-4 inline-block rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+                    >
+                      Download Error Report
+                    </a>
+                  )}
+
+                  {selected.rolledBackAt && (
+                    <p className="mt-3 text-sm text-red-600">
+                      Rolled back: {formatDate(selected.rolledBackAt)}
+                    </p>
+                  )}
+                </div>
+
+                <h3 className="mb-3 font-semibold">Import Rows</h3>
+
+                {loading ? (
+                  <p className="p-5 text-center text-gray-500">
+                    Loading rows...
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[650px] text-left text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="p-3">Row</th>
+                          <th className="p-3">Question</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">Errors</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {rows.map((row) => (
+                          <tr key={row.id} className="border-t align-top">
+                            <td className="p-3">{row.rowNumber}</td>
+                            <td className="max-w-sm whitespace-normal p-3">
+                              {String(row.rawData?.questionText ?? "â€”")}
+                            </td>
+                            <td className="p-3 font-semibold">
+                              {row.status}
+                            </td>
+                            <td className="p-3 text-xs text-red-600">
+                              {getErrors(row.errorMessages).join(", ") || "â€”"}
+                            </td>
+                          </tr>
+                        ))}
+
+                        {rows.length === 0 && (
+                          <tr>
+                            <td colSpan={4} className="p-5 text-center text-gray-500">
+                              à¦•à§‹à¦¨à§‹ Row à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="mb-4 flex justify-end">
+                  <button
+                    type="button"
+                    onClick={() => loadHistory(page)}
+                    disabled={loading}
+                    className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
+                  >
+                    â†» Refresh
+                  </button>
+                </div>
+
+                {loading ? (
+                  <p className="p-8 text-center text-gray-500">
+                    Loading Import History...
+                  </p>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                    <table className="w-full min-w-[900px] text-left text-sm">
+                      <thead className="bg-gray-50">
+                        <tr>
+                          <th className="p-3">File Name</th>
+                          <th className="p-3">Status</th>
+                          <th className="p-3">Total</th>
+                          <th className="p-3">Valid</th>
+                          <th className="p-3">Invalid</th>
+                          <th className="p-3">Duplicate</th>
+                          <th className="p-3">Imported</th>
+                          <th className="p-3">Date</th>
+                          <th className="p-3">Details</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {batches.map((batch) => (
+                          <tr key={batch.id} className="border-t">
+                            <td className="max-w-[200px] break-words p-3 font-medium">
+                              {batch.fileName}
+                              <p className="text-xs text-gray-500">
+                                {batch.fileType}
+                              </p>
+                            </td>
+                            <td className="p-3">{batch.status}</td>
+                            <td className="p-3">{batch.totalRows}</td>
+                            <td className="p-3">{batch.validRows}</td>
+                            <td className="p-3">{batch.invalidRows}</td>
+                            <td className="p-3">{batch.duplicateRows}</td>
+                            <td className="p-3">{batch.importedRows}</td>
+                            <td className="whitespace-nowrap p-3">
+                              {formatDate(batch.createdAt)}
+                            </td>
+                            <td className="p-3">
+                              <button
+                                type="button"
+                                onClick={() => viewDetails(batch)}
+                                className="font-semibold text-blue-600 hover:underline"
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+
+                        {batches.length === 0 && (
+                          <tr>
+                            <td colSpan={9} className="p-8 text-center text-gray-500">
+                              à¦•à§‹à¦¨à§‹ Import History à¦ªà¦¾à¦“à§Ÿà¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤
+                            </td>
+                          </tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                <div className="mt-4 flex items-center justify-between">
+                  <p className="text-sm text-gray-500">
+                    Page {page} of {totalPages}
+                  </p>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      disabled={page <= 1 || loading}
+                      onClick={() => loadHistory(page - 1)}
+                      className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
+                    >
+                      Previous
+                    </button>
+                    <button
+                      type="button"
+                      disabled={page >= totalPages || loading}
+                      onClick={() => loadHistory(page + 1)}
+                      className="rounded-lg border px-3 py-2 text-sm disabled:opacity-40"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

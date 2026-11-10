@@ -1,0 +1,45 @@
+[
+    {
+        "options":  [
+                        {
+                            "label":  "A",
+                            "isCorrect":  true,
+                            "sortOrder":  1,
+                            "optionText":  "Dhaka"
+                        },
+                        {
+                            "label":  "B",
+                            "isCorrect":  false,
+                            "sortOrder":  2,
+                            "optionText":  "Chittagong"
+                        },
+                        {
+                            "label":  "C",
+                            "isCorrect":  false,
+                            "sortOrder":  3,
+                            "optionText":  "Rajshahi"
+                        },
+                        {
+                            "label":  "D",
+                            "isCorrect":  false,
+                            "sortOrder":  4,
+                            "optionText":  "Khulna"
+                        }
+                    ],
+        "difficulty":  "EASY",
+        "explanation":  "Dhaka is the capital of Bangladesh.",
+        "correctAnswer":  "Dhaka",
+        "questionText":  "ROLLBACK TEST QUESTION 20261109221304 - What is the capital of Bangladesh?",
+        "occurrences":  [
+                            {
+                                "examYear":  2026,
+                                "examName":  "Rollback Test Exam 20261109221304",
+                                "institution":  "Rollback Test Institution"
+                            }
+                        ],
+        "topic":  "Grammar",
+        "subject":  "English",
+        "questionType":  "MCQ",
+        "status":  "DRAFT"
+    }
+]

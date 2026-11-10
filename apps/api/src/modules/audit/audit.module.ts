@@ -1,34 +1,15 @@
 ﻿import { Module } from '@nestjs/common';
-import { JwtModule } from '@nestjs/jwt';
+
+import { AuthModule } from '../auth/auth.module';
+import { RbacModule } from '../rbac/rbac.module';
 
 import { AuditController } from './audit.controller';
 import { AuditService } from './audit.service';
-import { PermissionsGuard } from '../rbac/permissions.guard';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
 @Module({
-  imports: [
-    JwtModule.registerAsync({
-      useFactory: () => {
-        const secret = process.env.JWT_SECRET;
-
-        if (!secret || secret.length < 32) {
-          throw new Error(
-            'JWT_SECRET must be configured with at least 32 characters.',
-          );
-        }
-
-        return {
-          secret,
-          signOptions: {
-            expiresIn: (process.env.JWT_EXPIRES_IN || '1d') as any,
-          },
-        };
-      },
-    }),
-  ],
+  imports: [AuthModule, RbacModule],
   controllers: [AuditController],
-  providers: [AuditService, PermissionsGuard, JwtAuthGuard],
+  providers: [AuditService],
   exports: [AuditService],
 })
 export class AuditModule {}

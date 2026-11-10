@@ -1,3 +1,4 @@
+
 import {
   Controller,
   Post,
@@ -18,6 +19,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Response } from 'express';
+import * as XLSX from 'xlsx';
 
 import { ImportsService } from './imports.service';
 import { ImportsExportService } from './imports-export.service';
@@ -51,6 +53,136 @@ export class ImportsController {
     }
 
     return this.importsService.preview(file);
+  }
+
+  @Get('template')
+  downloadTemplate(
+    @Query('format') format: string = 'xlsx',
+    @Res() response: Response,
+  ) {
+    const normalizedFormat = format.toLowerCase();
+
+    if (!['xlsx', 'csv'].includes(normalizedFormat)) {
+      throw new BadRequestException(
+        'Template format must be xlsx or csv.',
+      );
+    }
+
+    const headers = [
+      'questionText',
+      'subject',
+      'topic',
+      'questionType',
+      'difficulty',
+      'status',
+      'options',
+      'correctAnswer',
+      'explanation',
+      'occurrences',
+    ];
+
+    const exampleRow = [
+      'What is the capital of Bangladesh?',
+      'English',
+      'Grammar',
+      'MCQ',
+      'EASY',
+      'DRAFT',
+      JSON.stringify([
+        {
+          label: 'A',
+          optionText: 'Dhaka',
+          isCorrect: true,
+          sortOrder: 1,
+        },
+        {
+          label: 'B',
+          optionText: 'Chittagong',
+          isCorrect: false,
+          sortOrder: 2,
+        },
+        {
+          label: 'C',
+          optionText: 'Rajshahi',
+          isCorrect: false,
+          sortOrder: 3,
+        },
+        {
+          label: 'D',
+          optionText: 'Khulna',
+          isCorrect: false,
+          sortOrder: 4,
+        },
+      ]),
+      'Dhaka',
+      'Dhaka is the capital of Bangladesh.',
+      JSON.stringify([
+        {
+          institution: 'Bangladesh Public Service Commission',
+          examName: 'Sample Examination',
+          examYear: 2025,
+        },
+      ]),
+    ];
+
+    const worksheet = XLSX.utils.aoa_to_sheet([
+      headers,
+      exampleRow,
+    ]);
+
+    worksheet['!cols'] = [
+      { wch: 45 },
+      { wch: 18 },
+      { wch: 18 },
+      { wch: 24 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 70 },
+      { wch: 25 },
+      { wch: 45 },
+      { wch: 75 },
+    ];
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      worksheet,
+      'Questions',
+    );
+
+    let buffer: Buffer;
+    let contentType: string;
+    let fileName: string;
+
+    if (normalizedFormat === 'xlsx') {
+      buffer = XLSX.write(workbook, {
+        type: 'buffer',
+        bookType: 'xlsx',
+      }) as Buffer;
+
+      contentType =
+        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+
+      fileName = 'shikhasetu-question-import-template.xlsx';
+    } else {
+      const csv = XLSX.utils.sheet_to_csv(worksheet);
+
+      buffer = Buffer.from(`\uFEFF${csv}`, 'utf8');
+
+      contentType = 'text/csv; charset=utf-8';
+
+      fileName = 'shikhasetu-question-import-template.csv';
+    }
+
+    response.setHeader('Content-Type', contentType);
+    response.setHeader(
+      'Content-Disposition',
+      `attachment; filename="${fileName}"`,
+    );
+    response.setHeader('Content-Length', buffer.length);
+
+    response.send(buffer);
   }
 
   @Get('export')
