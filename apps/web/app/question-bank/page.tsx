@@ -14,6 +14,7 @@ import {
   Badge,
 } from "@shikhasetu/ui";
 import QuestionImportPanel from "../../components/question-import-panel";
+import OcrQuestionImportPanel from "../../components/ocr-question-import-panel";
 import QuestionImportTemplates from "../../components/question-import-templates";
 import QuestionImportHistory from "../../components/question-import-history";
 
@@ -81,6 +82,7 @@ const initialFilters = {
   post: "",
   subject: "",
   topic: "",
+  status: "",
 };
 
 const emptyForm = {
@@ -221,6 +223,7 @@ export default function QuestionBankPage() {
       if (filters.post) params.set("post", filters.post);
       if (filters.subject) params.set("subject", filters.subject);
       if (filters.topic) params.set("topic", filters.topic);
+      if (filters.status) params.set("status", filters.status);
 
       const response = await fetch(`/api/questions?${params.toString()}`, {
         method: "GET",
@@ -288,6 +291,20 @@ export default function QuestionBankPage() {
     }, 300);
 
     return () => clearTimeout(timer);
+  }, [loadQuestions]);
+
+  useEffect(() => {
+    const refreshQuestions = () => {
+      void loadQuestions();
+    };
+
+    window.addEventListener("shikhasetu:questions-updated", refreshQuestions);
+    return () => {
+      window.removeEventListener(
+        "shikhasetu:questions-updated",
+        refreshQuestions,
+      );
+    };
   }, [loadQuestions]);
 
   const filteredQuestions = useMemo(() => questions, [questions]);
@@ -659,20 +676,40 @@ export default function QuestionBankPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-2">
-            <QuestionImportPanel />
-<QuestionImportTemplates />
-<QuestionImportHistory />
-            <Button variant="outline" onClick={toggleTrash}>
+          <div className="flex flex-wrap items-center justify-end gap-3">
+  {!showTrash && (
+    <>
+      <div className="flex items-center">
+        <QuestionImportPanel />
+      </div>
+
+      <div className="flex items-center">
+        <OcrQuestionImportPanel />
+      </div>
+
+      <QuestionImportTemplates />
+
+      <div className="flex items-center">
+        <QuestionImportHistory />
+      </div>
+    </>
+  )}
+
+  <div className="flex items-center">
+    <Button variant="outline" onClick={toggleTrash}>
               🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
               {deletedQuestions.length > 0
                 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})`
                 : ""}
             </Button>
-            <Button onClick={openAddForm}>+ নতুন প্রশ্ন</Button>
-          </div>
+  </div>
+
+  {!showTrash && <Button onClick={openAddForm}>+ নতুন প্রশ্ন</Button>}
+</div>
         </div>
 
+        {!showTrash && (
+          <>
         {pageError && (
           <div className="rounded-lg bg-red-50 p-4 text-sm text-red-700">
             {pageError}
@@ -733,6 +770,9 @@ export default function QuestionBankPage() {
             </Card>
           ))}
         </div>
+
+          </>
+        )}
 
         {showTrash && (
           <Card>
@@ -836,6 +876,8 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
+        {!showTrash && (
+          <>
         {isFormOpen && (
           <Card>
             <CardHeader>
@@ -1077,6 +1119,17 @@ export default function QuestionBankPage() {
                 ))}
               </Select>
 
+              <Select
+                label="Status"
+                value={filters.status}
+                onChange={(e) => updateFilter("status", e.target.value)}
+              >
+                <option value="">সকল</option>
+                <option value="DRAFT">Draft</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="HIDDEN">Hidden</option>
+                <option value="ARCHIVED">Archived</option>
+              </Select>
               {filterOptions.map((filter) => (
                 <Select
                   key={filter.key}
@@ -1256,6 +1309,9 @@ export default function QuestionBankPage() {
               </div>
             </CardContent>
           </Card>
+        )}
+
+          </>
         )}
 
         {permanentDeleteTarget && (

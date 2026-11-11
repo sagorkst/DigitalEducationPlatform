@@ -99,21 +99,85 @@ export default function QuestionImportHistory() {
     setLoading(true);
 
     try {
-      const response = await fetch(
-        `/api/imports/${batch.id}/rows?page=1&limit=20`,
-        { cache: "no-store" },
-      );
+      if (batch.fileType.toLowerCase().endsWith("-ocr")) {
+        const response = await fetch(`/api/imports/${batch.id}`, {
+          cache: "no-store",
+        });
 
-      const result: ApiResponse<ImportRow[]> = await response.json();
+        const result: ApiResponse<ImportBatch & { rows?: ImportRow[] }> =
+          await response.json();
 
-      if (!response.ok || !result.success) {
-        throw new Error(result.message || "Could not load import rows.");
+        if (!response.ok || !result.success || !Array.isArray(result.data?.rows)) {
+          throw new Error(result.message || "Could not load OCR import rows.");
+        }
+
+        setSelected(result.data);
+        setRows(result.data.rows);
+      } else {
+        const response = await fetch(
+          `/api/imports/${batch.id}/rows?page=1&limit=20`,
+          { cache: "no-store" },
+        );
+
+        const result: ApiResponse<ImportRow[]> = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || "Could not load import rows.");
+        }
+
+        setRows(result.data || []);
       }
-
-      setRows(result.data || []);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Could not load import rows.",
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function resumeOcrBatch(batch: ImportBatch) {
+    if (!batch.fileType.toLowerCase().endsWith("-ocr")) return;
+
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
+    try {
+      const response = await fetch(`/api/imports/${batch.id}`, {
+        cache: "no-store",
+      });
+
+      const result: ApiResponse<ImportBatch & { rows?: ImportRow[] }> =
+        await response.json();
+
+      if (
+        !response.ok ||
+        !result.success ||
+        !Array.isArray(result.data?.rows)
+      ) {
+        throw new Error(
+          result.message || "OCR History থেকে Batch Resume করা যায়নি.",
+        );
+      }
+
+      window.dispatchEvent(
+        new CustomEvent("shikhasetu:resume-ocr-import", {
+          detail: {
+            batch: result.data,
+            rows: result.data.rows,
+          },
+        }),
+      );
+
+      setOpen(false);
+      setSelected(null);
+      setRows([]);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "OCR Batch Resume করা যায়নি.",
       );
     } finally {
       setLoading(false);
@@ -163,7 +227,11 @@ export default function QuestionImportHistory() {
   }
 
   async function rollbackBatch(batch: ImportBatch) {
-    if (batch.status !== "COMPLETED" || batch.rolledBackAt) {
+    if (
+      batch.status !== "COMPLETED" ||
+      batch.importedRows <= 0 ||
+      batch.rolledBackAt
+    ) {
       return;
     }
 
@@ -200,7 +268,7 @@ export default function QuestionImportHistory() {
         { cache: "no-store" },
       );
 
-      const detailResult: ApiResponse<ImportBatch> =
+      const detailResult: ApiResponse<ImportBatch & { rows?: ImportRow[] }> =
         await detailResponse.json();
 
       if (!detailResponse.ok || !detailResult.success) {
@@ -211,17 +279,24 @@ export default function QuestionImportHistory() {
 
       setSelected(detailResult.data);
 
-      // Refresh import rows.
-      const rowsResponse = await fetch(
-        `/api/imports/${batch.id}/rows?page=1&limit=20`,
-        { cache: "no-store" },
-      );
+      if (
+        batch.fileType.toLowerCase().endsWith("-ocr") &&
+        Array.isArray(detailResult.data.rows)
+      ) {
+        setRows(detailResult.data.rows);
+      } else {
+        // Refresh import rows for standard spreadsheet imports.
+        const rowsResponse = await fetch(
+          `/api/imports/${batch.id}/rows?page=1&limit=20`,
+          { cache: "no-store" },
+        );
 
-      const rowsResult: ApiResponse<ImportRow[]> =
-        await rowsResponse.json();
+        const rowsResult: ApiResponse<ImportRow[]> =
+          await rowsResponse.json();
 
-      if (rowsResponse.ok && rowsResult.success) {
-        setRows(rowsResult.data || []);
+        if (rowsResponse.ok && rowsResult.success) {
+          setRows(rowsResult.data || []);
+        }
       }
 
       // Refresh history list.
@@ -353,6 +428,20 @@ export default function QuestionImportHistory() {
                     </a>
                   )}
 
+                  {selected.fileType.toLowerCase().endsWith("-ocr") &&
+                    selected.status !== "COMPLETED" &&
+                    selected.status !== "ROLLED_BACK" &&
+                    !selected.rolledBackAt && (
+                      <button
+                        type="button"
+                        onClick={() => void resumeOcrBatch(selected)}
+                        disabled={loading || rollingBack}
+                        className="mt-4 rounded-lg bg-violet-600 px-4 py-2 text-sm font-semibold text-white hover:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {loading ? "Loading OCR Batch..." : "Resume OCR Import"}
+                      </button>
+                    )}
+
                   {selected.rolledBackAt && (
                     <p className="mt-3 text-sm text-red-600">
                       Rolled back: {formatDate(selected.rolledBackAt)}
@@ -360,6 +449,7 @@ export default function QuestionImportHistory() {
                   )}
 
                   {selected.status === "COMPLETED" &&
+                    selected.importedRows > 0 &&
                     !selected.rolledBackAt && (
                       <button
                         type="button"

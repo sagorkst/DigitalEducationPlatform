@@ -132,6 +132,111 @@ export class ImportsService {
 
       const data = { ...(row as ImportData) };
 
+      // optionA-D contain the four choices.
+      // optionE contains the correct answer letter (A/B/C/D).
+      // Legacy JSON options remain supported.
+      if (!('options' in data)) {
+        const letters = ['A', 'B', 'C', 'D'];
+
+        const correctOption = String(
+          data.optionE ?? '',
+        ).trim().toUpperCase();
+
+        const flatOptions: ImportData[] = [];
+
+        letters.forEach((letter, index) => {
+          const optionText = String(
+            data[`option${letter}`] ?? '',
+          ).trim();
+
+          if (optionText) {
+            flatOptions.push({
+              label: letter,
+              optionText,
+              isCorrect: correctOption === letter,
+              sortOrder: index + 1,
+            });
+          }
+        });
+
+        if (flatOptions.length > 0) {
+          data.options = flatOptions;
+        }
+
+        if (
+          (!data.correctAnswer ||
+            !String(data.correctAnswer).trim()) &&
+          correctOption
+        ) {
+          const selected = flatOptions.find(
+            (option) => option.label === correctOption,
+          );
+
+          if (selected) {
+            data.correctAnswer = selected.optionText;
+          }
+        }
+      }
+      // Separate exam columns -> occurrences array.
+      // Existing JSON occurrences remain supported.
+      if (!('occurrences' in data)) {
+        const institution = String(
+          data.institution ?? '',
+        ).trim();
+
+        const examName = String(
+          data.examName ?? '',
+        ).trim();
+
+        const examId = String(
+          data.examId ?? '',
+        ).trim();
+
+        if (institution || examName || examId) {
+          const occurrence: ImportData = {
+            institution,
+            ...(examName ? { examName } : {}),
+            ...(String(data.examYear ?? '').trim()
+              ? { examYear: Number(data.examYear) }
+              : {}),
+            ...(data.postName
+              ? { postName: String(data.postName).trim() }
+              : {}),
+            ...(data.department
+              ? { department: String(data.department).trim() }
+              : {}),
+            ...(String(data.questionNumber ?? '').trim()
+              ? { questionNumber: Number(data.questionNumber) }
+              : {}),
+            ...(data.source
+              ? { source: String(data.source).trim() }
+              : {}),
+            ...(String(data.sourcePage ?? '').trim()
+              ? { sourcePage: Number(data.sourcePage) }
+              : {}),
+            ...(data.sourceUrl
+              ? { sourceUrl: String(data.sourceUrl).trim() }
+              : {}),
+            ...(data.institutionId
+              ? { institutionId: String(data.institutionId).trim() }
+              : {}),
+            ...(examId ? { examId } : {}),
+            ...(data.postId
+              ? { postId: String(data.postId).trim() }
+              : {}),
+            ...(data.sourceDocumentId
+              ? {
+                  sourceDocumentId: String(
+                    data.sourceDocumentId,
+                  ).trim(),
+                }
+              : {}),
+          };
+
+          data.occurrences = [occurrence];
+        }
+      }
+
       if ('options' in data) {
         data.options = this.parseJsonValue(data.options);
       }

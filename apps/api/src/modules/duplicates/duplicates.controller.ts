@@ -13,12 +13,16 @@ import {
   DefaultValuePipe,
   HttpCode,
   HttpStatus,
+  UseGuards,
 } from '@nestjs/common';
 
 import { DuplicatesService } from './duplicates.service';
 import { CreateDuplicateDto } from './dto/create-duplicate.dto';
 import { ReviewDuplicateDto } from './dto/review-duplicate.dto';
 import { MergeDuplicateDto } from './dto/merge-duplicate.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 @Controller('duplicates')
 export class DuplicatesController {
@@ -33,6 +37,25 @@ export class DuplicatesController {
     return this.duplicatesService.create(dto);
   }
 
+  // CHECK OCR QUESTIONS AGAINST EXISTING QUESTIONS
+  @Post('check-ocr')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async checkOcrDuplicates(
+    @Body('items')
+    items: Array<{
+      clientId: string;
+      questionText: string;
+      questionType?: string;
+    }>,
+    @Body('ignoreQuestionIds') ignoreQuestionIds: string[] = [],
+  ) {
+    return this.duplicatesService.checkOcrDuplicates(
+      items,
+      ignoreQuestionIds,
+    );
+  }
   // AUTOMATIC DUPLICATE DETECTION
   @Post('detect')
   async detect(

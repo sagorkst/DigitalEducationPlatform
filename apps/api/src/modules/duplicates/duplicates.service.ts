@@ -180,6 +180,164 @@ export class DuplicatesService {
   // AUTOMATIC DUPLICATE DETECTION
   // ==========================================
 
+  async checkOcrDuplicates(
+    items: Array<{
+      clientId: string;
+      questionText: string;
+      questionType?: string;
+    }>,
+    ignoreQuestionIds: string[] = [],
+  ) {
+    if (!Array.isArray(items) || items.length === 0) {
+      throw new BadRequestException(
+        'At least one OCR question is required.',
+      );
+    }
+
+    if (items.length > 200) {
+      throw new BadRequestException(
+        'Maximum 200 OCR questions can be checked at once.',
+      );
+    }
+
+    const clientIds = new Set<string>();
+
+    for (const item of items) {
+      if (
+        !item ||
+        typeof item.clientId !== 'string' ||
+        !item.clientId.trim() ||
+        item.clientId.length > 80 ||
+        clientIds.has(item.clientId) ||
+        typeof item.questionText !== 'string' ||
+        !item.questionText.trim() ||
+        item.questionText.length > 1000
+      ) {
+        throw new BadRequestException(
+          'Every OCR question must contain a unique clientId and valid questionText.',
+        );
+      }
+
+      clientIds.add(item.clientId);
+
+      if (item.questionType && item.questionType !== 'MCQ') {
+        throw new BadRequestException(
+          'OCR duplicate detection currently supports MCQ questions only.',
+        );
+      }
+    }
+
+    if (
+      !Array.isArray(ignoreQuestionIds) ||
+      ignoreQuestionIds.length > 200 ||
+      ignoreQuestionIds.some(
+        (id) => typeof id !== 'string' || !/^[0-9a-f-]{36}$/i.test(id),
+      )
+    ) {
+      throw new BadRequestException('Invalid ignored question IDs.');
+    }
+
+    const uniqueIgnoredIds = [...new Set(ignoreQuestionIds)];
+
+    const existingQuestions =
+      await this.prisma.question.findMany({
+        where: {
+          deletedAt: null,
+          ...(uniqueIgnoredIds.length > 0
+            ? { id: { notIn: uniqueIgnoredIds } }
+            : {}),
+        },
+        select: {
+          id: true,
+          questionText: true,
+          questionType: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 5001,
+      });
+
+    const scanTruncated = existingQuestions.length > 5000;
+    const databaseQuestions = existingQuestions.slice(0, 5000);
+
+    const results = items.map((item, index) => {
+      const questionType = item.questionType ?? 'MCQ';
+
+      const matches: Array<{
+        source: 'DATABASE' | 'OCR_BATCH';
+        questionId?: string;
+        questionIndex?: number;
+        questionText: string;
+        similarity: number;
+        matchType: 'EXACT' | 'SIMILAR';
+      }> = [];
+
+      for (const existing of databaseQuestions) {
+        if (existing.questionType !== questionType) {
+          continue;
+        }
+
+        const similarity = this.calculateSimilarity(
+          item.questionText,
+          existing.questionText,
+        );
+
+        if (similarity >= 0.8) {
+          matches.push({
+            source: 'DATABASE',
+            questionId: existing.id,
+            questionText: existing.questionText,
+            similarity,
+            matchType: similarity === 1 ? 'EXACT' : 'SIMILAR',
+          });
+        }
+      }
+
+      for (let previous = 0; previous < index; previous++) {
+        const other = items[previous];
+
+        if ((other.questionType ?? 'MCQ') !== questionType) {
+          continue;
+        }
+
+        const similarity = this.calculateSimilarity(
+          item.questionText,
+          other.questionText,
+        );
+
+        if (similarity >= 0.8) {
+          matches.push({
+            source: 'OCR_BATCH',
+            questionIndex: previous,
+            questionText: other.questionText,
+            similarity,
+            matchType: similarity === 1 ? 'EXACT' : 'SIMILAR',
+          });
+        }
+      }
+
+      matches.sort((a, b) => b.similarity - a.similarity);
+
+      return {
+        clientId: item.clientId,
+        duplicateFound: matches.length > 0,
+        exactMatch: matches.some((match) => match.matchType === 'EXACT'),
+        matches: matches.slice(0, 5),
+      };
+    });
+
+    return {
+      success: true,
+      threshold: 0.8,
+      totalChecked: results.length,
+      scannedDatabaseQuestions: databaseQuestions.length,
+      databaseScanLimit: 5000,
+      scanTruncated,
+      results,
+    };
+  }
+
   async detect(threshold = 0.8, limit = 200) {
     if (!Number.isFinite(threshold) || threshold < 0 || threshold > 1) {
       throw new BadRequestException(

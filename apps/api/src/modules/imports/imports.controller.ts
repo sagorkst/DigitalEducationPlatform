@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -13,7 +12,10 @@ import {
   ParseIntPipe,
   DefaultValuePipe,
   BadRequestException,
+  HttpCode,
+  HttpStatus,
   Res,
+  UseGuards,
 } from '@nestjs/common';
 
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -25,7 +27,12 @@ import { ImportsService } from './imports.service';
 import { ImportsExportService } from './imports-export.service';
 import { ImportsRollbackService } from './imports-rollback.service';
 import { ImportsErrorReportService } from './imports-error-report.service';
+import { OcrService } from './ocr.service';
+import { OcrHistoryService } from './ocr-history.service';
 import { CommitImportDto } from './dto/commit-import.dto';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 @Controller('imports')
 export class ImportsController {
@@ -34,6 +41,8 @@ export class ImportsController {
     private readonly exportService: ImportsExportService,
     private readonly rollbackService: ImportsRollbackService,
     private readonly errorReportService: ImportsErrorReportService,
+    private readonly ocrService: OcrService,
+    private readonly ocrHistoryService: OcrHistoryService,
   ) {}
 
   @Post('preview')
@@ -53,6 +62,85 @@ export class ImportsController {
     }
 
     return this.importsService.preview(file);
+  }
+
+  @Post('ocr/preview')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+      },
+    }),
+  )
+  async ocrPreview(@UploadedFile() file: Express.Multer.File) {
+    if (!file) {
+      throw new BadRequestException(
+        'Please upload a PDF, PNG, JPG or JPEG file.',
+      );
+    }
+
+    const result = await this.ocrService.extractText(file);
+    const parsedQuestions = result.parsedQuestions ?? [];
+
+    const history =
+      parsedQuestions.length > 0
+        ? await this.ocrHistoryService.createBatch(
+            file,
+            parsedQuestions as unknown as Record<string, unknown>[],
+          )
+        : null;
+
+    return {
+      ...result,
+      history,
+    };
+  }
+
+  @Put('ocr/history/:batchId/rows/:rowId')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async updateOcrHistoryRow(
+    @Param('batchId', ParseUUIDPipe) batchId: string,
+    @Param('rowId', ParseUUIDPipe) rowId: string,
+    @Body()
+    body: {
+      status: 'PENDING' | 'VALID' | 'INVALID' | 'DUPLICATE' | 'IMPORTED' | 'SKIPPED';
+      errorMessages?: unknown;
+      questionId?: string | null;
+      rawData?: unknown;
+    },
+  ) {
+    return this.ocrHistoryService.updateRow(
+      batchId,
+      rowId,
+      body.status,
+      body.errorMessages,
+      body.questionId,
+      body.rawData,
+    );
+  }
+  @Put('ocr/history/:batchId/progress')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async updateOcrHistoryProgress(
+    @Param('batchId', ParseUUIDPipe) batchId: string,
+    @Body()
+    body: {
+      rows: Array<{
+        rowId: string;
+        status: 'PENDING' | 'VALID' | 'INVALID' | 'DUPLICATE' | 'IMPORTED' | 'SKIPPED';
+        errorMessages?: unknown;
+        questionId?: string | null;
+        rawData: unknown;
+      }>;
+    },
+  ) {
+    return this.ocrHistoryService.updateRows(batchId, body.rows);
   }
 
   @Get('template')
@@ -75,10 +163,25 @@ export class ImportsController {
       'questionType',
       'difficulty',
       'status',
-      'options',
-      'correctAnswer',
+      'optionA',
+      'optionB',
+      'optionC',
+      'optionD',
+      'optionE',
       'explanation',
-      'occurrences',
+      'institution',
+      'examName',
+      'examYear',
+      'postName',
+      'department',
+      'questionNumber',
+      'source',
+      'sourcePage',
+      'sourceUrl',
+      'institutionId',
+      'examId',
+      'postId',
+      'sourceDocumentId',
     ];
 
     const exampleRow = [
@@ -88,41 +191,25 @@ export class ImportsController {
       'MCQ',
       'EASY',
       'DRAFT',
-      JSON.stringify([
-        {
-          label: 'A',
-          optionText: 'Dhaka',
-          isCorrect: true,
-          sortOrder: 1,
-        },
-        {
-          label: 'B',
-          optionText: 'Chittagong',
-          isCorrect: false,
-          sortOrder: 2,
-        },
-        {
-          label: 'C',
-          optionText: 'Rajshahi',
-          isCorrect: false,
-          sortOrder: 3,
-        },
-        {
-          label: 'D',
-          optionText: 'Khulna',
-          isCorrect: false,
-          sortOrder: 4,
-        },
-      ]),
       'Dhaka',
+      'Chittagong',
+      'Rajshahi',
+      'Khulna',
+      'A',
       'Dhaka is the capital of Bangladesh.',
-      JSON.stringify([
-        {
-          institution: 'Bangladesh Public Service Commission',
-          examName: 'Sample Examination',
-          examYear: 2025,
-        },
-      ]),
+      'Bangladesh Public Service Commission',
+      'Sample Examination',
+      2025,
+      'Assistant Director',
+      'General',
+      1,
+      'Sample Question Paper',
+      1,
+      '',
+      '',
+      '',
+      '',
+      '',
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([
@@ -132,16 +219,53 @@ export class ImportsController {
 
     worksheet['!cols'] = [
       { wch: 45 },
-      { wch: 18 },
-      { wch: 18 },
+      { wch: 20 },
+      { wch: 20 },
       { wch: 24 },
       { wch: 15 },
       { wch: 15 },
-      { wch: 70 },
       { wch: 25 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 16 },
       { wch: 45 },
-      { wch: 75 },
+      { wch: 35 },
+      { wch: 30 },
+      { wch: 12 },
+      { wch: 25 },
+      { wch: 25 },
+      { wch: 16 },
+      { wch: 30 },
+      { wch: 14 },
+      { wch: 40 },
+      { wch: 38 },
+      { wch: 38 },
+      { wch: 38 },
+      { wch: 38 },
     ];
+
+    const instructions = XLSX.utils.aoa_to_sheet([
+      ['SHIKHASETU QUESTION IMPORT TEMPLATE'],
+      ['IMPORTANT INSTRUCTIONS'],
+      ['1. Each row represents one question.'],
+      ['2. Enter the four choices in optionA, optionB, optionC and optionD.'],
+      ['3. In optionE, enter the correct answer letter: A, B, C or D.'],
+      ['4. The correctAnswer text is generated automatically from optionE.'],
+      ['5. questionType: MCQ, TRUE_FALSE, FILL_IN_THE_BLANKS, WRITTEN.'],
+      ['6. difficulty: EASY, MEDIUM, HARD.'],
+      ['7. status: DRAFT, PUBLISHED, HIDDEN, ARCHIVED.'],
+      ['8. institution, examName and examYear are required.'],
+      ['9. examYear must be between 1900 and 2100.'],
+      ['10. Optional IDs can be used to link existing records.'],
+      ['11. Keep unused option columns blank.'],
+      ['12. Do not rename or remove the column headers.'],
+      ['13. Keep one exam occurrence per question row in this template.'],
+      ['14. For multiple exam occurrences, import the question separately for each occurrence.'],
+      ['15. The sample question row can be replaced or deleted.'],
+    ]);
+
+    instructions['!cols'] = [{ wch: 100 }];
 
     const workbook = XLSX.utils.book_new();
 
@@ -149,6 +273,12 @@ export class ImportsController {
       workbook,
       worksheet,
       'Questions',
+    );
+
+    XLSX.utils.book_append_sheet(
+      workbook,
+      instructions,
+      'Instructions',
     );
 
     let buffer: Buffer;
@@ -287,3 +417,4 @@ export class ImportsController {
     return this.rollbackService.rollback(id);
   }
 }
+
