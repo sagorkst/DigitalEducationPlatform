@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Question = {
   id: string;
@@ -16,14 +16,24 @@ type Question = {
     examName: string;
     examYear: number | null;
     postName: string | null;
-    examRef?: { id: string; name: string; examYear: number | null; examType: string | null };
+    examRef?: {
+      id: string;
+      name: string;
+      examYear: number | null;
+      examType: string | null;
+    };
   }[];
 };
 
 type AnswerData = {
   correctAnswer: string | null;
   explanation: string | null;
-  options: { id: string; label: string; optionText: string; isCorrect: boolean }[];
+  options: {
+    id: string;
+    label: string;
+    optionText: string;
+    isCorrect: boolean;
+  }[];
 };
 
 type ExamInfo = {
@@ -39,6 +49,282 @@ type ExamInfo = {
 const PAGE_SIZE = 20;
 const API_PAGE_SIZE = 100;
 
+type VisibilityKey = "options" | "answers" | "explanations";
+type VisibilitySettings = Record<VisibilityKey, boolean>;
+type VisibilityOverrides = Record<string, Partial<VisibilitySettings>>;
+type VisibilityMode = "global" | "individual";
+
+const VISIBILITY_STORAGE_KEYS: Record<VisibilityKey, string> = {
+  options: "shikhasetu_qbank_show_options_v2",
+  answers: "shikhasetu_qbank_show_answers_v2",
+  explanations: "shikhasetu_qbank_show_explanations_v2",
+};
+
+const VISIBILITY_MODE_KEY = "shikhasetu_qbank_visibility_mode_v2";
+const VISIBILITY_OVERRIDES_KEY = "shikhasetu_qbank_individual_visibility_v2";
+const LEGACY_ANSWER_KEY = "shikhasetu_qbank_show_all_answers";
+
+const DEFAULT_VISIBILITY: VisibilitySettings = {
+  options: true,
+  answers: false,
+  explanations: false,
+};
+
+function effectiveVisibility(
+  global: VisibilitySettings,
+  overrides: Partial<VisibilitySettings> | undefined,
+  mode: VisibilityMode,
+): VisibilitySettings {
+
+  return {
+    options: overrides?.options ?? global.options,
+    answers: overrides?.answers ?? global.answers,
+    explanations: overrides?.explanations ?? global.explanations,
+  };
+}
+
+function useQuestionVisibility() {
+  const [visibility, setVisibility] = useState<VisibilitySettings>(DEFAULT_VISIBILITY);
+  const [mode, setModeState] = useState<VisibilityMode>("global");
+  const [overrides, setOverrides] = useState<VisibilityOverrides>({});
+
+  useEffect(() => {
+    const readStorage = () => {
+      try {
+        const next = { ...DEFAULT_VISIBILITY };
+
+        (Object.keys(VISIBILITY_STORAGE_KEYS) as VisibilityKey[]).forEach((key) => {
+          const value = window.localStorage.getItem(VISIBILITY_STORAGE_KEYS[key]);
+
+          if (value === "true") next[key] = true;
+          if (value === "false") next[key] = false;
+        });
+
+        const legacy = window.localStorage.getItem(LEGACY_ANSWER_KEY);
+
+        if (
+          window.localStorage.getItem(VISIBILITY_STORAGE_KEYS.answers) === null &&
+          legacy !== null
+        ) {
+          next.answers = legacy === "true";
+        }
+
+        if (
+          window.localStorage.getItem(VISIBILITY_STORAGE_KEYS.explanations) === null &&
+          legacy !== null
+        ) {
+          next.explanations = legacy === "true";
+        }
+
+        setVisibility(next);
+
+        const savedMode = window.localStorage.getItem(VISIBILITY_MODE_KEY);
+        setModeState(savedMode === "individual" ? "individual" : "global");
+
+        const savedOverrides = window.localStorage.getItem(VISIBILITY_OVERRIDES_KEY);
+        if (savedOverrides) {
+          const parsed = JSON.parse(savedOverrides);
+          if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+            setOverrides(parsed as VisibilityOverrides);
+          }
+        }
+      } catch {
+        // Keep defaults if browser storage is unavailable or invalid.
+      }
+    };
+
+    readStorage();
+
+    const handleStorage = (event: StorageEvent) => {
+      if (
+        event.key === null ||
+        event.key === VISIBILITY_MODE_KEY ||
+        event.key === VISIBILITY_OVERRIDES_KEY ||
+        event.key === LEGACY_ANSWER_KEY ||
+        Object.values(VISIBILITY_STORAGE_KEYS).includes(event.key)
+      ) {
+        readStorage();
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+    return () => window.removeEventListener("storage", handleStorage);
+  }, []);
+
+  const setGlobal = useCallback((key: VisibilityKey, value: boolean) => {
+    setVisibility((current) => ({ ...current, [key]: value }));
+
+    setOverrides((current) => {
+      const next: VisibilityOverrides = {};
+
+      Object.entries(current).forEach(([questionId, settings]) => {
+        next[questionId] = { ...settings, [key]: value };
+      });
+
+      try {
+        window.localStorage.setItem(VISIBILITY_OVERRIDES_KEY, JSON.stringify(next));
+        window.localStorage.setItem(VISIBILITY_STORAGE_KEYS[key], String(value));
+      } catch {
+        // In-memory state remains available.
+      }
+
+      return next;
+    });
+  }, []);
+
+  const setMode = useCallback((nextMode: VisibilityMode) => {
+    setModeState(nextMode);
+
+    try {
+      window.localStorage.setItem(VISIBILITY_MODE_KEY, nextMode);
+    } catch {
+      // In-memory state remains available.
+    }
+  }, []);
+
+  const setQuestion = useCallback((
+    questionId: string,
+    key: VisibilityKey,
+    value: boolean,
+  ) => {
+    setOverrides((current) => {
+      const next = {
+        ...current,
+        [questionId]: {
+          ...current[questionId],
+          [key]: value,
+        },
+      };
+
+      try {
+        window.localStorage.setItem(VISIBILITY_OVERRIDES_KEY, JSON.stringify(next));
+      } catch {
+        // In-memory state remains available.
+      }
+
+      return next;
+    });
+  }, []);
+
+  const getEffective = useCallback(
+    (questionId: string) =>
+      effectiveVisibility(visibility, overrides[questionId], mode),
+    [visibility, overrides, mode],
+  );
+
+  return {
+    visibility,
+    mode,
+    overrides,
+    setGlobal,
+    setMode,
+    setQuestion,
+    getEffective,
+  };
+}
+
+function VisibilitySwitch({
+  label,
+  value,
+  onChange,
+  disabled = false,
+}: {
+  label: string;
+  value: boolean;
+  onChange: (value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={value}
+      disabled={disabled}
+      onClick={() => onChange(!value)}
+      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+    >
+      <span className="text-xs font-semibold text-slate-700">
+        {label} {value ? "ON" : "OFF"}
+      </span>
+      <span className={`relative h-5 w-9 rounded-full transition ${value ? "bg-emerald-600" : "bg-slate-300"}`}>
+        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${value ? "left-[18px]" : "left-0.5"}`} />
+      </span>
+    </button>
+  );
+}
+
+function VisibilityModeSelector({
+  mode,
+  onChange,
+}: {
+  mode: VisibilityMode;
+  onChange: (mode: VisibilityMode) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      <span className="text-xs font-semibold text-slate-500">নিয়ন্ত্রণ:</span>
+      <button
+        type="button"
+        onClick={() => onChange("global")}
+        aria-pressed={mode === "global"}
+        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          mode === "global"
+            ? "bg-emerald-700 text-white"
+            : "border border-slate-300 bg-white text-slate-700"
+        }`}
+      >
+        Global Mode
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("individual")}
+        aria-pressed={mode === "individual"}
+        className={`rounded-lg px-3 py-2 text-xs font-semibold ${
+          mode === "individual"
+            ? "bg-emerald-700 text-white"
+            : "border border-slate-300 bg-white text-slate-700"
+        }`}
+      >
+        Individual Mode
+      </button>
+    </div>
+  );
+}
+
+function GlobalVisibilityControls({
+  visibility,
+  onChange,
+}: {
+  visibility: VisibilitySettings;
+  onChange: (key: VisibilityKey, value: boolean) => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2" aria-label="সকল প্রশ্নের দৃশ্যমানতা">
+      <VisibilitySwitch label="Options" value={visibility.options} onChange={(value) => onChange("options", value)} />
+      <VisibilitySwitch label="Answer" value={visibility.answers} onChange={(value) => onChange("answers", value)} />
+      <VisibilitySwitch label="Explanation" value={visibility.explanations} onChange={(value) => onChange("explanations", value)} />
+    </div>
+  );
+}
+
+function QuestionVisibilityControls({
+  visibility,
+  onChange,
+  disabled = false,
+}: {
+  visibility: VisibilitySettings;
+  onChange: (key: VisibilityKey, value: boolean) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+      <span className="mr-1 text-xs font-semibold text-slate-500">এই প্রশ্ন:</span>
+      <VisibilitySwitch label="Options" value={visibility.options} onChange={(value) => onChange("options", value)} disabled={disabled} />
+      <VisibilitySwitch label="Answer" value={visibility.answers} onChange={(value) => onChange("answers", value)} disabled={disabled} />
+      <VisibilitySwitch label="Explanation" value={visibility.explanations} onChange={(value) => onChange("explanations", value)} disabled={disabled} />
+    </div>
+  );
+}
 export default function PublicExamQuestions({ examId }: { examId: string }) {
   const [questions, setQuestions] = useState<Question[]>([]);
   const [exam, setExam] = useState<ExamInfo | null>(null);
@@ -47,6 +333,14 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const {
+    visibility: globalVisibility,
+    mode: visibilityMode,
+    setGlobal: setGlobalVisibility,
+    setMode: setVisibilityMode,
+    setQuestion: setQuestionVisibility,
+    getEffective: getEffectiveVisibility,
+  } = useQuestionVisibility();
   const [subjectFilter, setSubjectFilter] = useState("");
   const [topicFilter, setTopicFilter] = useState("");
   const [difficultyFilter, setDifficultyFilter] = useState("");
@@ -95,29 +389,32 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
         }
 
         const allQuestions: Question[] = firstQuestionResult.data ?? [];
-        const totalPages = Math.max(
+        const totalQuestionPages = Math.max(
           1,
           Number(firstQuestionResult.pagination?.totalPages ?? 1),
         );
 
-        if (totalPages > 1) {
+        if (totalQuestionPages > 1) {
           const remainingPages = await Promise.all(
-            Array.from({ length: totalPages - 1 }, (_, index) => index + 2).map(
-              async (page) => {
-                const response = await fetch(
-                  `/api/public/questions?examId=${encodeURIComponent(examId)}&page=${page}&limit=${API_PAGE_SIZE}`,
-                  { cache: "no-store" },
+            Array.from(
+              { length: totalQuestionPages - 1 },
+              (_, index) => index + 2,
+            ).map(async (page) => {
+              const response = await fetch(
+                `/api/public/questions?examId=${encodeURIComponent(examId)}&page=${page}&limit=${API_PAGE_SIZE}`,
+                { cache: "no-store" },
+              );
+
+              const result = await response.json();
+
+              if (!response.ok) {
+                throw new Error(
+                  result.message || `পৃষ্ঠা ${page} লোড করা যায়নি।`,
                 );
+              }
 
-                const result = await response.json();
-
-                if (!response.ok) {
-                  throw new Error(result.message || `পৃষ্ঠা ${page} লোড করা যায়নি।`);
-                }
-
-                return (result.data ?? []) as Question[];
-              },
-            ),
+              return (result.data ?? []) as Question[];
+            }),
           );
 
           for (const pageQuestions of remainingPages) {
@@ -145,10 +442,52 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
     };
   }, [examId]);
 
+  const loadAnswer = useCallback(
+    async (questionId: string) => {
+      if (answers[questionId] || loadingAnswers[questionId]) return;
+
+      setLoadingAnswers((current) => ({
+        ...current,
+        [questionId]: true,
+      }));
+
+      try {
+        const response = await fetch(
+          `/api/public/questions/${questionId}?examId=${encodeURIComponent(examId)}`,
+          { cache: "no-store" },
+        );
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.message || "উত্তর লোড করা যায়নি।");
+        }
+
+        setAnswers((current) => ({
+          ...current,
+          [questionId]: result.data,
+        }));
+      } catch (e) {
+        setError(e instanceof Error ? e.message : "উত্তর লোড করা যায়নি।");
+      } finally {
+        setLoadingAnswers((current) => ({
+          ...current,
+          [questionId]: false,
+        }));
+      }
+    },
+    [answers, loadingAnswers, examId],
+  );
+
   const subjects = useMemo(
     () =>
-      [...new Set(questions.map((question) => question.subject).filter(Boolean) as string[])]
-        .sort((a, b) => a.localeCompare(b, "bn")),
+      [
+        ...new Set(
+          questions
+            .map((question) => question.subject)
+            .filter(Boolean) as string[],
+        ),
+      ].sort((a, b) => a.localeCompare(b, "bn")),
     [questions],
   );
 
@@ -157,7 +496,10 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
       [
         ...new Set(
           questions
-            .filter((question) => !subjectFilter || question.subject === subjectFilter)
+            .filter(
+              (question) =>
+                !subjectFilter || question.subject === subjectFilter,
+            )
             .map((question) => question.topic)
             .filter(Boolean) as string[],
         ),
@@ -187,7 +529,10 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
     return result;
   }, [questions, subjectFilter, topicFilter, difficultyFilter, sortOrder]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredQuestions.length / PAGE_SIZE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredQuestions.length / PAGE_SIZE),
+  );
   const safeCurrentPage = Math.min(currentPage, totalPages);
 
   const visibleQuestions = useMemo(() => {
@@ -196,36 +541,21 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
   }, [filteredQuestions, safeCurrentPage]);
 
   useEffect(() => {
+    if (loading || visibleQuestions.length === 0) return;
+
+    visibleQuestions.forEach((question) => {
+      const effective = getEffectiveVisibility(question.id);
+      if ((effective.answers || effective.explanations) &&
+          !answers[question.id] && !loadingAnswers[question.id]) {
+        void loadAnswer(question.id);
+      }
+    });
+  }, [globalVisibility, visibilityMode, getEffectiveVisibility, loading, visibleQuestions, answers, loadingAnswers, loadAnswer]);
+
+
+  useEffect(() => {
     setCurrentPage(1);
   }, [subjectFilter, topicFilter, difficultyFilter, sortOrder]);
-
-  async function revealAnswer(questionId: string) {
-    if (answers[questionId] || loadingAnswers[questionId]) return;
-
-    setLoadingAnswers((current) => ({ ...current, [questionId]: true }));
-
-    try {
-      const response = await fetch(
-        `/api/public/questions/${questionId}?examId=${encodeURIComponent(examId)}`,
-        { cache: "no-store" },
-      );
-
-      const result = await response.json();
-
-      if (!response.ok) {
-        throw new Error(result.message || "উত্তর লোড করা যায়নি।");
-      }
-
-      setAnswers((current) => ({
-        ...current,
-        [questionId]: result.data,
-      }));
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "উত্তর লোড করা যায়নি।");
-    } finally {
-      setLoadingAnswers((current) => ({ ...current, [questionId]: false }));
-    }
-  }
 
   function resetFilters() {
     setSubjectFilter("");
@@ -271,28 +601,36 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
 
             <p className="mt-1 text-sm text-slate-600">{exam?.name}</p>
 
-            <div className="mt-4 flex flex-wrap gap-2 text-sm">
-              {exam?.examYear && (
-                <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
-                  {exam.examYear}
-                </span>
-              )}
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap gap-2 text-sm">
+                {exam?.examYear && (
+                  <span className="rounded-full bg-blue-50 px-3 py-1 text-blue-700">
+                    {exam.examYear}
+                  </span>
+                )}
 
-              {exam?.examType && (
-                <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
-                  {exam.examType}
-                </span>
-              )}
+                {exam?.examType && (
+                  <span className="rounded-full bg-slate-100 px-3 py-1 text-slate-700">
+                    {exam.examType}
+                  </span>
+                )}
 
-              <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
-                মোট {questions.length}টি প্রকাশিত প্রশ্ন
-              </span>
+                <span className="rounded-full bg-emerald-50 px-3 py-1 font-semibold text-emerald-700">
+                  মোট {questions.length}টি প্রকাশিত প্রশ্ন
+                </span>
+              </div>
+
+              <div className="flex flex-col items-end gap-3">
+                <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+              </div>
             </div>
           </header>
 
           <section className="mb-6 rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
             <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-              <h2 className="font-bold text-slate-900">এই পরীক্ষার প্রশ্ন ফিল্টার</h2>
+              <h2 className="font-bold text-slate-900">
+                এই পরীক্ষার প্রশ্ন ফিল্টার
+              </h2>
 
               <button
                 type="button"
@@ -316,9 +654,7 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
                 >
                   <option value="">সকল বিষয়</option>
                   {subjects.map((subject) => (
-                    <option key={subject} value={subject}>
-                      {subject}
-                    </option>
+                    <option key={subject} value={subject}>{subject}</option>
                   ))}
                 </select>
               </label>
@@ -332,9 +668,7 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
                 >
                   <option value="">সকল টপিক</option>
                   {topics.map((topic) => (
-                    <option key={topic} value={topic}>
-                      {topic}
-                    </option>
+                    <option key={topic} value={topic}>{topic}</option>
                   ))}
                 </select>
               </label>
@@ -358,7 +692,9 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
                 <select
                   value={sortOrder}
                   onChange={(event) =>
-                    setSortOrder(event.target.value as "default" | "asc" | "desc")
+                    setSortOrder(
+                      event.target.value as "default" | "asc" | "desc",
+                    )
                   }
                   className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2"
                 >
@@ -373,6 +709,12 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
               ফিল্টার অনুযায়ী {filteredQuestions.length}টি প্রশ্ন পাওয়া গেছে।
             </p>
           </section>
+
+          {error && (
+            <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+              {error}
+            </div>
+          )}
 
           {filteredQuestions.length === 0 ? (
             <div className="rounded-xl border border-dashed border-slate-300 bg-white p-10 text-center">
@@ -394,9 +736,7 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
             <>
               <div className="mb-4 flex flex-wrap items-center justify-between gap-2 text-sm text-slate-600">
                 <span>
-                  {filteredQuestions.length === 0
-                    ? 0
-                    : (safeCurrentPage - 1) * PAGE_SIZE + 1}
+                  {(safeCurrentPage - 1) * PAGE_SIZE + 1}
                   {" - "}
                   {Math.min(safeCurrentPage * PAGE_SIZE, filteredQuestions.length)}
                   {" / "}
@@ -407,7 +747,10 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
 
               <div className="space-y-5">
                 {visibleQuestions.map((question, index) => {
-                  const answer = answers[question.id];
+                  const questionVisibility = getEffectiveVisibility(question.id);
+                  const answer = (questionVisibility.answers || questionVisibility.explanations)
+                    ? answers[question.id]
+                    : undefined;
                   const questionNumber =
                     (safeCurrentPage - 1) * PAGE_SIZE + index + 1;
 
@@ -432,11 +775,11 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
                         {question.questionText}
                       </h2>
 
-                      <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                      {questionVisibility.options && <div className="mt-4 grid gap-2 sm:grid-cols-2">
                         {question.options?.map((option) => {
-                          const revealedOption = answer?.options?.find(
-                            (item) => item.id === option.id,
-                          );
+                          const revealedOption = questionVisibility.answers
+                            ? answer?.options?.find((item) => item.id === option.id)
+                            : undefined;
 
                           return (
                             <div
@@ -459,42 +802,47 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
                             </div>
                           );
                         })}
-                      </div>
+                      </div>}
 
-                      <div className="mt-4 border-t border-slate-100 pt-4">
-                        {!answer ? (
-                          <button
-                            type="button"
-                            onClick={() => void revealAnswer(question.id)}
-                            disabled={Boolean(loadingAnswers[question.id])}
-                            className="rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
-                          >
-                            {loadingAnswers[question.id]
-                              ? "লোড হচ্ছে..."
-                              : "উত্তর ও ব্যাখ্যা দেখুন"}
-                          </button>
-                        ) : (
-                          <div className="space-y-3">
-                            {answer.correctAnswer && (
-                              <p className="text-sm font-semibold text-emerald-800">
-                                সঠিক উত্তর: {answer.correctAnswer}
-                              </p>
-                            )}
-
-                            {answer.explanation && (
-                              <div className="rounded-lg bg-emerald-50 p-4 text-sm leading-7 text-slate-700">
-                                <p className="mb-1 font-bold text-emerald-800">
-                                  ব্যাখ্যা
+                      {(questionVisibility.answers || questionVisibility.explanations) && (
+                        <div className="mt-4 border-t border-slate-100 pt-4">
+                          {loadingAnswers[question.id] && !answer ? (
+                            <p className="text-sm text-slate-500">
+                              উত্তর লোড হচ্ছে...
+                            </p>
+                          ) : answer ? (
+                            <div className="space-y-3">
+                              {questionVisibility.answers && answer.correctAnswer && (
+                                <p className="text-sm font-semibold text-emerald-800">
+                                  সঠিক উত্তর: {answer.correctAnswer}
                                 </p>
-                                {answer.explanation}
-                              </div>
-                            )}
-                          </div>
-                        )}
+                              )}
 
+                              {questionVisibility.explanations && answer.explanation && (
+                                <div className="rounded-lg bg-emerald-50 p-4 text-sm leading-7 text-slate-700">
+                                  <p className="mb-1 font-bold text-emerald-800">
+                                    ব্যাখ্যা
+                                  </p>
+                                  {answer.explanation}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <p className="text-sm text-rose-600">
+                              উত্তর লোড করা যায়নি।
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      <QuestionVisibilityControls
+                        visibility={questionVisibility}
+                        onChange={(key, value) => setQuestionVisibility(question.id, key, value)}
+                      />
+                      <div className="mt-4 border-t border-slate-100 pt-4">
                         <Link
                           href={`/question-bank/${question.id}?examId=${encodeURIComponent(examId)}`}
-                          className="ml-4 text-sm font-semibold text-blue-700 hover:underline"
+                          className="text-sm font-semibold text-blue-700 hover:underline"
                         >
                           বিস্তারিত দেখুন →
                         </Link>
