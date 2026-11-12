@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Geist, Geist_Mono } from "next/font/google";
 import SiteHeader from "../components/site-header";
 import SiteFooter from "../components/site-footer";
+import GlobalScrollArrows from "../components/global-scroll-arrows";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -47,6 +48,7 @@ export default function RootLayout({
         <SiteHeader />
         {children}
         <SiteFooter />
+        <GlobalScrollArrows />
       </body>
     </html>
   );

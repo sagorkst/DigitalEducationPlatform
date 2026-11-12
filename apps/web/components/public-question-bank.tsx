@@ -1105,6 +1105,7 @@ export default function PublicQuestionBank({
 
           {totalPages > 1 && (
             <div className="mt-8 flex flex-col items-center gap-4">
+              
               <div className="flex flex-wrap items-center justify-center gap-2">
                 <button
                   type="button"
@@ -1117,7 +1118,8 @@ export default function PublicQuestionBank({
 
                 {Array.from(
                   { length: Math.min(6, totalPages) },
-                  (_, index) => index + 1,
+                  (_, index) =>
+                    Math.max(1, Math.min(page - 2, totalPages - 5)) + index,
                 ).map((pageNumber) => (
                   <button
                     key={pageNumber}
@@ -1134,7 +1136,7 @@ export default function PublicQuestionBank({
                   </button>
                 ))}
 
-                {totalPages > 6 && (
+                {totalPages > 6 && page < totalPages - 2 && (
                   <>
                     <span className="px-1 text-slate-500">...</span>
                     <button
