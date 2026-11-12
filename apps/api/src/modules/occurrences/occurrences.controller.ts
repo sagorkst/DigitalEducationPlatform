@@ -1,6 +1,7 @@
 
 import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Put,
@@ -13,6 +14,9 @@ import {
   DefaultValuePipe,
   BadRequestException,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { isUUID } from 'class-validator';
 
@@ -21,6 +25,8 @@ import { CreateOccurrenceDto } from './dto/create-occurrence.dto';
 import { UpdateOccurrenceDto } from './dto/update-occurrence.dto';
 
 @Controller()
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('content.manage')
 export class OccurrencesController {
   constructor(
     private readonly occurrencesService: OccurrencesService,

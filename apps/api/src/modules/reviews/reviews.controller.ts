@@ -1,17 +1,23 @@
-﻿import {
+import {
   Body,
   Controller,
+  UseGuards,
   Get,
   Param,
   Post,
   Query,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { ReviewsService } from './reviews.service';
 import { SubmitReviewDto } from './dto/submit-review.dto';
 import { RejectReviewDto } from './dto/reject-review.dto';
 
 @Controller('reviews')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('questions.review')
 export class ReviewsController {
   constructor(private readonly reviewsService: ReviewsService) {}
 

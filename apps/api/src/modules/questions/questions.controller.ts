@@ -39,7 +39,7 @@ export class QuestionsController {
 
   // GET ALL QUESTIONS
   @Get()
-  @RequirePermissions('questions.read')
+  @RequirePermissions('content.manage')
   async findAll(
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -95,7 +95,7 @@ export class QuestionsController {
 
   // GET QUESTION BY ID
   @Get(':id')
-  @RequirePermissions('questions.read')
+  @RequirePermissions('content.manage')
   async findOne(@Param('id') id: string) {
     return this.questionsService.findOne(id);
   }

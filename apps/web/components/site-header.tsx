@@ -1,4 +1,51 @@
-﻿const links = [
+﻿"use client";
+
+import { useEffect, useState } from "react";
+
+function hasQuestionManagementAccess(payload: any): boolean {
+  const candidates = [
+    payload?.data,
+    payload?.data?.user,
+    payload?.data?.account,
+    payload?.user,
+    payload?.account,
+  ].filter(Boolean);
+
+  for (const item of candidates) {
+    const roles = [
+      item.role,
+      ...(Array.isArray(item.roles) ? item.roles : []),
+    ]
+      .map((role: any) =>
+        typeof role === "string"
+          ? role
+          : role?.name ?? role?.code ?? role?.role,
+      )
+      .filter(Boolean);
+
+    const permissions = Array.isArray(item.permissions)
+      ? item.permissions
+          .map((permission: any) =>
+            typeof permission === "string"
+              ? permission
+              : permission?.name ?? permission?.code,
+          )
+          .filter(Boolean)
+      : [];
+
+    if (
+      roles.includes("SUPER_ADMIN") ||
+      roles.includes("ADMIN") ||
+      permissions.includes("content.manage")
+    ) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+const links = [
   { label: "হোম", href: "/" },
   { label: "একাডেমিক", href: "/academic" },
   { label: "চাকরি প্রস্তুতি", href: "/career" },
@@ -11,6 +58,41 @@
 ];
 
 export default function SiteHeader() {
+  const [canManageQuestions, setCanManageQuestions] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function checkAccess() {
+      try {
+        const response = await fetch("/api/auth/me", {
+          method: "GET",
+          credentials: "same-origin",
+          cache: "no-store",
+        });
+
+        if (!response.ok) {
+          if (active) setCanManageQuestions(false);
+          return;
+        }
+
+        const payload = await response.json();
+
+        if (active) {
+          setCanManageQuestions(hasQuestionManagementAccess(payload));
+        }
+      } catch {
+        if (active) setCanManageQuestions(false);
+      }
+    }
+
+    checkAccess();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-5 px-5 py-4">
@@ -36,12 +118,22 @@ export default function SiteHeader() {
         </nav>
 
         <div className="hidden shrink-0 items-center gap-3 lg:flex">
+          {canManageQuestions && (
+            <a
+              href="/dashboard/question-bank"
+              className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800"
+            >
+              প্রশ্নব্যাংক পরিচালনা
+            </a>
+          )}
+
           <a
             href="/login"
             className="rounded-xl px-4 py-2.5 text-sm font-bold text-blue-700 transition hover:bg-blue-50"
           >
             লগইন
           </a>
+
           <a
             href="/register"
             className="rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white transition hover:bg-blue-800"
@@ -66,11 +158,28 @@ export default function SiteHeader() {
                 {link.label}
               </a>
             ))}
+
+            {canManageQuestions && (
+              <a
+                href="/dashboard/question-bank"
+                className="mt-2 block rounded-lg bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800"
+              >
+                প্রশ্নব্যাংক পরিচালনা
+              </a>
+            )}
+
             <div className="mt-2 grid grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-              <a href="/login" className="rounded-lg bg-blue-50 px-3 py-3 text-center text-sm font-bold text-blue-700">
+              <a
+                href="/login"
+                className="rounded-lg bg-blue-50 px-3 py-3 text-center text-sm font-bold text-blue-700"
+              >
                 লগইন
               </a>
-              <a href="/register" className="rounded-lg bg-blue-700 px-3 py-3 text-center text-sm font-bold text-white">
+
+              <a
+                href="/register"
+                className="rounded-lg bg-blue-700 px-3 py-3 text-center text-sm font-bold text-white"
+              >
                 নিবন্ধন
               </a>
             </div>

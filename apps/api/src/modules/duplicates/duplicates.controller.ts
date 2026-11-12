@@ -25,6 +25,8 @@ import { PermissionsGuard } from '../rbac/permissions.guard';
 import { RequirePermissions } from '../rbac/permissions.decorator';
 
 @Controller('duplicates')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('content.manage')
 export class DuplicatesController {
   constructor(
     private readonly duplicatesService: DuplicatesService,

@@ -236,26 +236,77 @@ after(async () => {
   }
 });
 
+test('Public Question Bank API should be readable without authentication', async () => {
+  const response = await request(app.getHttpServer())
+    .get('/api/public/questions')
+    .expect(200);
+
+  assert.equal(response.body.success, true);
+  assert.ok(Array.isArray(response.body.data));
+});
+
+test('Question Bank supporting admin APIs must reject unauthenticated access', async () => {
+  for (const path of [
+    '/api/imports',
+    '/api/duplicates',
+    '/api/occurrences',
+    '/api/reviews',
+    '/api/tags',
+    '/api/analytics/overview',
+  ]) {
+    await request(app.getHttpServer()).get(path).expect(401);
+  }
+
+  for (const path of [
+    '/api/institutions',
+    '/api/exams',
+    '/api/posts',
+  ]) {
+    await request(app.getHttpServer()).post(path).send({}).expect(401);
+  }
+});
+
+test('Question Bank supporting admin APIs must reject ordinary question readers', async () => {
+  for (const path of [
+    '/api/imports',
+    '/api/duplicates',
+    '/api/occurrences',
+    '/api/reviews',
+    '/api/tags',
+    '/api/analytics/overview',
+  ]) {
+    await request(app.getHttpServer())
+      .get(path)
+      .set('Authorization', `Bearer ${readerToken}`)
+      .expect(403);
+  }
+
+  for (const path of [
+    '/api/institutions',
+    '/api/exams',
+    '/api/posts',
+  ]) {
+    await request(app.getHttpServer())
+      .post(path)
+      .set('Authorization', `Bearer ${readerToken}`)
+      .send({})
+      .expect(403);
+  }
+});
+
 test('Questions API should reject requests without authentication', async () => {
   await request(app.getHttpServer())
     .get('/api/questions')
     .expect(401);
 });
 
-test('Questions API should reject authenticated users without questions.read permission', async () => {
-  await request(app.getHttpServer())
-    .get('/api/questions')
-    .set('Authorization', `Bearer ${noPermissionToken}`)
-    .expect(403);
-});
-
-test('Questions API should allow users with questions.read permission', async () => {
-  const response = await request(app.getHttpServer())
-    .get('/api/questions')
-    .set('Authorization', `Bearer ${readerToken}`)
-    .expect(200);
-
-  assert.equal(typeof response.body, 'object');
+test('Admin Questions API should reject ordinary users who only have questions.read permission', async () => {
+  for (const token of [readerToken, noPermissionToken]) {
+    await request(app.getHttpServer())
+      .get('/api/questions')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(403);
+  }
 });
 
 test('Question creation should reject users without content.manage permission', async () => {

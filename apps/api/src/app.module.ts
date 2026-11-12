@@ -7,6 +7,7 @@ import { DatabaseController } from './database.controller';
 
 import { DatabaseModule } from './database/database.module';
 import { QuestionsModule } from './modules/questions/questions.module';
+import { PublicQuestionsModule } from './modules/public-question-bank/public-questions.module';
 import { SubjectsModule } from './modules/subjects/subjects.module';
 import { TopicsModule } from './modules/subjects/topics.module';
 import { InstitutionsModule } from './modules/institutions/institutions.module';
@@ -34,6 +35,7 @@ import { AuditModule } from './modules/audit/audit.module';
     ]),
     DatabaseModule,
     QuestionsModule,
+    PublicQuestionsModule,
     SubjectsModule,
     TopicsModule,
     InstitutionsModule,

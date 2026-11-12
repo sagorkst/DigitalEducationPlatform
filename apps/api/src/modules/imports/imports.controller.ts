@@ -35,6 +35,8 @@ import { PermissionsGuard } from '../rbac/permissions.guard';
 import { RequirePermissions } from '../rbac/permissions.decorator';
 
 @Controller('imports')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('content.manage')
 export class ImportsController {
   constructor(
     private readonly importsService: ImportsService,

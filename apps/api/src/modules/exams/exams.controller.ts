@@ -1,5 +1,6 @@
 import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Put,
@@ -12,6 +13,10 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
+
 import { ExamsService } from './exams.service';
 import { CreateExamDto } from './dto/create-exam.dto';
 import { UpdateExamDto } from './dto/update-exam.dto';
@@ -23,6 +28,8 @@ export class ExamsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   create(@Body() dto: CreateExamDto) {
     return this.examsService.create(dto);
   }
@@ -73,6 +80,8 @@ export class ExamsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateExamDto,
@@ -81,6 +90,8 @@ export class ExamsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   remove(
     @Param('id', ParseUUIDPipe) id: string,
   ) {

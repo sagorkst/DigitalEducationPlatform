@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "module": "commonjs",
     "declaration": true,
@@ -19,5 +19,13 @@
     "noFallthroughCasesInSwitch": true,
     "esModuleInterop": true,
     "types": ["node"]
-  }
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": [
+    "node_modules",
+    "dist",
+    "scripts",
+    "test",
+    "tests"
+  ]
 }

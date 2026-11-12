@@ -1,5 +1,6 @@
 import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Put,
@@ -12,6 +13,10 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
+
 import { InstitutionsService } from './institutions.service';
 import { CreateInstitutionDto } from './dto/create-institution.dto';
 import { UpdateInstitutionDto } from './dto/update-institution.dto';
@@ -23,6 +28,8 @@ export class InstitutionsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   create(@Body() dto: CreateInstitutionDto) {
     return this.institutionsService.create(dto);
   }
@@ -50,6 +57,8 @@ export class InstitutionsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdateInstitutionDto,
@@ -58,6 +67,8 @@ export class InstitutionsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   remove(@Param('id', ParseUUIDPipe) id: string) {
     return this.institutionsService.remove(id);
   }

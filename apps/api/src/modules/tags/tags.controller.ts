@@ -1,5 +1,6 @@
-﻿import {
+import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Patch,
@@ -9,10 +10,15 @@
   Query,
   Body,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { TagsService } from './tags.service';
 
 @Controller('tags')
+@UseGuards(JwtAuthGuard, PermissionsGuard)
+@RequirePermissions('content.manage')
 export class TagsController {
   constructor(private readonly tagsService: TagsService) {}
 

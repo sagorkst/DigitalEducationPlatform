@@ -1,10 +1,13 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { AuthModule } from '../auth/auth.module';
+import { RbacModule } from '../rbac/rbac.module';
+
 import { AnalyticsController } from './analytics.controller';
 import { AnalyticsService } from './analytics.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule, RbacModule],
   controllers: [AnalyticsController],
   providers: [AnalyticsService],
   exports: [AnalyticsService],

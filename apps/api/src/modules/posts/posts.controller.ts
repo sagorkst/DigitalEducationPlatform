@@ -1,6 +1,6 @@
-
-import {
+﻿import {
   Controller,
+  UseGuards,
   Get,
   Post,
   Put,
@@ -13,6 +13,10 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { PermissionsGuard } from '../rbac/permissions.guard';
+import { RequirePermissions } from '../rbac/permissions.decorator';
+
 import { PostsService } from './posts.service';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
@@ -24,6 +28,8 @@ export class PostsController {
   ) {}
 
   @Post()
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   create(@Body() dto: CreatePostDto) {
     return this.postsService.create(dto);
   }
@@ -51,6 +57,8 @@ export class PostsController {
   }
 
   @Put(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   update(
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: UpdatePostDto,
@@ -59,6 +67,8 @@ export class PostsController {
   }
 
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, PermissionsGuard)
+  @RequirePermissions('content.manage')
   remove(
     @Param('id', ParseUUIDPipe) id: string,
   ) {
