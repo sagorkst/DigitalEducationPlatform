@@ -36,3 +36,15 @@ coverage/
 *.temp
 
 /generated/prisma
+
+# Shikhasetu local backups and temporary work files
+apps/web/components/*.bak
+apps/web/components/*.before-*
+/public-exam-questions.tsx
+/public-question-bank.tsx
+/qbank-source-backup/
+/replace-question-bank-files.ps1
+/update-qbank-answer-toggles.ps1
+/update-qbank-three-visibility-toggles.ps1
+# Local layout backups
+apps/web/app/*.bak
