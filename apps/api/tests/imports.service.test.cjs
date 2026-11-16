@@ -267,11 +267,10 @@ test('10 - rejects MCQ without options', async () => {
   assert.equal(savedRows[0].status, 'INVALID');
 });
 
-test('11 - rejects MCQ with multiple correct options', async () => {
+test('11 - accepts MCQ with multiple correct options', async () => {
   const { service, prisma } = createService();
 
   let savedRows;
-
   prisma.importRow.createMany = async ({ data }) => {
     savedRows = data;
     return { count: data.length };
@@ -285,14 +284,50 @@ test('11 - rejects MCQ with multiple correct options', async () => {
   });
 
   await service.preview(jsonFile([row]));
+  assert.equal(savedRows[0].status, 'VALID');
+});
 
+test('11b - accepts MCQ with no correct option selected', async () => {
+  const { service, prisma } = createService();
+
+  let savedRows;
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const row = validRow({
+    options: [
+      { label: 'A', optionText: 'Option A', isCorrect: false },
+      { label: 'B', optionText: 'Option B', isCorrect: false },
+    ],
+    correctAnswer: undefined,
+  });
+
+  await service.preview(jsonFile([row]));
+  assert.equal(savedRows[0].status, 'VALID');
+});
+
+test('11c - rejects MCQ with more than four options', async () => {
+  const { service, prisma } = createService();
+
+  let savedRows;
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const row = validRow({
+    options: ['A', 'B', 'C', 'D', 'E'].map((label) => ({
+      label,
+      optionText: `Option ${label}`,
+      isCorrect: false,
+    })),
+  });
+
+  await service.preview(jsonFile([row]));
   assert.equal(savedRows[0].status, 'INVALID');
-
-  assert.ok(
-    savedRows[0].errorMessages.includes(
-      'MCQ must have exactly one correct option.',
-    ),
-  );
+  assert.ok(savedRows[0].errorMessages.includes('MCQ options must contain 2 to 4 items.'));
 });
 
 test('12 - detects duplicate questions inside the same import file', async () => {
