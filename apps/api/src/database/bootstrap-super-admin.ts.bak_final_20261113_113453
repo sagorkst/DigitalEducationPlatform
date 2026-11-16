@@ -1,0 +1,81 @@
+import { config } from 'dotenv';
+import { resolve } from 'path';
+import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '../generated/prisma/client';
+import { Pool } from 'pg';
+
+config({ path: resolve(__dirname, '../../../../.env') });
+
+const userId = process.argv[2];
+
+if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
+  throw new Error('Ã Â¦Â¸Ã Â¦Â Ã Â¦Â¿Ã Â¦â€¢ User ID Ã Â¦Â¦Ã Â¦Â¿Ã Â¦Â¤Ã Â§â€¡ Ã Â¦Â¹Ã Â¦Â¬Ã Â§â€¡Ã Â¥Â¤');
+}
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+const prisma = new PrismaClient({
+  adapter: new PrismaPg(pool),
+});
+
+async function main() {
+  await prisma.$transaction(async (tx) => {
+    // Serialize concurrent SUPER_ADMIN bootstrap attempts.
+    await tx.$queryRaw`SELECT pg_advisory_xact_lock(7411132026::bigint)`;
+const user = await tx.user.findUnique({
+      where: { id: userId },
+      select: {
+        id: true,
+        status: true,
+        deletedAt: true,
+      },
+    });
+
+    if (!user || user.status !== 'ACTIVE' || user.deletedAt !== null) {
+      throw new Error('Account Ã Â¦ÂªÃ Â¦Â¾Ã Â¦â€œÃ Â§Å¸Ã Â¦Â¾ Ã Â¦Â¯Ã Â¦Â¾Ã Â§Å¸Ã Â¦Â¨Ã Â¦Â¿ Ã Â¦â€¦Ã Â¦Â¥Ã Â¦Â¬Ã Â¦Â¾ Account ACTIVE Ã Â¦Â¨Ã Â§Å¸Ã Â¥Â¤');
+    }
+
+    const role = await tx.role.findUnique({
+      where: { name: 'SUPER_ADMIN' },
+      select: { id: true },
+    });
+
+    if (!role) {
+      throw new Error('SUPER_ADMIN Role Ã Â¦ÂªÃ Â¦Â¾Ã Â¦â€œÃ Â§Å¸Ã Â¦Â¾ Ã Â¦Â¯Ã Â¦Â¾Ã Â§Å¸Ã Â¦Â¨Ã Â¦Â¿Ã Â¥Â¤ Ã Â¦â€ Ã Â¦â€”Ã Â§â€¡ Seed Ã Â¦Å¡Ã Â¦Â¾Ã Â¦Â²Ã Â¦Â¾Ã Â¦â€œÃ Â¥Â¤');
+    }
+
+    const existingAssignments = await tx.userRole.findMany({
+      where: { roleId: role.id },
+      select: { userId: true },
+    });
+
+    const anotherAdmin = existingAssignments.find(
+      (assignment) => assignment.userId !== userId,
+    );
+
+    if (anotherAdmin) {
+      throw new Error('Ã Â¦â€¦Ã Â¦Â¨Ã Â§ÂÃ Â¦Â¯ Account-Ã Â¦Â SUPER_ADMIN Ã Â¦Â°Ã Â§Å¸Ã Â§â€¡Ã Â¦â€ºÃ Â§â€¡Ã Â¥Â¤ Ã Â¦â€¢Ã Â§â€¹Ã Â¦Â¨Ã Â§â€¹ Ã Â¦ÂªÃ Â¦Â°Ã Â¦Â¿Ã Â¦Â¬Ã Â¦Â°Ã Â§ÂÃ Â¦Â¤Ã Â¦Â¨ Ã Â¦â€¢Ã Â¦Â°Ã Â¦Â¾ Ã Â¦Â¹Ã Â§Å¸Ã Â¦Â¨Ã Â¦Â¿Ã Â¥Â¤');
+    }
+
+    await tx.userRole.createMany({
+      data: [{ userId, roleId: role.id }],
+      skipDuplicates: true,
+    });
+  });
+
+  console.log('SUPER_ADMIN successfully assigned.');
+  console.log(`Account ID: ${userId}`);
+  console.log('Other SUPER_ADMIN accounts: 0');
+}
+
+main()
+  .catch((error) => {
+    console.error('BOOTSTRAP FAILED:', error.message || error);
+    process.exitCode = 1;
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+    await pool.end();
+  });

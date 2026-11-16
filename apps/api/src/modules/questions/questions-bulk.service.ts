@@ -183,6 +183,53 @@ export class QuestionsBulkService {
     );
   }
 
+  async bulkSoftDelete(ids: string[]) {
+    return this.prisma.$transaction(
+      async (tx) => {
+        const questions = await tx.question.findMany({
+          where: {
+            id: { in: ids },
+            deletedAt: null,
+          },
+          select: { id: true },
+        });
+
+        if (questions.length !== ids.length) {
+          throw new NotFoundException(
+            'One or more selected questions do not exist or are already in Trash. No questions were deleted.',
+          );
+        }
+
+        const deletedAt = new Date();
+
+        const result = await tx.question.updateMany({
+          where: {
+            id: { in: ids },
+            deletedAt: null,
+          },
+          data: { deletedAt },
+        });
+
+        if (result.count !== ids.length) {
+          throw new BadRequestException(
+            'Bulk delete could not safely complete. No questions were changed.',
+          );
+        }
+
+        return {
+          success: true,
+          message: `${result.count} question(s) moved to Trash successfully.`,
+          deletedCount: result.count,
+          data: ids.map((id) => ({ id, deletedAt })),
+        };
+      },
+      {
+        maxWait: 10000,
+        timeout: 30000,
+      },
+    );
+  }
+
   async publishAllDrafts() {
     return this.prisma.$transaction(
       async (tx) => {

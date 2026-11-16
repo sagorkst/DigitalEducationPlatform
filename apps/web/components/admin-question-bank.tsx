@@ -228,11 +228,13 @@ export default function QuestionBankPage() {
   const [selectedInstitutionKey, setSelectedInstitutionKey] = useState<string | null>(null);
   const [selectedExamGroup, setSelectedExamGroup] = useState<ExamGroup | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
 
   const [showTrash, setShowTrash] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
+  const [emptyingTrash, setEmptyingTrash] = useState(false);
   const [trashError, setTrashError] = useState("");
   const [recoveringId, setRecoveringId] = useState<string | null>(null);
   const [permanentDeletingId, setPermanentDeletingId] = useState<string | null>(null);
@@ -288,6 +290,7 @@ export default function QuestionBankPage() {
       const totalPages = result.pagination?.totalPages ?? 1;
 
       setTotalQuestions(total);
+      setTotalPages(totalPages);
       setCurrentPage(requestedPage);
       setHasMore(requestedPage < totalPages);
     } catch (error) {
@@ -475,13 +478,23 @@ export default function QuestionBankPage() {
       currentIds.length > 0 &&
       currentIds.every((id) => selectedQuestionIds.includes(id));
 
-    setSelectedQuestionIds((previous) => {
-      if (allSelected) {
-        return previous.filter((id) => !currentIds.includes(id));
+    if (allSelected) {
+      setSelectedQuestionIds((previous) =>
+        previous.filter((id) => !currentIds.includes(id)),
+      );
+    } else {
+      const nextIds = Array.from(
+        new Set([...selectedQuestionIds, ...currentIds]),
+      );
+
+      if (nextIds.length > 500) {
+        setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন নির্বাচন করা যাবে। কিছু নির্বাচন Clear করে আবার চেষ্টা করুন।");
+        setBulkSuccess("");
+        return;
       }
 
-      return Array.from(new Set([...previous, ...currentIds])).slice(0, 500);
-    });
+      setSelectedQuestionIds(nextIds);
+    }
 
     setBulkError("");
     setBulkSuccess("");
@@ -556,6 +569,70 @@ export default function QuestionBankPage() {
     }
   };
 
+  const bulkDeleteQuestions = async () => {
+    if (selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
+      return;
+    }
+
+    if (selectedQuestionIds.length > 500) {
+      setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন Trash-এ পাঠানো যাবে।");
+      return;
+    }
+
+    if (!window.confirm(
+      `আপনি কি নির্বাচিত ${selectedQuestionIds.length}টি প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
+    )) {
+      return;
+    }
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+
+    try {
+      const idsToDelete = [...selectedQuestionIds];
+
+      const response = await fetch("/api/questions/bulk/delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: idsToDelete }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "নির্বাচিত প্রশ্ন Trash-এ পাঠানো যায়নি।");
+      }
+
+      const count = Number(result.deletedCount ?? idsToDelete.length);
+
+      setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে Trash-এ পাঠানো হয়েছে।`);
+      setSelectedQuestionIds([]);
+
+      if (selected && idsToDelete.includes(selected)) {
+        setSelected(null);
+      }
+
+      if (selectedExamGroup) {
+        await loadGroupQuestions(selectedExamGroup);
+      } else {
+        await loadQuestions(1, false);
+      }
+
+      await refreshDraftCount();
+      await loadGroupOptions();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(
+        error instanceof Error
+          ? error.message
+          : "Bulk Delete করতে সমস্যা হয়েছে।",
+      );
+    } finally {
+      setBulkSaving(false);
+    }
+  };
   const publishAllDrafts = async () => {
     if (draftCount <= 0) {
       setBulkError("Publish করার মতো কোনো Draft প্রশ্ন পাওয়া যায়নি।");
@@ -608,6 +685,48 @@ export default function QuestionBankPage() {
     setSearch("");
   };
 
+  const emptyTrash = async () => {
+    if (deletedQuestions.length === 0 || emptyingTrash) return;
+
+    const confirmed = window.confirm(
+      `Trash-এর ${deletedQuestions.length}টি প্রশ্ন স্থায়ীভাবে Delete করবেন? এই কাজ Undo বা Recover করা যাবে না।`,
+    );
+
+    if (!confirmed) return;
+
+    setEmptyingTrash(true);
+    setTrashError("");
+
+    try {
+      const response = await fetch("/api/questions/trash/empty", {
+        method: "DELETE",
+        cache: "no-store",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Trash খালি করা যায়নি।");
+      }
+
+      const deletedCount = Number(result.data?.deletedCount ?? 0);
+
+      setDeletedQuestions([]);
+      setPermanentDeleteTarget(null);
+
+      window.alert(
+        `${deletedCount.toLocaleString("bn-BD")}টি প্রশ্ন স্থায়ীভাবে Delete করা হয়েছে।`,
+      );
+    } catch (error) {
+      setTrashError(
+        error instanceof Error
+          ? error.message
+          : "Trash খালি করতে সমস্যা হয়েছে।",
+      );
+    } finally {
+      setEmptyingTrash(false);
+    }
+  };
   const toggleTrash = () => {
     const nextState = !showTrash;
     setShowTrash(nextState);
@@ -912,7 +1031,7 @@ export default function QuestionBankPage() {
     {
       key: "institution",
       label: "প্রতিষ্ঠান",
-      options: [...new Set(questions.map((q) => q.institution).filter(Boolean))],
+      options: [...new Set(groupOptions.institutions.map((item) => item.name).filter(Boolean))],
     },
     {
       key: "exam",
@@ -1075,6 +1194,20 @@ export default function QuestionBankPage() {
                   </p>
                 </div>
                 <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => void emptyTrash()}
+                  disabled={
+                    deletedQuestions.length === 0 ||
+                    trashLoading ||
+                    emptyingTrash ||
+                    recoveringId !== null ||
+                    permanentDeletingId !== null
+                  }
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  {emptyingTrash ? "Trash খালি হচ্ছে..." : "সব Trash Delete করুন"}
+                </Button>                <Button
                   size="sm"
                   variant="outline"
                   onClick={() => void loadTrash()}
@@ -1697,6 +1830,15 @@ export default function QuestionBankPage() {
                 <Button
                   type="button"
                   variant="outline"
+                  onClick={() => void bulkDeleteQuestions()}
+                  disabled={bulkSaving || selectedQuestionIds.length === 0}
+                  className="border-red-300 text-red-700 hover:bg-red-50"
+                >
+                  {bulkSaving ? "Processing..." : "নির্বাচিত প্রশ্ন Trash-এ পাঠান"}
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
                   onClick={() => void publishAllDrafts()}
                   disabled={bulkSaving || draftCount === 0}
                 >
@@ -1826,35 +1968,93 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
-            <p className="text-sm text-slate-600">
-              Page {currentPage} · {questions.length.toLocaleString("bn-BD")} / {totalQuestions.toLocaleString("bn-BD")} টি প্রশ্ন
-            </p>
-            <div className="flex flex-wrap gap-2">
+          <div className="mt-8 flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+            {hasMore && (
               <Button
-                size="sm"
-                variant="outline"
-                disabled={loading || currentPage <= 1}
-                onClick={() => void loadQuestions(currentPage - 1, false)}
-              >
-                ← Previous Page
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                disabled={loading || !hasMore}
-                onClick={() => void loadQuestions(currentPage + 1, false)}
-              >
-                Next Page →
-              </Button>
-              <Button
-                size="sm"
-                disabled={loading || loadingMore || !hasMore}
+                type="button"
+                disabled={loading || loadingMore}
                 onClick={() => void loadQuestions(currentPage + 1, true)}
+                className="bg-green-700 text-white hover:bg-green-800"
               >
-                {loadingMore ? "লোড হচ্ছে..." : "Load More"}
+                {loadingMore ? "লোড হচ্ছে..." : "আরও প্রশ্ন দেখুন ↓"}
+                {!loadingMore && (
+                  <span className="ml-2">Load More · পরবর্তী ২৫টি প্রশ্ন</span>
+                )}
               </Button>
-            </div>
+            )}
+
+            {totalPages > 1 && (
+              <div className="flex flex-col items-center gap-4">
+                <div className="flex flex-wrap items-center justify-center gap-2">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage <= 1 || loading}
+                    onClick={() => void loadQuestions(currentPage - 1, false)}
+                  >
+                    আগের পৃষ্ঠা
+                  </Button>
+
+                  {Array.from(
+                    { length: Math.min(6, totalPages) },
+                    (_, index) =>
+                      Math.max(1, Math.min(currentPage - 2, totalPages - 5)) + index,
+                  ).map((pageNumber) => (
+                    <Button
+                      key={pageNumber}
+                      type="button"
+                      size="sm"
+                      variant={currentPage === pageNumber ? "primary" : "outline"}
+                      disabled={loading}
+                      onClick={() => void loadQuestions(pageNumber, false)}
+                      className={
+                        currentPage === pageNumber
+                          ? "border-green-700 bg-green-700 text-white hover:bg-green-800"
+                          : ""
+                      }
+                    >
+                      {pageNumber}
+                    </Button>
+                  ))}
+
+                  {totalPages > 6 && currentPage < totalPages - 2 && (
+                    <>
+                      <span className="px-1 text-slate-500">...</span>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={loading}
+                        onClick={() => void loadQuestions(totalPages, false)}
+                      >
+                        Last ({totalPages})
+                      </Button>
+                    </>
+                  )}
+
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={currentPage >= totalPages || loading}
+                    onClick={() => void loadQuestions(currentPage + 1, false)}
+                  >
+                    পরের পৃষ্ঠা
+                  </Button>
+                </div>
+
+                <p className="text-sm text-slate-500">
+                  পৃষ্ঠা {currentPage} / {totalPages} · মোট {totalQuestions.toLocaleString("bn-BD")}টি প্রশ্ন
+                </p>
+              </div>
+            )}
+
+            {totalPages <= 1 && (
+              <p className="text-sm text-slate-500">
+                মোট {totalQuestions.toLocaleString("bn-BD")}টি প্রশ্ন
+              </p>
+            )}
           </div>
         )}
 

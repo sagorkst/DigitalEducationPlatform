@@ -110,6 +110,17 @@ export const ReviewStatus = {
 export type ReviewStatus = (typeof ReviewStatus)[keyof typeof ReviewStatus]
 
 
+export const AccountType = {
+  GENERAL: 'GENERAL',
+  STUDENT: 'STUDENT',
+  JOB_SEEKER: 'JOB_SEEKER',
+  TEACHER: 'TEACHER',
+  INSTITUTION: 'INSTITUTION'
+} as const
+
+export type AccountType = (typeof AccountType)[keyof typeof AccountType]
+
+
 export const VerificationChannel = {
   EMAIL: 'EMAIL',
   PHONE: 'PHONE'

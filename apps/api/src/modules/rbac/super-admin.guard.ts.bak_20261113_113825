@@ -1,0 +1,22 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  ForbiddenException,
+  Injectable,
+} from '@nestjs/common';
+
+@Injectable()
+export class SuperAdminGuard implements CanActivate {
+  canActivate(context: ExecutionContext): boolean {
+    const request = context.switchToHttp().getRequest();
+    const roles: string[] = request.user?.roles ?? [];
+
+    if (!roles.includes('SUPER_ADMIN')) {
+      throw new ForbiddenException(
+        'Only SUPER_ADMIN can manage roles and permissions.',
+      );
+    }
+
+    return true;
+  }
+}

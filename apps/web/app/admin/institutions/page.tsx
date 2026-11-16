@@ -46,6 +46,7 @@ export default function AdminInstitutionsPage() {
   const [institutions, setInstitutions] = useState<Institution[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [bulkDeleting, setBulkDeleting] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
@@ -240,6 +241,50 @@ export default function AdminInstitutionsPage() {
     }
   }
 
+  async function deleteAllInstitutions() {
+    const confirmed = window.confirm(
+      "আপনি কি সব Institution একসাথে Delete করতে চান? যেসব Institution-এর সঙ্গে Exam বা Question Occurrence যুক্ত আছে, সেগুলো নিরাপত্তার জন্য Delete হবে না। এই কাজ Undo করা যাবে না।",
+    );
+
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch("/api/admin/institutions/bulk-delete", {
+        method: "DELETE",
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok || payload?.success === false) {
+        throw new Error(
+          getMessage(payload, `Bulk delete failed (${response.status}).`),
+        );
+      }
+
+      const data = payload?.data ?? payload;
+      const deletedCount = Number(data?.deletedCount ?? 0);
+      const skippedCount = Number(data?.skippedCount ?? 0);
+
+      setNotice(
+        `${deletedCount}টি Institution Delete হয়েছে। ${skippedCount}টি Institution-এর সঙ্গে Exam/Question যুক্ত থাকায় Delete করা হয়নি।`,
+      );
+
+      setPage(1);
+      await loadInstitutions();
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "সব Institution Delete করা যায়নি।",
+      );
+    } finally {
+      setBulkDeleting(false);
+    }
+  }
   if (access === "checking") {
     return <PanelMessage text="Permission যাচাই করা হচ্ছে..." />;
   }
@@ -384,7 +429,17 @@ export default function AdminInstitutionsPage() {
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <h2 className="font-bold text-slate-900">Institution Directory</h2>
-          <span className="text-sm text-slate-500">Total: {total}</span>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-sm text-slate-500">Total: {total}</span>
+            <button
+              type="button"
+              onClick={deleteAllInstitutions}
+              disabled={bulkDeleting || loading || total === 0}
+              className="rounded-lg border border-red-300 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {bulkDeleting ? "Deleting..." : "সব Institution Delete করুন"}
+            </button>
+          </div>
         </div>
 
         <form onSubmit={applySearch} className="mt-4 grid gap-3 md:grid-cols-4">
@@ -534,3 +589,4 @@ function PanelMessage({ text }: { text: string }) {
     </div>
   );
 }
+

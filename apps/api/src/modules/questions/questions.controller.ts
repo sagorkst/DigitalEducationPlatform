@@ -18,6 +18,7 @@ import { QuestionsBulkService } from './questions-bulk.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { BulkUpdateQuestionsDto } from './dto/bulk-update-questions.dto';
+import { BulkDeleteQuestionsDto } from './dto/bulk-delete-questions.dto';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -37,6 +38,14 @@ export class QuestionsController {
   @HttpCode(HttpStatus.OK)
   async bulkUpdate(@Body() dto: BulkUpdateQuestionsDto) {
     return this.questionsBulkService.bulkUpdate(dto);
+  }
+
+  // MOVE SELECTED QUESTIONS TO TRASH
+  @Post('bulk/delete')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkSoftDelete(@Body() dto: BulkDeleteQuestionsDto) {
+    return this.questionsBulkService.bulkSoftDelete(dto.ids);
   }
 
   // PUBLISH ALL ACTIVE DRAFT QUESTIONS
@@ -139,6 +148,13 @@ export class QuestionsController {
     });
   }
 
+  // EMPTY TRASH - PERMANENTLY DELETE ALL TRASHED QUESTIONS
+  @HttpCode(HttpStatus.OK)
+  @Delete('trash/empty')
+  @RequirePermissions('content.manage')
+  async emptyTrash() {
+    return this.questionsService.emptyTrash();
+  }
   // GET QUESTION BY ID
   @Get(':id')
   @RequirePermissions('content.manage')

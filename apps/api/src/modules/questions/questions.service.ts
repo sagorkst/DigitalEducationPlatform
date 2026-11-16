@@ -1,4 +1,4 @@
-﻿import {
+import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -747,13 +747,41 @@ export class QuestionsService {
         : {}),
 
       ...(query.institution?.trim()
-        ? {
-            institution: {
-              contains: query.institution.trim(),
-              mode: 'insensitive',
+  ? {
+      OR: [
+        {
+          institution: {
+            contains: query.institution.trim(),
+            mode: 'insensitive',
+          },
+        },
+        {
+          institutionRef: {
+            is: {
+              name: {
+                contains: query.institution.trim(),
+                mode: 'insensitive',
+              },
             },
-          }
-        : {}),
+          },
+        },
+        {
+          examRef: {
+            is: {
+              institution: {
+                is: {
+                  name: {
+                    contains: query.institution.trim(),
+                    mode: 'insensitive',
+                  },
+                },
+              },
+            },
+          },
+        },
+      ],
+    }
+  : {}),
 
       ...(query.exam?.trim()
         ? {
@@ -1719,4 +1747,63 @@ export class QuestionsService {
       };
     });
   }
-}
+
+  // PERMANENTLY DELETE ALL QUESTIONS IN TRASH ONLY
+  async emptyTrash() {
+    return this.prisma.$transaction(async (tx) => {
+      const trashedQuestions = await tx.question.findMany({
+        where: {
+          deletedAt: {
+            not: null,
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const ids = trashedQuestions.map((question) => question.id);
+
+      if (ids.length === 0) {
+        return {
+          success: true,
+          message: 'Trash is already empty.',
+          data: {
+            deletedCount: 0,
+            detachedImportRows: 0,
+          },
+        };
+      }
+
+      const detachedImportRows = await tx.importRow.updateMany({
+        where: {
+          questionId: {
+            in: ids,
+          },
+        },
+        data: {
+          questionId: null,
+        },
+      });
+
+      const deletion = await tx.question.deleteMany({
+        where: {
+          id: {
+            in: ids,
+          },
+          deletedAt: {
+            not: null,
+          },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'All trashed questions permanently deleted.',
+        data: {
+          deletedCount: deletion.count,
+          detachedImportRows: detachedImportRows.count,
+        },
+      };
+    });
+  }}

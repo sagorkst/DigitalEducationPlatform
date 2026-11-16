@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   BadRequestException,
   ConflictException,
@@ -312,6 +312,50 @@ export class InstitutionsService {
     }
   }
 
+  async removeAllUnlinked() {
+    return this.prisma.$transaction(async (tx) => {
+      const linkedInstitutions = await tx.institution.findMany({
+        where: {
+          OR: [
+            { exams: { some: {} } },
+            { occurrences: { some: {} } },
+          ],
+        },
+        select: {
+          id: true,
+          name: true,
+          _count: {
+            select: {
+              exams: true,
+              occurrences: true,
+            },
+          },
+        },
+      });
+
+      const deletion = await tx.institution.deleteMany({
+        where: {
+          exams: { none: {} },
+          occurrences: { none: {} },
+        },
+      });
+
+      return {
+        success: true,
+        message: 'Unlinked institutions deleted successfully.',
+        data: {
+          deletedCount: deletion.count,
+          skippedCount: linkedInstitutions.length,
+          skippedInstitutions: linkedInstitutions.map((item) => ({
+            id: item.id,
+            name: item.name,
+            exams: item._count.exams,
+            occurrences: item._count.occurrences,
+          })),
+        },
+      };
+    });
+  }
   async remove(id: string) {
     const institution = await this.prisma.institution.findUnique({
       where: { id },
