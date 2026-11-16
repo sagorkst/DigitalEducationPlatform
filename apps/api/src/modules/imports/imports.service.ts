@@ -172,10 +172,11 @@ export class ImportsService {
       // Legacy JSON options remain supported.
       if (!('options' in data)) {
         const letters = ['A', 'B', 'C', 'D'];
-        const correctAnswerValue = String(data.correctAnswer ?? data.optionE ?? '').trim();
-        const correctOption = /^[A-D]$/i.test(correctAnswerValue)
-          ? correctAnswerValue.toUpperCase()
-          : '';
+        const correctAnswerValue = String(data.correctAnswer ?? '').trim();
+        const correctAnswerTokens = correctAnswerValue
+          .split(/[,;|]/)
+          .map((token) => token.trim())
+          .filter(Boolean);
 
         const flatOptions: ImportData[] = [];
 
@@ -186,10 +187,11 @@ export class ImportsService {
             flatOptions.push({
               label: letter,
               optionText,
-              isCorrect:
-                correctOption === letter ||
-                (correctAnswerValue !== '' &&
-                  optionText.toLowerCase() === correctAnswerValue.toLowerCase()),
+              isCorrect: correctAnswerTokens.some(
+                (token) =>
+                  token.toUpperCase() === letter ||
+                  token.toLowerCase() === optionText.toLowerCase(),
+              ),
               sortOrder: index + 1,
             });
           }
@@ -199,12 +201,16 @@ export class ImportsService {
           data.options = flatOptions;
         }
 
-        const selected = flatOptions.find(
+        const selected = flatOptions.filter(
           (option) => option.isCorrect === true,
         );
 
-        if (selected) {
-          data.correctAnswer = selected.optionText;
+        if (selected.length > 0) {
+          data.correctAnswer = selected
+            .map((option) => String(option.optionText))
+            .join(', ');
+        } else {
+          delete data.correctAnswer;
         }
       }      // Separate exam columns -> occurrences array.
       // Existing JSON occurrences remain supported.
@@ -344,12 +350,11 @@ export class ImportsService {
       if (!Array.isArray(options)) {
         errors.push('Options must be an array.');
       } else {
-        if (options.length < 2 || options.length > 10) {
-          errors.push('Options must contain 2 to 10 items.');
+        if (options.length < 2 || options.length > 4) {
+          errors.push('MCQ options must contain 2 to 4 items.');
         }
 
         const labels = new Set<string>();
-        let correctCount = 0;
 
         options.forEach((option, index) => {
           if (
@@ -394,19 +399,7 @@ export class ImportsService {
             );
           }
 
-          if (item.isCorrect === true) {
-            correctCount++;
-          }
         });
-
-        if (
-          questionType === 'MCQ' &&
-          correctCount !== 1
-        ) {
-          errors.push(
-            'MCQ must have exactly one correct option.',
-          );
-        }
       }
     } else if (questionType === 'MCQ') {
       errors.push('MCQ questions require options.');
