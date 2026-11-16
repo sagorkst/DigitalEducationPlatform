@@ -1,5 +1,4 @@
-
-"use client";
+﻿"use client";
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -55,13 +54,10 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [profileOpen, setProfileOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-
   const [user, setUser] = useState<UserProfile | null>(null);
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
-  const [logoutLoading, setLogoutLoading] = useState(false);
 
   async function verifySession() {
     setAuthLoading(true);
@@ -81,17 +77,13 @@ export default function DashboardPage() {
       }
 
       if (!response.ok || !result.success || !result.data?.user) {
-        setAuthError(
-          result.message ?? "আপনার Session যাচাই করা যায়নি।",
-        );
+        setAuthError(result.message ?? "আপনার Session যাচাই করা যায়নি।");
         return;
       }
 
       setUser(result.data.user);
     } catch {
-      setAuthError(
-        "সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। আবার চেষ্টা করুন।",
-      );
+      setAuthError("সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না। আবার চেষ্টা করুন।");
     } finally {
       setAuthLoading(false);
     }
@@ -100,27 +92,6 @@ export default function DashboardPage() {
   useEffect(() => {
     void verifySession();
   }, []);
-
-  async function handleLogout() {
-    if (logoutLoading) return;
-
-    setLogoutLoading(true);
-
-    try {
-      await fetch("/api/auth/logout", {
-        method: "POST",
-        cache: "no-store",
-      });
-
-      router.replace("/login");
-      router.refresh();
-    } catch {
-      setAuthError(
-        "Logout সম্পন্ন করা যায়নি। আবার চেষ্টা করুন।",
-      );
-      setLogoutLoading(false);
-    }
-  }
 
   if (authLoading) {
     return (
@@ -165,8 +136,6 @@ export default function DashboardPage() {
     );
   }
 
-  const userInitial = user.name.trim().charAt(0) || "শি";
-
   return (
     <main className="min-h-screen bg-slate-50">
       <div className="mx-auto flex max-w-[1600px]">
@@ -191,9 +160,11 @@ export default function DashboardPage() {
                   ✕
                 </button>
               </div>
+
               <p className="mb-4 text-xs font-bold tracking-wider text-slate-400">
                 MAIN MENU
               </p>
+
               <nav className="space-y-2">
                 {menuItems.map((item) => (
                   <a
@@ -211,6 +182,7 @@ export default function DashboardPage() {
                   </a>
                 ))}
               </nav>
+
               <a
                 href="/"
                 className="mt-10 block text-sm font-semibold text-slate-500"
@@ -282,148 +254,98 @@ export default function DashboardPage() {
               ☰
             </button>
 
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-sm font-medium text-slate-500">
                 শিক্ষাসেতু ড্যাশবোর্ড
               </p>
               <h1 className="mt-2 text-2xl font-black text-slate-900 sm:text-3xl">
-                স্বাগতম, {user.name}! 👋
+                আপনার ড্যাশবোর্ডে স্বাগতম! 👋
               </h1>
               <p className="mt-2 text-sm text-slate-500">
                 আজকের পড়াশোনা ও অগ্রগতির সংক্ষিপ্ত চিত্র।
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setNotificationOpen(!notificationOpen)}
-                  aria-label="নোটিফিকেশন"
-                  aria-expanded={notificationOpen}
-                  className="relative rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
-                >
-                  🔔
-                  <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
-                </button>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setNotificationOpen(!notificationOpen)}
+                aria-label="নোটিফিকেশন"
+                aria-expanded={notificationOpen}
+                className="relative rounded-xl border border-slate-200 bg-white p-3 hover:bg-slate-50"
+              >
+                🔔
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500" />
+              </button>
 
-                {notificationOpen && (
-                  <div className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[90vw] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                      <h3 className="font-black text-slate-900">
-                        নোটিফিকেশন
-                      </h3>
-                      <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
-                        ৩টি নতুন
+              {notificationOpen && (
+                <div className="absolute right-0 top-full z-40 mt-2 w-80 max-w-[90vw] rounded-2xl border border-slate-200 bg-white p-4 shadow-xl">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-black text-slate-900">
+                      নোটিফিকেশন
+                    </h3>
+                    <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-bold text-blue-700">
+                      ৩টি নতুন
+                    </span>
+                  </div>
+
+                  <div className="divide-y divide-slate-100">
+                    <div className="flex gap-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50">
+                        📝
                       </span>
-                    </div>
-                    <div className="divide-y divide-slate-100">
-                      <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-50">
-                          📝
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            নতুন মডেল টেস্ট উপলভ্য
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            বাংলা মডেল টেস্ট - ০২ এখন অনুশীলন করতে পারবেন।
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            ১০ মিনিট আগে
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50">
-                          📚
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            কোর্সের নতুন পাঠ যোগ হয়েছে
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            English Grammar কোর্সে নতুন পাঠ যুক্ত হয়েছে।
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            গতকাল
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-3 py-3">
-                        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50">
-                          📢
-                        </span>
-                        <div>
-                          <p className="text-sm font-bold text-slate-800">
-                            নতুন নোটিশ প্রকাশিত
-                          </p>
-                          <p className="mt-1 text-xs text-slate-500">
-                            শিক্ষাসেতুর সর্বশেষ নোটিশ দেখে নিন।
-                          </p>
-                          <p className="mt-1 text-xs text-slate-400">
-                            ২ দিন আগে
-                          </p>
-                        </div>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          নতুন মডেল টেস্ট উপলভ্য
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          বাংলা মডেল টেস্ট - ০২ এখন অনুশীলন করতে পারবেন।
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">
+                          ১০ মিনিট আগে
+                        </p>
                       </div>
                     </div>
-                    <a
-                      href="/notices"
-                      className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-sm font-bold text-blue-700 hover:bg-blue-100"
-                    >
-                      সব নোটিশ দেখুন →
-                    </a>
-                  </div>
-                )}
-              </div>
 
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setProfileOpen(!profileOpen)}
-                  aria-expanded={profileOpen}
-                  className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-2 pr-4 text-left hover:bg-slate-50"
-                >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 font-bold text-blue-700">
-                    {userInitial}
-                  </span>
-                  <span>
-                    <span className="block max-w-36 truncate text-sm font-bold text-slate-800">
-                      {user.name}
-                    </span>
-                    <span className="block text-xs text-slate-500">
-                      {user.email || user.phone || "সাধারণ অ্যাকাউন্ট"}
-                    </span>
-                  </span>
-                  <span className="text-slate-400">⌄</span>
-                </button>
+                    <div className="flex gap-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-emerald-50">
+                        📚
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          কোর্সের নতুন পাঠ যোগ হয়েছে
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          English Grammar কোর্সে নতুন পাঠ যুক্ত হয়েছে।
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">গতকাল</p>
+                      </div>
+                    </div>
 
-                {profileOpen && (
-                  <div className="absolute right-0 top-full z-40 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-                    <a
-                      href="/dashboard/profile"
-                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      👤 আমার প্রোফাইল
-                    </a>
-                    <a
-                      href="/dashboard/settings"
-                      className="block rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
-                    >
-                      ⚙️ সেটিংস
-                    </a>
-                    <div className="my-1 border-t border-slate-100" />
-                    <button
-                      type="button"
-                      onClick={() => void handleLogout()}
-                      disabled={logoutLoading}
-                      className="block w-full rounded-lg px-3 py-2 text-left text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-50"
-                    >
-                      {logoutLoading ? "Logout হচ্ছে..." : "↪ লগআউট"}
-                    </button>
+                    <div className="flex gap-3 py-3">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-50">
+                        📢
+                      </span>
+                      <div>
+                        <p className="text-sm font-bold text-slate-800">
+                          নতুন নোটিশ প্রকাশিত
+                        </p>
+                        <p className="mt-1 text-xs text-slate-500">
+                          শিক্ষাসেতুর সর্বশেষ নোটিশ দেখে নিন।
+                        </p>
+                        <p className="mt-1 text-xs text-slate-400">২ দিন আগে</p>
+                      </div>
+                    </div>
                   </div>
-                )}
-              </div>
+
+                  <a
+                    href="/notices"
+                    className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-sm font-bold text-blue-700 hover:bg-blue-100"
+                  >
+                    সব নোটিশ দেখুন →
+                  </a>
+                </div>
+              )}
             </div>
           </header>
 
@@ -433,9 +355,7 @@ export default function DashboardPage() {
                 key={stat.label}
                 className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm"
               >
-                <div
-                  className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${stat.color}`}
-                >
+                <div className={`flex h-12 w-12 items-center justify-center rounded-xl text-xl ${stat.color}`}>
                   {stat.icon}
                 </div>
                 <p className="mt-5 text-sm font-medium text-slate-500">
@@ -568,9 +488,7 @@ export default function DashboardPage() {
                       <td className="px-3 py-4 font-bold text-slate-800">
                         {exam.title}
                       </td>
-                      <td className="px-3 py-4 text-slate-500">
-                        {exam.date}
-                      </td>
+                      <td className="px-3 py-4 text-slate-500">{exam.date}</td>
                       <td className="px-3 py-4 font-bold text-slate-800">
                         {exam.score}
                       </td>

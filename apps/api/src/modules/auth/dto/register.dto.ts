@@ -1,4 +1,22 @@
-﻿import { IsEmail, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import {
+  IsEmail,
+  IsIn,
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
+
+export const REGISTER_ACCOUNT_TYPES = [
+  'GENERAL',
+  'STUDENT',
+  'JOB_SEEKER',
+  'TEACHER',
+  'INSTITUTION',
+] as const;
+
+export type RegisterAccountType =
+  (typeof REGISTER_ACCOUNT_TYPES)[number];
 
 export class RegisterDto {
   @IsString()
@@ -6,15 +24,16 @@ export class RegisterDto {
   @MaxLength(100)
   name!: string;
 
-  @IsOptional()
   @IsEmail()
   @MaxLength(150)
-  email?: string;
+  email!: string;
 
-  @IsOptional()
   @IsString()
   @Matches(/^\+?[0-9]{10,15}$/)
-  phone?: string;
+  phone!: string;
+
+  @IsIn(REGISTER_ACCOUNT_TYPES)
+  accountType!: RegisterAccountType;
 
   @IsString()
   @MinLength(8)

@@ -797,7 +797,29 @@ export class ImportsService {
     });
   }
 
-  async preview(file: ImportFile) {
+  async previewParsedRows(
+    rows: ImportData[],
+    fileName: string,
+    fileType = 'html',
+  ) {
+    if (!Array.isArray(rows) || rows.length === 0) {
+      throw new BadRequestException('No questions were extracted from HTML.');
+    }
+
+    const virtualFile = {
+      originalname: fileName,
+      buffer: Buffer.from('html-import'),
+      size: 11,
+    } as ImportFile;
+
+    return this.preview(virtualFile, rows, fileType);
+  }
+
+  async preview(
+    file: ImportFile,
+    parsedRows?: ImportData[],
+    sourceFileType?: string,
+  ) {
     if (!file) {
       throw new BadRequestException('No file uploaded.');
     }
@@ -806,14 +828,12 @@ export class ImportsService {
       throw new BadRequestException('Uploaded file is empty.');
     }
 
-    const rows = this.parseFile(file);
+    const rows = parsedRows ?? this.parseFile(file);
 
     const batch = await this.prisma.importBatch.create({
       data: {
         fileName: file.originalname,
-        fileType:
-          file.originalname.split('.').pop()?.toLowerCase() ??
-          'unknown',
+        fileType: sourceFileType ?? file.originalname.split('.').pop()?.toLowerCase() ?? 'unknown',
         status: 'PROCESSING',
         totalRows: rows.length,
         startedAt: new Date(),
@@ -1009,6 +1029,281 @@ export class ImportsService {
     };
   }
 
+  private async revalidateBatchRows(
+    tx: Prisma.TransactionClient,
+    batchId: string,
+  ) {
+    const rows = await tx.importRow.findMany({
+      where: {
+        batchId,
+        status: {
+          in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'],
+        },
+      },
+      orderBy: { rowNumber: 'asc' },
+    });
+
+    let validRows = 0;
+    let invalidRows = 0;
+    let duplicateRows = 0;
+    const seenQuestions = new Set<string>();
+
+    for (const row of rows) {
+      const data =
+        row.rawData &&
+        typeof row.rawData === 'object' &&
+        !Array.isArray(row.rawData)
+          ? (row.rawData as unknown as ImportData)
+          : {};
+
+      const errors = this.validateRow(data);
+
+      if (errors.length === 0) {
+        errors.push(...await this.validateOccurrenceReferences(data));
+      }
+
+      let rowStatus: 'VALID' | 'INVALID' | 'DUPLICATE' = 'VALID';
+
+      if (errors.length > 0) {
+        rowStatus = 'INVALID';
+        invalidRows++;
+      } else {
+        const questionText = String(data.questionText);
+        const normalized = this.normalizeText(questionText);
+
+        if (seenQuestions.has(normalized)) {
+          rowStatus = 'DUPLICATE';
+          errors.push('Duplicate question found within this import file.');
+          duplicateRows++;
+        } else {
+          seenQuestions.add(normalized);
+
+          const existing = await tx.question.findFirst({
+            where: {
+              deletedAt: null,
+              questionText: {
+                equals: questionText,
+                mode: 'insensitive',
+              },
+            },
+            select: { id: true },
+          });
+
+          if (existing) {
+            rowStatus = 'DUPLICATE';
+            errors.push('An identical question already exists in the question bank.');
+            duplicateRows++;
+          } else {
+            validRows++;
+          }
+        }
+      }
+
+      await tx.importRow.update({
+        where: { id: row.id },
+        data: {
+          status: rowStatus,
+          errorMessages: errors.length > 0
+            ? (errors as Prisma.InputJsonValue)
+            : Prisma.JsonNull,
+        },
+      });
+    }
+
+    await tx.importBatch.update({
+      where: { id: batchId },
+      data: { validRows, invalidRows, duplicateRows },
+    });
+
+    return {
+      totalRows: rows.length,
+      validRows,
+      invalidRows,
+      duplicateRows,
+    };
+  }
+
+  async applyBatchMetadata(
+    batchId: string,
+    metadata: {
+      institution?: unknown;
+      examName?: unknown;
+      examYear?: unknown;
+      postName?: unknown;
+    },
+  ) {
+    const cleanText = (value: unknown): string | undefined => {
+      if (value === undefined || value === null) return undefined;
+
+      if (typeof value !== 'string' && typeof value !== 'number') {
+        throw new BadRequestException('Metadata values must be text or numbers.');
+      }
+
+      const result = String(value).trim();
+      return result || undefined;
+    };
+
+    const institution = cleanText(metadata.institution);
+    const examName = cleanText(metadata.examName);
+    const postName = cleanText(metadata.postName);
+
+    let examYear: number | undefined;
+
+    if (metadata.examYear !== undefined &&
+        metadata.examYear !== null &&
+        String(metadata.examYear).trim() !== '') {
+      examYear = Number(metadata.examYear);
+
+      if (!Number.isInteger(examYear) || examYear < 1900 || examYear > 2100) {
+        throw new BadRequestException('Exam year must be between 1900 and 2100.');
+      }
+    }
+
+    if (!institution && !examName && !postName && examYear === undefined) {
+      throw new BadRequestException('Provide at least one metadata field.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const batch = await tx.importBatch.findUnique({
+        where: { id: batchId },
+        select: { id: true, status: true },
+      });
+
+      if (!batch) throw new NotFoundException('Import batch not found.');
+
+      if (batch.status !== 'REVIEW') {
+        throw new BadRequestException('Only batches in REVIEW status can be edited.');
+      }
+
+      const rows = await tx.importRow.findMany({
+        where: {
+          batchId,
+          status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
+        },
+        select: { id: true, rawData: true },
+      });
+
+      for (const row of rows) {
+        const data =
+          row.rawData &&
+          typeof row.rawData === 'object' &&
+          !Array.isArray(row.rawData)
+            ? ({ ...(row.rawData as Record<string, unknown>) } as ImportData)
+            : {};
+
+        const occurrences: Record<string, unknown>[] =
+          Array.isArray(data.occurrences)
+            ? data.occurrences.map((item) =>
+                item && typeof item === 'object' && !Array.isArray(item)
+                  ? { ...(item as Record<string, unknown>) }
+                  : {},
+              )
+            : [];
+
+        if (occurrences.length === 0) occurrences.push({});
+
+        const occurrence = occurrences[0];
+
+        const fillIfMissing = (
+          key: string,
+          value: string | number | undefined,
+        ) => {
+          if (value === undefined) return;
+
+          const current = occurrence[key];
+
+          if (current === undefined || current === null || String(current).trim() === '') {
+            occurrence[key] = value;
+          }
+        };
+
+        fillIfMissing('institution', institution);
+        fillIfMissing('examName', examName);
+        fillIfMissing('examYear', examYear);
+        fillIfMissing('postName', postName);
+
+        data.occurrences = occurrences;
+
+        await tx.importRow.update({
+          where: { id: row.id },
+          data: { rawData: data as Prisma.InputJsonValue },
+        });
+      }
+
+      const summary = await this.revalidateBatchRows(tx, batchId);
+
+      return {
+        success: true,
+        message: 'Batch metadata applied successfully.',
+        data: { batchId, summary },
+      };
+    });
+  }
+
+  async updateImportRow(
+    batchId: string,
+    rowId: string,
+    rawData: unknown,
+  ) {
+    if (!rawData || typeof rawData !== 'object' || Array.isArray(rawData)) {
+      throw new BadRequestException('Question data must be a valid object.');
+    }
+
+    let serialized: string;
+
+    try {
+      serialized = JSON.stringify(rawData);
+    } catch {
+      throw new BadRequestException('Invalid question data.');
+    }
+
+    if (!serialized || serialized.length > 500000) {
+      throw new BadRequestException('Question data exceeds the allowed size.');
+    }
+
+    const cleanData = JSON.parse(serialized) as ImportData;
+
+    return this.prisma.$transaction(async (tx) => {
+      const batch = await tx.importBatch.findUnique({
+        where: { id: batchId },
+        select: { id: true, status: true },
+      });
+
+      if (!batch) throw new NotFoundException('Import batch not found.');
+
+      if (batch.status !== 'REVIEW') {
+        throw new BadRequestException('Only batches in REVIEW status can be edited.');
+      }
+
+      const row = await tx.importRow.findFirst({
+        where: {
+          id: rowId,
+          batchId,
+          status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
+        },
+        select: { id: true },
+      });
+
+      if (!row) throw new NotFoundException('Editable import row not found.');
+
+      await tx.importRow.update({
+        where: { id: rowId },
+        data: { rawData: cleanData as Prisma.InputJsonValue },
+      });
+
+      const summary = await this.revalidateBatchRows(tx, batchId);
+
+      const updatedRow = await tx.importRow.findUnique({
+        where: { id: rowId },
+      });
+
+      return {
+        success: true,
+        message: 'Import row updated successfully.',
+        data: { row: updatedRow, summary },
+      };
+    });
+  }
   async findRows(
     batchId: string,
     status?: string,

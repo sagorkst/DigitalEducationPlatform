@@ -1,4 +1,3 @@
-
 import {
   Controller,
   Post,
@@ -15,8 +14,10 @@ import {
 } from '@nestjs/common';
 
 import { QuestionsService } from './questions.service';
+import { QuestionsBulkService } from './questions-bulk.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
+import { BulkUpdateQuestionsDto } from './dto/bulk-update-questions.dto';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -27,7 +28,24 @@ import { RequirePermissions } from '../rbac/permissions.decorator';
 export class QuestionsController {
   constructor(
     private readonly questionsService: QuestionsService,
+    private readonly questionsBulkService: QuestionsBulkService,
   ) {}
+
+  // BULK UPDATE SELECTED QUESTIONS
+  @Post('bulk')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkUpdate(@Body() dto: BulkUpdateQuestionsDto) {
+    return this.questionsBulkService.bulkUpdate(dto);
+  }
+
+  // PUBLISH ALL ACTIVE DRAFT QUESTIONS
+  @Post('bulk/publish-drafts')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async publishAllDrafts() {
+    return this.questionsBulkService.publishAllDrafts();
+  }
 
   // CREATE QUESTION
   @Post()
@@ -75,6 +93,34 @@ export class QuestionsController {
       hasAnswer,
       hasExplanation,
       isRepeated,
+    });
+  }
+
+  // GET INSTITUTION AND EXAM GROUP OPTIONS
+  @Get('group-options')
+  @RequirePermissions('content.manage')
+  async getGroupOptions() {
+    return this.questionsService.getGroupOptions();
+  }
+
+  // GET ALL QUESTIONS FOR ONE EXACT EXAM GROUP
+  @Get('by-group')
+  @RequirePermissions('content.manage')
+  async findByGroup(
+    @Query('examId') examId?: string,
+    @Query('institution') institution?: string,
+    @Query('examName') examName?: string,
+    @Query('examYear') examYear?: string,
+    @Query('postName') postName?: string,
+    @Query('department') department?: string,
+  ) {
+    return this.questionsService.findByGroup({
+      examId,
+      institution,
+      examName,
+      examYear,
+      postName,
+      department,
     });
   }
 

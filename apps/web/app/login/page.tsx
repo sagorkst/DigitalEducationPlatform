@@ -1,5 +1,4 @@
-﻿
-"use client";
+﻿"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -50,6 +49,8 @@ export default function LoginPage() {
         setError(result.message ?? "লগইন করা যায়নি। আবার চেষ্টা করুন।");
         return;
       }
+
+      window.dispatchEvent(new Event("shikhasetu:auth-changed"));
 
       router.push("/dashboard");
       router.refresh();

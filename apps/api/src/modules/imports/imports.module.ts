@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+﻿import { Module } from '@nestjs/common';
 
 import { ImportsController } from './imports.controller';
 import { ImportsService } from './imports.service';
@@ -7,6 +7,7 @@ import { ImportsRollbackService } from './imports-rollback.service';
 import { ImportsErrorReportService } from './imports-error-report.service';
 import { OcrService } from './ocr.service';
 import { OcrHistoryService } from './ocr-history.service';
+import { HtmlQuestionParserService } from './html-question-parser.service';
 
 import { QuestionsModule } from '../questions/questions.module';
 import { AuthModule } from '../auth/auth.module';
@@ -22,6 +23,7 @@ import { RbacModule } from '../rbac/rbac.module';
     ImportsErrorReportService,
     OcrService,
     OcrHistoryService,
+    HtmlQuestionParserService,
   ],
   exports: [
     ImportsService,
@@ -30,6 +32,7 @@ import { RbacModule } from '../rbac/rbac.module';
     ImportsErrorReportService,
     OcrService,
     OcrHistoryService,
+    HtmlQuestionParserService,
   ],
 })
 export class ImportsModule {}

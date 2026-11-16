@@ -8,8 +8,15 @@ config({ path: resolve(__dirname, '../../../../.env') });
 
 const userId = process.argv[2];
 
-if (!userId || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)) {
-  throw new Error('সঠিক User ID দিতে হবে।');
+if (
+  !userId ||
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId)
+) {
+  throw new Error('A valid user UUID is required.');
+}
+
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL is not configured.');
 }
 
 const pool = new Pool({
@@ -22,6 +29,11 @@ const prisma = new PrismaClient({
 
 async function main() {
   await prisma.$transaction(async (tx) => {
+    // Serialize every bootstrap attempt across processes.
+    await tx.$queryRaw`
+      SELECT pg_advisory_xact_lock(7411132026::bigint)
+    `;
+
     const user = await tx.user.findUnique({
       where: { id: userId },
       select: {
@@ -32,7 +44,7 @@ async function main() {
     });
 
     if (!user || user.status !== 'ACTIVE' || user.deletedAt !== null) {
-      throw new Error('Account পাওয়া যায়নি অথবা Account ACTIVE নয়।');
+      throw new Error('Target account must exist, be ACTIVE, and not be deleted.');
     }
 
     const role = await tx.role.findUnique({
@@ -41,7 +53,7 @@ async function main() {
     });
 
     if (!role) {
-      throw new Error('SUPER_ADMIN Role পাওয়া যায়নি। আগে Seed চালাও।');
+      throw new Error('SUPER_ADMIN role does not exist. Run the seed first.');
     }
 
     const existingAssignments = await tx.userRole.findMany({
@@ -54,7 +66,9 @@ async function main() {
     );
 
     if (anotherAdmin) {
-      throw new Error('অন্য Account-এ SUPER_ADMIN রয়েছে। কোনো পরিবর্তন করা হয়নি।');
+      throw new Error(
+        'A different SUPER_ADMIN account already exists. No assignment was made.',
+      );
     }
 
     await tx.userRole.createMany({
@@ -63,9 +77,9 @@ async function main() {
     });
   });
 
-  console.log('SUPER_ADMIN successfully assigned.');
+  console.log('SUPER_ADMIN bootstrap successful.');
   console.log(`Account ID: ${userId}`);
-  console.log('Other SUPER_ADMIN accounts: 0');
+  console.log('Exactly one SUPER_ADMIN account is enforced by this bootstrap process.');
 }
 
 main()

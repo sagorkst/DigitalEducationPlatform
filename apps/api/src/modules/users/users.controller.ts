@@ -1,5 +1,7 @@
 ﻿import {
+  BadRequestException,
   Controller,
+  Delete,
   Get,
   Patch,
   Post,
@@ -9,7 +11,11 @@
   Req,
   UseGuards,
   ParseUUIDPipe,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -17,6 +23,7 @@ import { RequirePermissions } from '../rbac/permissions.decorator';
 
 import { UsersService } from './users.service';
 import { VerificationService } from './verification.service';
+import { AvatarService } from './avatar.service';
 import { ListUsersDto } from './dto/list-users.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 import { UpdateMyProfileDto } from './dto/update-my-profile.dto';
@@ -28,6 +35,7 @@ export class UsersController {
   constructor(
     private readonly usersService: UsersService,
     private readonly verificationService: VerificationService,
+    private readonly avatarService: AvatarService,
   ) {}
 
   @Get('me')
@@ -40,6 +48,37 @@ export class UsersController {
   @UseGuards(JwtAuthGuard)
   updateMyProfile(@Body() dto: UpdateMyProfileDto, @Req() request: any) {
     return this.usersService.updateMyProfile(request.user.id, dto);
+  }
+
+  @Post('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+        files: 1,
+      },
+    }),
+  )
+  uploadMyAvatar(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Req() request: any,
+  ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('Please select an image file.');
+    }
+
+    return this.avatarService.uploadMyAvatar(
+      request.user.id,
+      file.buffer,
+    );
+  }
+
+  @Delete('me/avatar')
+  @UseGuards(JwtAuthGuard)
+  removeMyAvatar(@Req() request: any) {
+    return this.avatarService.removeMyAvatar(request.user.id);
   }
 
   @Patch('me/password')

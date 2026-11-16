@@ -74,6 +74,26 @@ type ApiQuestion = {
   occurrences?: ApiOccurrence[];
 };
 
+type ExamGroup = {
+  id: string | null;
+  groupKey: string;
+  institutionId: string | null;
+  institutionName: string;
+  examName: string;
+  examYear: number;
+  postName?: string | null;
+  department?: string | null;
+};
+
+type InstitutionGroup = {
+  id: string | null;
+  groupKey: string;
+  name: string;
+  exams: ExamGroup[];
+};
+
+type QuestionViewMode = "single" | "exam" | "institution";
+
 const initialFilters = {
   from: "",
   to: "",
@@ -192,6 +212,25 @@ export default function QuestionBankPage() {
   const [pageError, setPageError] = useState("");
   const [totalQuestions, setTotalQuestions] = useState(0);
 
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [bulkDifficulty, setBulkDifficulty] = useState("");
+  const [bulkStatus, setBulkStatus] = useState("");
+  const [bulkSaving, setBulkSaving] = useState(false);
+  const [bulkError, setBulkError] = useState("");
+  const [bulkSuccess, setBulkSuccess] = useState("");
+  const [draftCount, setDraftCount] = useState(0);
+
+  const [viewMode, setViewMode] = useState<QuestionViewMode>("single");
+  const [groupOptions, setGroupOptions] = useState<{
+    institutions: InstitutionGroup[];
+    exams: ExamGroup[];
+  }>({ institutions: [], exams: [] });
+  const [selectedInstitutionKey, setSelectedInstitutionKey] = useState<string | null>(null);
+  const [selectedExamGroup, setSelectedExamGroup] = useState<ExamGroup | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+
   const [showTrash, setShowTrash] = useState(false);
   const [trashLoading, setTrashLoading] = useState(false);
   const [trashError, setTrashError] = useState("");
@@ -206,14 +245,18 @@ export default function QuestionBankPage() {
     questionId: string;
   } | null>(null);
 
-  const loadQuestions = useCallback(async () => {
-    setLoading(true);
-    setPageError("");
+  const loadQuestions = useCallback(async (requestedPage = 1, append = false) => {
+    if (append) {
+      setLoadingMore(true);
+    } else {
+      setLoading(true);
+      setPageError("");
+    }
 
     try {
       const params = new URLSearchParams();
-      params.set("page", "1");
-      params.set("limit", "100");
+      params.set("page", String(requestedPage));
+      params.set("limit", "25");
 
       if (search.trim()) params.set("search", search.trim());
       if (filters.from) params.set("yearFrom", filters.from);
@@ -236,22 +279,107 @@ export default function QuestionBankPage() {
         throw new Error(result.message || "প্রশ্ন লোড করা যায়নি।");
       }
 
-      const records: ApiQuestion[] = Array.isArray(result.data)
-        ? result.data
-        : [];
+      const records: ApiQuestion[] = Array.isArray(result.data) ? result.data : [];
+      const mapped = records.map(mapQuestion);
 
-      setQuestions(records.map(mapQuestion));
-      setTotalQuestions(result.pagination?.total ?? records.length);
+      setQuestions((old) => append ? [...old, ...mapped] : mapped);
+
+      const total = result.pagination?.total ?? records.length;
+      const totalPages = result.pagination?.totalPages ?? 1;
+
+      setTotalQuestions(total);
+      setCurrentPage(requestedPage);
+      setHasMore(requestedPage < totalPages);
     } catch (error) {
       setPageError(
-        error instanceof Error
-          ? error.message
-          : "প্রশ্ন লোড করতে সমস্যা হয়েছে।",
+        error instanceof Error ? error.message : "প্রশ্ন লোড করতে সমস্যা হয়েছে।",
+      );
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  }, [search, filters]);
+
+  const loadGroupOptions = useCallback(async () => {
+    try {
+      const response = await fetch("/api/questions/group-options", {
+        method: "GET",
+        cache: "no-store",
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Exam group লোড করা যায়নি।");
+      }
+
+      setGroupOptions({
+        institutions: result.data?.institutions ?? [],
+        exams: result.data?.exams ?? [],
+      });
+    } catch (error) {
+      setPageError(
+        error instanceof Error ? error.message : "Exam group লোড করতে সমস্যা হয়েছে।",
+      );
+    }
+  }, []);
+
+  const loadGroupQuestions = useCallback(async (group: ExamGroup) => {
+    setLoading(true);
+    setPageError("");
+    setSelectedExamGroup(group);
+    setSelected(null);
+
+    try {
+      const params = new URLSearchParams();
+
+      if (group.id) {
+        params.set("examId", group.id);
+      } else {
+        params.set("institution", group.institutionName);
+        params.set("examName", group.examName);
+        params.set("examYear", String(group.examYear));
+        if (group.postName) params.set("postName", group.postName);
+        if (group.department) params.set("department", group.department);
+      }
+
+      const response = await fetch(`/api/questions/by-group?${params.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "এই Exam-এর প্রশ্ন লোড করা যায়নি।");
+      }
+
+      const records: ApiQuestion[] = Array.isArray(result.data) ? result.data : [];
+
+      const mapped = records.map((item) => {
+        const question = mapQuestion(item);
+        return {
+          ...question,
+          institution: group.institutionName,
+          exam: group.examName,
+          year: group.examYear,
+          post: group.postName ?? question.post,
+          department: group.department ?? question.department,
+        };
+      });
+
+      setQuestions(mapped);
+      setTotalQuestions(mapped.length);
+      setCurrentPage(1);
+      setHasMore(false);
+    } catch (error) {
+      setQuestions([]);
+      setTotalQuestions(0);
+      setPageError(
+        error instanceof Error ? error.message : "Exam-এর প্রশ্ন লোড করতে সমস্যা হয়েছে।",
       );
     } finally {
       setLoading(false);
     }
-  }, [search, filters]);
+  }, []);
 
   const loadTrash = useCallback(async () => {
     setTrashLoading(true);
@@ -286,16 +414,27 @@ export default function QuestionBankPage() {
   }, []);
 
   useEffect(() => {
+    void loadGroupOptions();
+  }, [loadGroupOptions]);
+
+  useEffect(() => {
+    if (viewMode !== "single" || showTrash) return;
+
     const timer = setTimeout(() => {
-      void loadQuestions();
+      void loadQuestions(1, false);
     }, 300);
 
     return () => clearTimeout(timer);
-  }, [loadQuestions]);
+  }, [loadQuestions, viewMode, showTrash]);
 
   useEffect(() => {
     const refreshQuestions = () => {
-      void loadQuestions();
+      if (viewMode === "single") {
+        void loadQuestions(1, false);
+      } else if (selectedExamGroup) {
+        void loadGroupQuestions(selectedExamGroup);
+      }
+      void loadGroupOptions();
     };
 
     window.addEventListener("shikhasetu:questions-updated", refreshQuestions);
@@ -305,9 +444,160 @@ export default function QuestionBankPage() {
         refreshQuestions,
       );
     };
-  }, [loadQuestions]);
+  }, [loadQuestions, loadGroupOptions, loadGroupQuestions, viewMode, selectedExamGroup]);
 
   const filteredQuestions = useMemo(() => questions, [questions]);
+
+  const refreshDraftCount = useCallback(async () => {
+    try {
+      const response = await fetch(
+        "/api/questions?status=DRAFT&page=1&limit=1",
+        { method: "GET", cache: "no-store" },
+      );
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        setDraftCount(Number(result.pagination?.total ?? 0));
+      }
+    } catch {
+      // Count refresh failure must not interrupt Question Bank usage.
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshDraftCount();
+  }, [refreshDraftCount]);
+
+  const toggleCurrentPageSelection = () => {
+    const currentIds = filteredQuestions.map((question) => question.id);
+    const allSelected =
+      currentIds.length > 0 &&
+      currentIds.every((id) => selectedQuestionIds.includes(id));
+
+    setSelectedQuestionIds((previous) => {
+      if (allSelected) {
+        return previous.filter((id) => !currentIds.includes(id));
+      }
+
+      return Array.from(new Set([...previous, ...currentIds])).slice(0, 500);
+    });
+
+    setBulkError("");
+    setBulkSuccess("");
+  };
+
+  const applyBulkEdit = async () => {
+    if (selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
+      return;
+    }
+
+    if (selectedQuestionIds.length > 500) {
+      setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন পরিবর্তন করা যাবে।");
+      return;
+    }
+
+    const updates: Record<string, string> = {};
+
+    if (bulkDifficulty) updates.difficulty = bulkDifficulty;
+    if (bulkStatus) updates.status = bulkStatus;
+
+    if (Object.keys(updates).length === 0) {
+      setBulkError("পরিবর্তনের জন্য Difficulty অথবা Status নির্বাচন করুন।");
+      return;
+    }
+
+    if (!window.confirm(
+      `${selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
+    )) {
+      return;
+    }
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+
+    try {
+      const response = await fetch("/api/questions/bulk", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ids: selectedQuestionIds,
+          updates: {
+            ...updates,
+            changeNote: "Bulk update from Question Bank management.",
+          },
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Bulk update করা যায়নি।");
+      }
+
+      const count = Number(result.updatedCount ?? 0);
+
+      setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে পরিবর্তন হয়েছে।`);
+      setSelectedQuestionIds([]);
+      setBulkDifficulty("");
+      setBulkStatus("");
+
+      await loadQuestions(1, false);
+      await refreshDraftCount();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(
+        error instanceof Error ? error.message : "Bulk update ব্যর্থ হয়েছে।",
+      );
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
+  const publishAllDrafts = async () => {
+    if (draftCount <= 0) {
+      setBulkError("Publish করার মতো কোনো Draft প্রশ্ন পাওয়া যায়নি।");
+      return;
+    }
+
+    if (!window.confirm(
+      `Database-এর সব ${draftCount}টি active Draft প্রশ্ন Published করবেন? এই কাজটি সব Draft প্রশ্নের জন্য প্রযোজ্য হবে।`,
+    )) {
+      return;
+    }
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+
+    try {
+      const response = await fetch("/api/questions/bulk/publish-drafts", {
+        method: "POST",
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Draft publish করা যায়নি।");
+      }
+
+      const count = Number(result.publishedCount ?? 0);
+
+      setBulkSuccess(`${count}টি Draft প্রশ্ন Published হয়েছে।`);
+      setSelectedQuestionIds([]);
+      await loadQuestions(1, false);
+      await refreshDraftCount();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(
+        error instanceof Error ? error.message : "Bulk publish ব্যর্থ হয়েছে।",
+      );
+    } finally {
+      setBulkSaving(false);
+    }
+  };
 
   const updateFilter = (key: keyof typeof initialFilters, value: string) => {
     setFilters((old) => ({ ...old, [key]: value }));
@@ -1072,6 +1362,53 @@ export default function QuestionBankPage() {
 
         <Card>
           <CardHeader>
+            <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
+            <p className="text-sm text-slate-500">
+              সব প্রশ্ন একসঙ্গে, Exam অনুযায়ী অথবা Institution অনুযায়ী দেখুন।
+            </p>
+          </CardHeader>
+          <CardContent className="flex flex-wrap gap-2">
+            <Button
+              variant={viewMode === "single" ? "outline" : "ghost"}
+              onClick={() => {
+                setViewMode("single");
+                setSelectedExamGroup(null);
+                setSelectedInstitutionKey(null);
+                setSelected(null);
+              }}
+            >
+              Single List
+            </Button>
+            <Button
+              variant={viewMode === "exam" ? "outline" : "ghost"}
+              onClick={() => {
+                setViewMode("exam");
+                setSelectedExamGroup(null);
+                setSelectedInstitutionKey(null);
+                setSelected(null);
+                void loadGroupOptions();
+              }}
+            >
+              Exam Wise
+            </Button>
+            <Button
+              variant={viewMode === "institution" ? "outline" : "ghost"}
+              onClick={() => {
+                setViewMode("institution");
+                setSelectedExamGroup(null);
+                setSelectedInstitutionKey(null);
+                setSelected(null);
+                void loadGroupOptions();
+              }}
+            >
+              Institution Wise
+            </Button>
+          </CardContent>
+        </Card>
+
+        {true && (
+        <Card>
+          <CardHeader>
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Advanced Question Search</CardTitle>
@@ -1164,7 +1501,229 @@ export default function QuestionBankPage() {
             </div>
           </CardContent>
         </Card>
+        )}
 
+        {viewMode !== "single" && (
+          <Card>
+            <CardHeader>
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <CardTitle>
+                    {viewMode === "exam" ? "পরীক্ষাভিত্তিক প্রশ্ন" : "প্রতিষ্ঠানভিত্তিক প্রশ্ন"}
+                  </CardTitle>
+                  <p className="mt-1 text-sm text-slate-500">
+                    একটি নির্দিষ্ট Exam নির্বাচন করলে শুধু সেই Exam-এর প্রশ্ন লোড হবে।
+                  </p>
+                </div>
+                {selectedExamGroup && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      setSelectedExamGroup(null);
+                      setSelected(null);
+                      setQuestions([]);
+                      setTotalQuestions(0);
+                    }}
+                  >
+                    ← Exam তালিকায় ফিরুন
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {!selectedExamGroup && viewMode === "institution" && (
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {groupOptions.institutions.map((institution) => (
+                    <button
+                      key={institution.groupKey}
+                      type="button"
+                      onClick={() => setSelectedInstitutionKey(institution.groupKey)}
+                      className={`rounded-xl border p-4 text-left transition ${
+                        selectedInstitutionKey === institution.groupKey
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-slate-200 hover:border-blue-300"
+                      }`}
+                    >
+                      <p className="font-bold text-slate-900">{institution.name}</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {institution.exams.length.toLocaleString("bn-BD")} টি Exam
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!selectedExamGroup && (
+                <div className="space-y-2">
+                  {(
+                    viewMode === "exam"
+                      ? groupOptions.exams
+                      : groupOptions.institutions.find(
+                          (item) => item.groupKey === selectedInstitutionKey,
+                        )?.exams ?? []
+                  ).map((group) => (
+                    <button
+                      key={group.groupKey}
+                      type="button"
+                      onClick={() => void loadGroupQuestions(group)}
+                      className="w-full rounded-xl border border-slate-200 p-4 text-left transition hover:border-blue-400 hover:bg-blue-50"
+                    >
+                      <p className="font-bold text-slate-900">{group.examName}</p>
+                      <p className="mt-1 text-sm text-slate-500">
+                        {group.institutionName} · {group.examYear}
+                        {group.postName ? ` · ${group.postName}` : ""}
+                        {group.department ? ` · ${group.department}` : ""}
+                      </p>
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {!selectedExamGroup &&
+                (viewMode === "exam" ? groupOptions.exams.length === 0 : groupOptions.institutions.length === 0) && (
+                  <p className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
+                    কোনো Exam group পাওয়া যায়নি।
+                  </p>
+                )}
+
+              {!selectedExamGroup &&
+                viewMode === "institution" &&
+                selectedInstitutionKey &&
+                (groupOptions.institutions.find(
+                  (item) => item.groupKey === selectedInstitutionKey,
+                )?.exams.length ?? 0) === 0 && (
+                  <p className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
+                    এই প্রতিষ্ঠানের কোনো Exam পাওয়া যায়নি।
+                  </p>
+                )}
+
+              {selectedExamGroup && (
+                <div className="rounded-xl bg-blue-50 p-4">
+                  <p className="font-bold text-blue-900">
+                    {selectedExamGroup.institutionName} — {selectedExamGroup.examName}
+                  </p>
+                  <p className="mt-1 text-sm text-blue-800">
+                    {selectedExamGroup.examYear}
+                    {selectedExamGroup.postName ? ` · ${selectedExamGroup.postName}` : ""}
+                    {selectedExamGroup.department ? ` · ${selectedExamGroup.department}` : ""}
+                    {" · "}
+                    {totalQuestions.toLocaleString("bn-BD")} টি প্রশ্ন
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
+        {true && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Bulk Question Management</CardTitle>
+              <p className="text-sm text-slate-500">
+                একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={toggleCurrentPageSelection}
+                  disabled={loading || filteredQuestions.length === 0 || bulkSaving}
+                >
+                  {filteredQuestions.length > 0 &&
+                  filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))
+                    ? "বর্তমান তালিকার নির্বাচন বাতিল"
+                    : "বর্তমান তালিকার সব নির্বাচন"}
+                </Button>
+
+                <span className="text-sm text-slate-600">
+                  নির্বাচিত: {selectedQuestionIds.length}টি
+                </span>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => {
+                    setSelectedQuestionIds([]);
+                    setBulkError("");
+                    setBulkSuccess("");
+                  }}
+                  disabled={selectedQuestionIds.length === 0 || bulkSaving}
+                >
+                  Selection Clear
+                </Button>
+              </div>
+
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Select
+                  label="Bulk Difficulty"
+                  value={bulkDifficulty}
+                  onChange={(e) => setBulkDifficulty(e.target.value)}
+                  disabled={bulkSaving}
+                >
+                  <option value="">পরিবর্তন করবেন না</option>
+                  <option value="EASY">Easy</option>
+                  <option value="MEDIUM">Medium</option>
+                  <option value="HARD">Hard</option>
+                </Select>
+
+                <Select
+                  label="Bulk Status"
+                  value={bulkStatus}
+                  onChange={(e) => setBulkStatus(e.target.value)}
+                  disabled={bulkSaving}
+                >
+                  <option value="">পরিবর্তন করবেন না</option>
+                  <option value="DRAFT">Draft</option>
+                  <option value="PUBLISHED">Published</option>
+                  <option value="HIDDEN">Hidden</option>
+                  <option value="ARCHIVED">Archived</option>
+                </Select>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <Button
+                  type="button"
+                  onClick={() => void applyBulkEdit()}
+                  disabled={bulkSaving || selectedQuestionIds.length === 0}
+                >
+                  {bulkSaving ? "Processing..." : "Apply Bulk Edit"}
+                </Button>
+
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => void publishAllDrafts()}
+                  disabled={bulkSaving || draftCount === 0}
+                >
+                  Publish All Drafts ({draftCount.toLocaleString("bn-BD")})
+                </Button>
+              </div>
+
+              {bulkError && (
+                <p role="alert" className="text-sm text-red-600">
+                  {bulkError}
+                </p>
+              )}
+
+              {bulkSuccess && (
+                <p role="status" className="text-sm text-green-700">
+                  {bulkSuccess}
+                </p>
+              )}
+
+              <p className="text-xs text-slate-500">
+                Select All বর্তমান loaded তালিকার প্রশ্ন নির্বাচন করে। Bulk Edit সর্বোচ্চ ৫০০টি প্রশ্নে কাজ করে। Publish All Drafts database-এর সব active Draft প্রশ্নে কাজ করে; Trash-এর প্রশ্ন এতে অন্তর্ভুক্ত নয়।
+              </p>
+            </CardContent>
+          </Card>
+        )}
+
+        {(viewMode === "single" || selectedExamGroup) && (
         <Card>
           <CardHeader>
             <CardTitle>প্রশ্নের তালিকা</CardTitle>
@@ -1183,8 +1742,28 @@ export default function QuestionBankPage() {
                 {filteredQuestions.map((q) => (
                   <div
                     key={q.id}
-                    className="rounded-xl border border-slate-200 p-4 transition hover:border-blue-300"
+                    className="relative rounded-xl border border-slate-200 p-4 pl-12 transition hover:border-blue-300"
                   >
+                    {true && (
+                      <input
+                        type="checkbox"
+                        aria-label="প্রশ্ন নির্বাচন করুন"
+                        checked={selectedQuestionIds.includes(q.id)}
+                        disabled={bulkSaving}
+                        onChange={() => {
+                          setSelectedQuestionIds((previous) =>
+                            previous.includes(q.id)
+                              ? previous.filter((id) => id !== q.id)
+                              : previous.length < 500
+                                ? [...previous, q.id]
+                                : previous,
+                          );
+                          setBulkError("");
+                          setBulkSuccess("");
+                        }}
+                        className="absolute left-4 top-5 h-4 w-4"
+                      />
+                    )}
                     <button
                       onClick={() =>
                         setSelected(selected === q.id ? null : q.id)
@@ -1244,6 +1823,40 @@ export default function QuestionBankPage() {
             )}
           </CardContent>
         </Card>
+        )}
+
+        {true && (
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4">
+            <p className="text-sm text-slate-600">
+              Page {currentPage} · {questions.length.toLocaleString("bn-BD")} / {totalQuestions.toLocaleString("bn-BD")} টি প্রশ্ন
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || currentPage <= 1}
+                onClick={() => void loadQuestions(currentPage - 1, false)}
+              >
+                ← Previous Page
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                disabled={loading || !hasMore}
+                onClick={() => void loadQuestions(currentPage + 1, false)}
+              >
+                Next Page →
+              </Button>
+              <Button
+                size="sm"
+                disabled={loading || loadingMore || !hasMore}
+                onClick={() => void loadQuestions(currentPage + 1, true)}
+              >
+                {loadingMore ? "লোড হচ্ছে..." : "Load More"}
+              </Button>
+            </div>
+          </div>
+        )}
 
         {selectedQuestion && (
           <Card>

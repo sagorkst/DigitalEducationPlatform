@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   ConflictException,
   HttpException,
@@ -57,11 +57,14 @@ export class VerificationService {
     });
   }
 
-  async requestEmailVerification(userId: string) {
+  private async issueEmailCode(
+    userId: string,
+    expectedStatus: 'ACTIVE' | 'PENDING',
+  ) {
     const user = await this.prisma.user.findFirst({
       where: {
         id: userId,
-        status: 'ACTIVE',
+        status: expectedStatus,
         deletedAt: null,
       },
       select: {
@@ -73,11 +76,11 @@ export class VerificationService {
     });
 
     if (!user) {
-      throw new NotFoundException('Active user পাওয়া যায়নি।');
+      throw new NotFoundException('User account পাওয়া যায়নি।');
     }
 
     if (!user.email) {
-      throw new BadRequestException('প্রথমে Email যোগ করুন।');
+      throw new BadRequestException('Email পাওয়া যায়নি।');
     }
 
     if (user.emailVerified) {
@@ -183,11 +186,26 @@ export class VerificationService {
     };
   }
 
-  async verifyEmail(userId: string, code: string, ipAddress?: string) {
+  async requestEmailVerification(userId: string) {
+    return this.issueEmailCode(userId, 'ACTIVE');
+  }
+
+  async requestRegistrationEmailVerification(userId: string) {
+    return this.issueEmailCode(userId, 'PENDING');
+  }
+
+  private async verifyEmailForStatus(
+    userId: string,
+    expectedEmail: string,
+    code: string,
+    expectedStatus: 'ACTIVE' | 'PENDING',
+    ipAddress?: string,
+  ) {
     const record = await this.prisma.verificationCode.findFirst({
       where: {
         userId,
         channel: 'EMAIL',
+        target: expectedEmail,
         consumedAt: null,
       },
       orderBy: { createdAt: 'desc' },
@@ -246,6 +264,7 @@ export class VerificationService {
         where: {
           id: record.id,
           consumedAt: null,
+          attempts: { lt: this.maxAttempts },
         },
         data: { consumedAt: now },
       });
@@ -257,8 +276,9 @@ export class VerificationService {
       const currentUser = await tx.user.findFirst({
         where: {
           id: userId,
-          email: record.target,
-          status: 'ACTIVE',
+          email: expectedEmail,
+          status: expectedStatus,
+          emailVerified: false,
           deletedAt: null,
         },
         select: { id: true },
@@ -270,7 +290,12 @@ export class VerificationService {
 
       await tx.user.update({
         where: { id: userId },
-        data: { emailVerified: true },
+        data: {
+          emailVerified: true,
+          ...(expectedStatus === 'PENDING'
+            ? { status: 'ACTIVE' }
+            : {}),
+        },
       });
 
       await tx.auditLog.create({
@@ -279,7 +304,10 @@ export class VerificationService {
           action: 'EMAIL_VERIFIED',
           entityType: 'USER',
           entityId: userId,
-          details: { email: record.target },
+          details: {
+            email: expectedEmail,
+            registrationActivation: expectedStatus === 'PENDING',
+          },
           ipAddress: ipAddress || null,
         },
       });
@@ -293,6 +321,47 @@ export class VerificationService {
       );
     }
 
-    return { message: 'Email successfully verified.' };
+    return {
+      message:
+        expectedStatus === 'PENDING'
+          ? 'Email verified. Account is now active.'
+          : 'Email successfully verified.',
+      emailVerified: true,
+      accountActivated: expectedStatus === 'PENDING',
+    };
+  }
+
+  async verifyEmail(userId: string, code: string, ipAddress?: string) {
+    const user = await this.prisma.user.findFirst({
+      where: { id: userId },
+      select: { email: true },
+    });
+
+    if (!user?.email) {
+      throw new NotFoundException('User email পাওয়া যায়নি।');
+    }
+
+    return this.verifyEmailForStatus(
+      userId,
+      user.email,
+      code,
+      'ACTIVE',
+      ipAddress,
+    );
+  }
+
+  async verifyRegistrationEmail(
+    userId: string,
+    email: string,
+    code: string,
+    ipAddress?: string,
+  ) {
+    return this.verifyEmailForStatus(
+      userId,
+      email,
+      code,
+      'PENDING',
+      ipAddress,
+    );
   }
 }

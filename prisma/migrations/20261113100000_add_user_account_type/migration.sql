@@ -1,0 +1,10 @@
+CREATE TYPE "AccountType" AS ENUM (
+  'GENERAL',
+  'STUDENT',
+  'JOB_SEEKER',
+  'TEACHER',
+  'INSTITUTION'
+);
+
+ALTER TABLE "User"
+ADD COLUMN "accountType" "AccountType" NOT NULL DEFAULT 'GENERAL';

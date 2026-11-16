@@ -35,7 +35,13 @@ export class RbacService {
     const name = dto.name.trim();
 
     if (!name) {
-      throw new BadRequestException('Role name ফাঁকা রাখা যাবে না।');
+      throw new BadRequestException('Role name cannot be empty.');
+    }
+
+    if (name.toUpperCase() === 'SUPER_ADMIN') {
+      throw new ForbiddenException(
+        'SUPER_ADMIN is a reserved system role.',
+      );
     }
 
     const existing = await this.prisma.role.findUnique({
@@ -43,7 +49,7 @@ export class RbacService {
     });
 
     if (existing) {
-      throw new ConflictException('এই Role আগে থেকেই রয়েছে।');
+      throw new ConflictException('This role already exists.');
     }
 
     try {
@@ -55,7 +61,7 @@ export class RbacService {
       });
     } catch (error) {
       if (this.isPrismaUniqueError(error)) {
-        throw new ConflictException('এই Role আগে থেকেই রয়েছে।');
+        throw new ConflictException('This role already exists.');
       }
       throw error;
     }
@@ -75,21 +81,18 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new NotFoundException('Role পাওয়া যায়নি।');
+      throw new NotFoundException('Role not found.');
     }
 
     if (role.name === 'SUPER_ADMIN') {
       throw new ForbiddenException(
-        'SUPER_ADMIN Role সাধারণ API দিয়ে মুছে ফেলা যাবে না।',
+        'SUPER_ADMIN cannot be deleted through the normal API.',
       );
     }
 
-    if (
-      role._count.userRoles > 0 ||
-      role._count.memberships > 0
-    ) {
+    if (role._count.userRoles > 0 || role._count.memberships > 0) {
       throw new ConflictException(
-        'এই Role ব্যবহারকারীর সঙ্গে যুক্ত আছে। আগে Role সরাতে হবে।',
+        'This role is assigned. Remove its assignments before deleting it.',
       );
     }
 
@@ -97,7 +100,7 @@ export class RbacService {
 
     return {
       success: true,
-      message: 'Role মুছে ফেলা হয়েছে।',
+      message: 'Role deleted successfully.',
     };
   }
 
@@ -110,12 +113,16 @@ export class RbacService {
   async createPermission(dto: CreatePermissionDto) {
     const key = dto.key.trim();
 
+    if (!key) {
+      throw new BadRequestException('Permission key cannot be empty.');
+    }
+
     const existing = await this.prisma.permission.findUnique({
       where: { key },
     });
 
     if (existing) {
-      throw new ConflictException('এই Permission আগে থেকেই রয়েছে।');
+      throw new ConflictException('This permission already exists.');
     }
 
     try {
@@ -127,7 +134,7 @@ export class RbacService {
       });
     } catch (error) {
       if (this.isPrismaUniqueError(error)) {
-        throw new ConflictException('এই Permission আগে থেকেই রয়েছে।');
+        throw new ConflictException('This permission already exists.');
       }
       throw error;
     }
@@ -140,11 +147,17 @@ export class RbacService {
     ]);
 
     if (!role) {
-      throw new NotFoundException('Role পাওয়া যায়নি।');
+      throw new NotFoundException('Role not found.');
     }
 
     if (!permission) {
-      throw new NotFoundException('Permission পাওয়া যায়নি।');
+      throw new NotFoundException('Permission not found.');
+    }
+
+    if (role.name === 'SUPER_ADMIN') {
+      throw new ForbiddenException(
+        'SUPER_ADMIN permissions cannot be changed through the normal API.',
+      );
     }
 
     try {
@@ -153,29 +166,46 @@ export class RbacService {
       });
     } catch (error) {
       if (this.isPrismaUniqueError(error)) {
-        throw new ConflictException('Permission আগে থেকেই যুক্ত আছে।');
+        throw new ConflictException(
+          'This permission is already assigned to the role.',
+        );
       }
       throw error;
     }
 
     return {
       success: true,
-      message: 'Permission যুক্ত হয়েছে।',
+      message: 'Permission assigned successfully.',
     };
   }
 
   async removePermission(roleId: string, permissionId: string) {
+    const role = await this.prisma.role.findUnique({
+      where: { id: roleId },
+      select: { id: true, name: true },
+    });
+
+    if (!role) {
+      throw new NotFoundException('Role not found.');
+    }
+
+    if (role.name === 'SUPER_ADMIN') {
+      throw new ForbiddenException(
+        'SUPER_ADMIN permissions cannot be changed through the normal API.',
+      );
+    }
+
     const result = await this.prisma.rolePermission.deleteMany({
       where: { roleId, permissionId },
     });
 
     if (!result.count) {
-      throw new NotFoundException('Role-Permission সম্পর্ক পাওয়া যায়নি।');
+      throw new NotFoundException('Role-permission relation not found.');
     }
 
     return {
       success: true,
-      message: 'Permission সরানো হয়েছে।',
+      message: 'Permission removed successfully.',
     };
   }
 
@@ -195,16 +225,16 @@ export class RbacService {
     ]);
 
     if (!user) {
-      throw new NotFoundException('সক্রিয় User পাওয়া যায়নি।');
+      throw new NotFoundException('Active user not found.');
     }
 
     if (!role) {
-      throw new NotFoundException('Role পাওয়া যায়নি।');
+      throw new NotFoundException('Role not found.');
     }
 
     if (role.name === 'SUPER_ADMIN') {
       throw new ForbiddenException(
-        'SUPER_ADMIN Role সাধারণ API দিয়ে Assign করা যাবে না।',
+        'SUPER_ADMIN cannot be assigned through the normal API.',
       );
     }
 
@@ -214,14 +244,16 @@ export class RbacService {
       });
     } catch (error) {
       if (this.isPrismaUniqueError(error)) {
-        throw new ConflictException('এই Role User-কে আগে থেকেই দেওয়া আছে।');
+        throw new ConflictException(
+          'This role is already assigned to the user.',
+        );
       }
       throw error;
     }
 
     return {
       success: true,
-      message: 'User-এর সঙ্গে Role যুক্ত হয়েছে।',
+      message: 'Role assigned to user successfully.',
     };
   }
 
@@ -231,12 +263,12 @@ export class RbacService {
     });
 
     if (!role) {
-      throw new NotFoundException('Role পাওয়া যায়নি।');
+      throw new NotFoundException('Role not found.');
     }
 
     if (role.name === 'SUPER_ADMIN') {
       throw new ForbiddenException(
-        'SUPER_ADMIN Role সাধারণ API দিয়ে সরানো যাবে না।',
+        'SUPER_ADMIN cannot be removed through the normal API.',
       );
     }
 
@@ -245,12 +277,12 @@ export class RbacService {
     });
 
     if (!result.count) {
-      throw new NotFoundException('User-এর সঙ্গে এই Role যুক্ত নেই।');
+      throw new NotFoundException('This role is not assigned to the user.');
     }
 
     return {
       success: true,
-      message: 'User থেকে Role সরানো হয়েছে।',
+      message: 'Role removed from user successfully.',
     };
   }
 

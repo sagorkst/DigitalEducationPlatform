@@ -21,7 +21,7 @@ type ImportRow = {
 const PAGE_SIZE = 100;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
-const ACCEPTED_EXTENSIONS = [".xlsx", ".xls", ".csv", ".json"];
+const ACCEPTED_EXTENSIONS = [".xlsx", ".xls", ".csv", ".json", ".html", ".htm", ".xhtml", ".mhtml", ".mht"];
 
 function formatBytes(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -84,6 +84,17 @@ export default function QuestionImportPanel() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [batchMetadata, setBatchMetadata] = useState({
+    institution: "",
+    examName: "",
+    examYear: "",
+    postName: "",
+  });
+  const [editingRowId, setEditingRowId] = useState("");
+  const [editingData, setEditingData] = useState<Record<string, any> | null>(null);
+  const [optionsJson, setOptionsJson] = useState("[]");
+  const [savingEdit, setSavingEdit] = useState(false);
+
 
   function validateFile(selectedFile: File | null) {
     if (!selectedFile) return;
@@ -95,8 +106,10 @@ export default function QuestionImportPanel() {
       return;
     }
 
-    if (selectedFile.size > MAX_FILE_SIZE) {
-      setError("ফাইলের সর্বোচ্চ সাইজ ১০ MB হতে পারবে।");
+    const isHtml = [".html", ".htm", ".xhtml", ".mhtml", ".mht"].includes(extension);
+    const maxSize = isHtml ? 5 * 1024 * 1024 : MAX_FILE_SIZE;
+    if (selectedFile.size > maxSize) {
+      setError(isHtml ? "HTML ফাইলের সর্বোচ্চ সাইজ ৫ MB।" : "ফাইলের সর্বোচ্চ সাইজ ১০ MB হতে পারবে।");
       return;
     }
 
@@ -146,7 +159,10 @@ export default function QuestionImportPanel() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const response = await fetch("/api/imports/preview", {
+      const extension = `.${file.name.split(".").pop()?.toLowerCase()}`;
+      const isHtml = [".html", ".htm", ".xhtml", ".mhtml", ".mht"].includes(extension);
+      const previewEndpoint = isHtml ? "/api/imports/html/preview" : "/api/imports/preview";
+      const response = await fetch(previewEndpoint, {
         method: "POST",
         body: formData,
       });
@@ -258,6 +274,145 @@ export default function QuestionImportPanel() {
     }
   }
 
+  function updateEditingField(field: string, value: string) {
+    setEditingData((current) =>
+      current ? { ...current, [field]: value } : current,
+    );
+  }
+
+  function updateEditingOccurrence(field: string, value: string) {
+    setEditingData((current) => {
+      if (!current) return current;
+      const occurrences = Array.isArray(current.occurrences)
+        ? [...current.occurrences]
+        : [{}];
+
+      occurrences[0] = {
+        ...(occurrences[0] ?? {}),
+        [field]: field === "examYear" && value.trim() !== ""
+          ? Number(value)
+          : value,
+      };
+
+      return { ...current, occurrences };
+    });
+  }
+
+  function startManualImportEdit(row: ImportRow) {
+    const raw = JSON.parse(JSON.stringify(row.rawData ?? {}));
+    const occurrence = Array.isArray(raw.occurrences)
+      ? raw.occurrences[0] ?? {}
+      : {};
+
+    setEditingRowId(row.id);
+    setEditingData(raw);
+    setOptionsJson(JSON.stringify(raw.options ?? [], null, 2));
+    setError("");
+    setMessage("");
+  }
+
+  async function applyBatchMetadataNow() {
+    if (!batchId) return;
+
+    const body = {
+      institution: batchMetadata.institution.trim() || undefined,
+      examName: batchMetadata.examName.trim() || undefined,
+      examYear: batchMetadata.examYear.trim()
+        ? Number(batchMetadata.examYear)
+        : undefined,
+      postName: batchMetadata.postName.trim() || undefined,
+    };
+
+    if (!body.institution && !body.examName && !body.examYear && !body.postName) {
+      setError("কমপক্ষে একটি Batch Metadata দিন।");
+      return;
+    }
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/imports/${batchId}/metadata`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "Batch metadata apply করা যায়নি।");
+      }
+
+      const payload = result.data ?? result;
+      const counts = payload.summary ?? payload;
+
+      setSummary((current) =>
+        current ? { ...current, ...counts } : current,
+      );
+      await loadRows(batchId, page);
+      setMessage("Batch Metadata প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function saveManualImportEdit() {
+    if (!batchId || !editingRowId || !editingData) return;
+
+    let parsedOptions: unknown;
+
+    try {
+      parsedOptions = JSON.parse(optionsJson);
+      if (!Array.isArray(parsedOptions)) {
+        throw new Error("Options অবশ্যই JSON array হতে হবে।");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Options JSON সঠিক নয়।");
+      return;
+    }
+
+    const rawData = { ...editingData, options: parsedOptions };
+
+    setSavingEdit(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(
+        `/api/imports/${batchId}/rows/${editingRowId}`,
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ rawData }),
+        },
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "Question update করা যায়নি।");
+      }
+
+      const payload = result.data ?? result;
+      const counts = payload.summary ?? payload;
+
+      setSummary((current) =>
+        current ? { ...current, ...counts } : current,
+      );
+      setEditingRowId("");
+      setEditingData(null);
+      await loadRows(batchId, page);
+      setMessage("Question update হয়েছে এবং validation আবার চালানো হয়েছে।");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Question update failed.");
+    } finally {
+      setSavingEdit(false);
+    }
+  }
   function getErrors(row: ImportRow): string[] {
     if (Array.isArray(row.errorMessages)) return row.errorMessages;
     if (typeof row.errorMessages === "string") {
@@ -321,7 +476,7 @@ export default function QuestionImportPanel() {
                 aria-label="Close import panel"
                 className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
               >
-                ✕
+                ×
               </button>
             </div>
 
@@ -332,10 +487,10 @@ export default function QuestionImportPanel() {
                     Supported formats
                   </p>
                   <p className="mt-2 text-lg font-bold text-slate-900">
-                    Excel · CSV · JSON
+                    Excel · CSV · JSON · HTML
                   </p>
                   <p className="mt-1 text-xs text-slate-500">
-                    XLSX, XLS, CSV and JSON
+                    XLSX, XLS, CSV, JSON and HTML/HTM
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
@@ -396,7 +551,7 @@ export default function QuestionImportPanel() {
                     <input
                       ref={fileInputRef}
                       type="file"
-                      accept=".xlsx,.xls,.csv,.json"
+                      accept=".xlsx,.xls,.csv,.json,.html,.htm,.xhtml,.mhtml,.mht"
                       className="hidden"
                       disabled={loading}
                       onChange={(event) => {
@@ -430,7 +585,7 @@ export default function QuestionImportPanel() {
                     </button>
 
                     <p className="mt-4 text-xs text-slate-400">
-                      XLSX, XLS, CSV, JSON · Maximum 10 MB
+                      XLSX, XLS, CSV, JSON (10 MB) · HTML/HTM/XHTML (5 MB)
                     </p>
                   </div>
 
@@ -444,7 +599,7 @@ export default function QuestionImportPanel() {
                           PDF Import
                         </p>
                         <p className="text-xs text-slate-400">
-                          Text extraction & OCR — Coming in a later phase
+                          Text extraction & OCR â€” Coming in a later phase
                         </p>
                       </div>
                     </div>
@@ -462,7 +617,7 @@ export default function QuestionImportPanel() {
                           Image Import
                         </p>
                         <p className="text-xs text-slate-400">
-                          OCR & question extraction — Coming in a later phase
+                          OCR & question extraction â€” Coming in a later phase
                         </p>
                       </div>
                     </div>
@@ -541,6 +696,185 @@ export default function QuestionImportPanel() {
                 </div>
               )}
 
+              {summary && (
+                <div className="mb-6 space-y-5">
+                  <section className="rounded-xl border border-blue-200 bg-white p-4 sm:p-5">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Batch Metadata — Apply to Missing Information
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      একই পরীক্ষার Institution, Exam, Year ও Post একবার লিখুন।
+                      আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
+                    </p>
+
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                      <input
+                        value={batchMetadata.institution}
+                        onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))}
+                        placeholder="Institution"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={batchMetadata.examName}
+                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))}
+                        placeholder="Exam Name"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={batchMetadata.examYear}
+                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))}
+                        placeholder="Exam Year"
+                        inputMode="numeric"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                      <input
+                        value={batchMetadata.postName}
+                        onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))}
+                        placeholder="Post Name"
+                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={applyBatchMetadataNow}
+                      disabled={loading}
+                      className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      Apply to Missing Fields & Revalidate
+                    </button>
+                  </section>
+
+                  <section className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
+                    <h3 className="text-base font-bold text-slate-900">
+                      Manual Question Edit
+                    </h3>
+                    <p className="mt-1 text-xs text-slate-500">
+                      কোনো প্রশ্নের তথ্য অনুপস্থিত বা ভুল হলে প্রশ্ন নির্বাচন করে সম্পাদনা করুন।
+                    </p>
+
+                    <select
+                      value={editingRowId}
+                      onChange={(e) => {
+                        const row = rows.find((item) => item.id === e.target.value);
+                        if (row) startManualImportEdit(row);
+                        else {
+                          setEditingRowId("");
+                          setEditingData(null);
+                        }
+                      }}
+                      className="mt-3 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                    >
+                      <option value="">প্রশ্ন নির্বাচন করুন</option>
+                      {rows.map((row) => (
+                        <option key={row.id} value={row.id}>
+                          Row {row.rowNumber} — {String(row.rawData?.questionText ?? "").slice(0, 100)}
+                        </option>
+                      ))}
+                    </select>
+
+                    {editingData && (
+                      <div className="mt-4 space-y-3">
+                        <textarea
+                          value={String(editingData.questionText ?? "")}
+                          onChange={(e) => updateEditingField("questionText", e.target.value)}
+                          placeholder="Question Text"
+                          rows={3}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+
+                        <div className="grid gap-3 sm:grid-cols-2">
+                          <input
+                            value={String(editingData.subject ?? "")}
+                            onChange={(e) => updateEditingField("subject", e.target.value)}
+                            placeholder="Subject"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={String(editingData.topic ?? "")}
+                            onChange={(e) => updateEditingField("topic", e.target.value)}
+                            placeholder="Topic"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={String(editingData.occurrences?.[0]?.institution ?? "")}
+                            onChange={(e) => updateEditingOccurrence("institution", e.target.value)}
+                            placeholder="Institution"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={String(editingData.occurrences?.[0]?.examName ?? "")}
+                            onChange={(e) => updateEditingOccurrence("examName", e.target.value)}
+                            placeholder="Exam Name"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={String(editingData.occurrences?.[0]?.examYear ?? "")}
+                            onChange={(e) => updateEditingOccurrence("examYear", e.target.value)}
+                            placeholder="Exam Year"
+                            inputMode="numeric"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                          <input
+                            value={String(editingData.occurrences?.[0]?.postName ?? "")}
+                            onChange={(e) => updateEditingOccurrence("postName", e.target.value)}
+                            placeholder="Post Name"
+                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                          />
+                        </div>
+
+                        <label className="block text-xs font-semibold text-slate-600">
+                          Options (JSON Array)
+                          <textarea
+                            value={optionsJson}
+                            onChange={(e) => setOptionsJson(e.target.value)}
+                            rows={6}
+                            spellCheck={false}
+                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
+                          />
+                        </label>
+
+                        <input
+                          value={String(editingData.correctAnswer ?? "")}
+                          onChange={(e) => updateEditingField("correctAnswer", e.target.value)}
+                          placeholder="Correct Answer"
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+
+                        <textarea
+                          value={String(editingData.explanation ?? "")}
+                          onChange={(e) => updateEditingField("explanation", e.target.value)}
+                          placeholder="Explanation"
+                          rows={3}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            type="button"
+                            onClick={saveManualImportEdit}
+                            disabled={savingEdit || loading}
+                            className="rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:opacity-50"
+                          >
+                            {savingEdit ? "Saving..." : "Save & Revalidate"}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setEditingRowId("");
+                              setEditingData(null);
+                            }}
+                            disabled={savingEdit}
+                            className="rounded-lg border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </section>
+                </div>
+              )}
               {summary && (
                 <>
                   <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
@@ -667,7 +1001,7 @@ export default function QuestionImportPanel() {
                       href={`/api/imports/${batchId}/error-report?format=csv`}
                       className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
                     >
-                      Error Report ↓
+                      Error Report →
                     </a>
                   </div>
 
@@ -716,13 +1050,47 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
-                                  {String(raw.questionText ?? "—")}
+                                  {String(raw.questionText ?? "â€”")}
+                                  {Array.isArray(raw.options) && raw.options.length > 0 && (
+                                    <div className="mt-3 space-y-1.5">
+                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; isCorrect?: boolean }, index: number) => (
+                                        <div
+                                          key={`${option.label ?? index}-${index}`}
+                                          className={`rounded-lg px-3 py-2 text-xs ${
+                                            option.isCorrect
+                                              ? "border border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
+                                              : "border border-slate-100 bg-slate-50 text-slate-700"
+                                          }`}
+                                        >
+                                          <span className="mr-2 font-bold">
+                                            {option.label ?? String.fromCharCode(65 + index)}.
+                                          </span>
+                                          {option.optionText ?? option.text ?? ""}
+                                          {option.isCorrect && (
+                                            <span className="ml-2">✓ Correct</span>
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  )}
+
+                                  {raw.correctAnswer != null && (
+                                    <p className="mt-3 text-xs font-semibold text-emerald-700">
+                                      Correct Answer: {String(raw.correctAnswer)}
+                                    </p>
+                                  )}
+
+                                  {raw.explanation != null && String(raw.explanation).trim() !== "" && (
+                                    <p className="mt-2 whitespace-pre-wrap text-xs text-slate-600">
+                                      Explanation: {String(raw.explanation)}
+                                    </p>
+                                  )}
                                 </td>
 
                                 <td className="p-3 text-slate-700">
-                                  {String(raw.subject ?? "—")}
+                                  {String(raw.subject ?? "â€”")}
                                   <p className="mt-1 text-xs text-slate-400">
-                                    {String(raw.topic ?? "—")}
+                                    {String(raw.topic ?? "â€”")}
                                   </p>
                                 </td>
 

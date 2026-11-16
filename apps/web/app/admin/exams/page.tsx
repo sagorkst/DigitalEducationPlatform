@@ -1,0 +1,538 @@
+"use client";
+
+import { FormEvent, useCallback, useEffect, useState } from "react";
+
+type Institution = {
+  id: string;
+  name: string;
+};
+
+type Exam = {
+  id: string;
+  name: string;
+  examYear: number;
+  slug?: string | null;
+  examType?: string | null;
+  description?: string | null;
+  institutionId?: string | null;
+  institution?: Institution | null;
+  createdAt?: string;
+};
+
+type ExamForm = {
+  name: string;
+  examYear: string;
+  slug: string;
+  examType: string;
+  description: string;
+  institutionId: string;
+};
+
+const emptyForm: ExamForm = {
+  name: "",
+  examYear: String(new Date().getFullYear()),
+  slug: "",
+  examType: "",
+  description: "",
+  institutionId: "",
+};
+
+function getMessage(payload: any, fallback: string) {
+  if (Array.isArray(payload?.message)) return payload.message.join(", ");
+  return typeof payload?.message === "string" ? payload.message : fallback;
+}
+
+function getRows(payload: any): Exam[] {
+  if (Array.isArray(payload)) return payload;
+  if (Array.isArray(payload?.data)) return payload.data;
+  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+  return [];
+}
+
+export default function AdminExamsPage() {
+  const [access, setAccess] = useState<"checking" | "allowed" | "denied">("checking");
+  const [exams, setExams] = useState<Exam[]>([]);
+  const [institutions, setInstitutions] = useState<Institution[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const [searchInput, setSearchInput] = useState("");
+  const [search, setSearch] = useState("");
+  const [institutionFilter, setInstitutionFilter] = useState("");
+
+  const [form, setForm] = useState<ExamForm>(emptyForm);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formOpen, setFormOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function verifyAccess() {
+      try {
+        const response = await fetch("/api/users/me", { cache: "no-store" });
+
+        if (!response.ok) {
+          if (active) setAccess("denied");
+          return;
+        }
+
+        const payload = await response.json();
+        const user = payload?.data?.user ?? payload?.data ?? payload?.user ?? payload;
+        const roles = Array.isArray(user?.roles) ? user.roles : [];
+
+        const allowed = roles.some((role: any) =>
+          typeof role === "string"
+            ? role === "SUPER_ADMIN"
+            : role?.name === "SUPER_ADMIN",
+        );
+
+        if (active) setAccess(allowed ? "allowed" : "denied");
+      } catch {
+        if (active) setAccess("denied");
+      }
+    }
+
+    verifyAccess();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const loadData = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const [examResponse, institutionResponse] = await Promise.all([
+        fetch("/api/admin/exams", { cache: "no-store" }),
+        fetch("/api/admin/institutions", { cache: "no-store" }),
+      ]);
+
+      const examPayload = await examResponse.json().catch(() => null);
+      const institutionPayload = await institutionResponse.json().catch(() => null);
+
+      if (!examResponse.ok) {
+        throw new Error(getMessage(examPayload, "Exams load করা যায়নি।"));
+      }
+
+      if (!institutionResponse.ok) {
+        throw new Error(getMessage(institutionPayload, "Institutions load করা যায়নি।"));
+      }
+
+      setExams(getRows(examPayload));
+      setInstitutions(getRows(institutionPayload));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Data load করা যায়নি।");
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (access === "allowed") loadData();
+  }, [access, loadData]);
+
+  function startCreate() {
+    setEditingId(null);
+    setForm({
+      ...emptyForm,
+      examYear: String(new Date().getFullYear()),
+    });
+    setFormOpen(true);
+    setError("");
+    setNotice("");
+  }
+
+  function startEdit(exam: Exam) {
+    setEditingId(exam.id);
+    setForm({
+      name: exam.name || "",
+      examYear: String(exam.examYear ?? ""),
+      slug: exam.slug || "",
+      examType: exam.examType || "",
+      description: exam.description || "",
+      institutionId: exam.institutionId || exam.institution?.id || "",
+    });
+    setFormOpen(true);
+    setError("");
+    setNotice("");
+  }
+
+  async function saveExam(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+    setNotice("");
+
+    try {
+      const examYear = Number(form.examYear);
+
+      if (
+        !Number.isInteger(examYear) ||
+        examYear < 1900 ||
+        examYear > 2100
+      ) {
+        throw new Error("Exam Year অবশ্যই ১৯০০ থেকে ২১০০-এর মধ্যে পূর্ণসংখ্যা হতে হবে।");
+      }
+
+      const body = {
+        name: form.name.trim(),
+        examYear,
+        slug: form.slug.trim() || undefined,
+        examType: form.examType.trim() || undefined,
+        description: form.description.trim() || undefined,
+        institutionId: form.institutionId || undefined,
+      };
+
+      const endpoint = editingId
+        ? `/api/admin/exams/${encodeURIComponent(editingId)}`
+        : "/api/admin/exams";
+
+      const response = await fetch(endpoint, {
+        method: editingId ? "PUT" : "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(getMessage(payload, `Save failed (${response.status}).`));
+      }
+
+      setFormOpen(false);
+      setEditingId(null);
+      setForm(emptyForm);
+      setNotice(editingId ? "Exam updated successfully." : "Exam created successfully.");
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Exam save করা যায়নি।");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function deleteExam(exam: Exam) {
+    if (!window.confirm(`Delete exam "${exam.name}" (${exam.examYear})?`)) return;
+
+    setError("");
+    setNotice("");
+
+    try {
+      const response = await fetch(
+        `/api/admin/exams/${encodeURIComponent(exam.id)}`,
+        { method: "DELETE" },
+      );
+
+      const payload = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(getMessage(payload, `Delete failed (${response.status}).`));
+      }
+
+      setNotice("Exam deleted successfully.");
+      await loadData();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Exam delete করা যায়নি।");
+    }
+  }
+
+  const filteredExams = exams.filter((exam) => {
+    const term = search.toLowerCase();
+
+    const matchesSearch =
+      !term ||
+      exam.name?.toLowerCase().includes(term) ||
+      String(exam.examYear ?? "").includes(term) ||
+      exam.slug?.toLowerCase().includes(term) ||
+      exam.examType?.toLowerCase().includes(term) ||
+      exam.institution?.name?.toLowerCase().includes(term);
+
+    const matchesInstitution =
+      !institutionFilter ||
+      exam.institutionId === institutionFilter ||
+      exam.institution?.id === institutionFilter;
+
+    return matchesSearch && matchesInstitution;
+  });
+
+  if (access === "checking") {
+    return <PanelMessage text="Permission যাচাই করা হচ্ছে..." />;
+  }
+
+  if (access === "denied") {
+    return <PanelMessage text="এই পেজ ব্যবহারের জন্য Super Admin permission প্রয়োজন।" />;
+  }
+
+  return (
+    <div className="space-y-6">
+      <section className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <p className="text-xs font-semibold uppercase tracking-widest text-emerald-700">
+          Examination Administration
+        </p>
+        <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900">Exams Management</h1>
+            <p className="mt-2 text-sm text-slate-500">
+              Exam তৈরি, edit, delete এবং institution অনুযায়ী পরিচালনা করো।
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={startCreate}
+            className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800"
+          >
+            + Add Exam
+          </button>
+        </div>
+      </section>
+
+      {(error || notice) && (
+        <div className="space-y-2">
+          {error && (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+          {notice && (
+            <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {notice}
+            </div>
+          )}
+        </div>
+      )}
+
+      {formOpen && (
+        <section className="rounded-2xl border border-emerald-200 bg-white p-5 shadow-sm">
+          <div className="flex items-center justify-between gap-3">
+            <h2 className="font-bold text-slate-900">
+              {editingId ? "Edit Exam" : "Create Exam"}
+            </h2>
+            <button
+              type="button"
+              onClick={() => setFormOpen(false)}
+              className="rounded-lg px-3 py-2 text-sm text-slate-500 hover:bg-slate-100"
+            >
+              Close
+            </button>
+          </div>
+
+          <form onSubmit={saveExam} className="mt-4 grid gap-4 md:grid-cols-2">
+            <label className="text-sm font-medium text-slate-700">
+              Exam Name *
+              <input
+                required
+                maxLength={200}
+                value={form.name}
+                onChange={(event) => setForm({ ...form, name: event.target.value })}
+                placeholder="e.g. BCS Preliminary Examination"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-700">
+              Exam Year *
+              <input
+                required
+                type="number"
+                min={1900}
+                max={2100}
+                step={1}
+                value={form.examYear}
+                onChange={(event) => setForm({ ...form, examYear: event.target.value })}
+                placeholder="e.g. 2026"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-700">
+              Institution
+              <select
+                value={form.institutionId}
+                onChange={(event) => setForm({ ...form, institutionId: event.target.value })}
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              >
+                <option value="">Select institution (optional)</option>
+                {institutions.map((institution) => (
+                  <option key={institution.id} value={institution.id}>
+                    {institution.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="text-sm font-medium text-slate-700">
+              Slug
+              <input
+                maxLength={100}
+                value={form.slug}
+                onChange={(event) => setForm({ ...form, slug: event.target.value })}
+                placeholder="bcs-preliminary-2026"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-700">
+              Exam Type / Stage
+              <input
+                maxLength={100}
+                value={form.examType}
+                onChange={(event) => setForm({ ...form, examType: event.target.value })}
+                placeholder="Preliminary / Written / Viva"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
+            <label className="text-sm font-medium text-slate-700 md:col-span-2">
+              Description
+              <textarea
+                rows={4}
+                maxLength={5000}
+                value={form.description}
+                onChange={(event) => setForm({ ...form, description: event.target.value })}
+                placeholder="Exam description"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
+            <div className="flex flex-wrap gap-2 md:col-span-2">
+              <button
+                disabled={saving}
+                className="rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50"
+              >
+                {saving ? "Saving..." : editingId ? "Save Changes" : "Create Exam"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setFormOpen(false)}
+                className="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        </section>
+      )}
+
+      <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="font-bold text-slate-900">Exam Directory</h2>
+          <span className="text-sm text-slate-500">
+            {filteredExams.length} exams
+          </span>
+        </div>
+
+        <div className="mt-4 grid gap-3 md:grid-cols-2">
+          <form
+            onSubmit={(event) => {
+              event.preventDefault();
+              setSearch(searchInput.trim());
+            }}
+          >
+            <div className="flex gap-2">
+              <input
+                value={searchInput}
+                onChange={(event) => setSearchInput(event.target.value)}
+                placeholder="Search exam name, year, slug or type"
+                className="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm"
+              />
+              <button className="rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white">
+                Search
+              </button>
+            </div>
+          </form>
+
+          <select
+            value={institutionFilter}
+            onChange={(event) => setInstitutionFilter(event.target.value)}
+            className="rounded-xl border border-slate-300 px-4 py-3 text-sm"
+          >
+            <option value="">All institutions</option>
+            {institutions.map((institution) => (
+              <option key={institution.id} value={institution.id}>
+                {institution.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </section>
+
+      <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+        {loading ? (
+          <p className="p-8 text-center text-sm text-slate-500">Loading exams...</p>
+        ) : filteredExams.length === 0 ? (
+          <p className="p-8 text-center text-sm text-slate-500">
+            কোনো exam পাওয়া যায়নি।
+          </p>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {filteredExams.map((exam) => (
+              <article key={exam.id} className="p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <h3 className="font-bold text-slate-900">{exam.name}</h3>
+                      <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-800">
+                        {exam.examYear ?? "Year missing"}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-sm text-slate-500">
+                      {exam.institution?.name || "No institution assigned"}
+                    </p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {exam.examType && (
+                        <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-800">
+                          {exam.examType}
+                        </span>
+                      )}
+                      {exam.slug && (
+                        <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs text-slate-600">
+                          {exam.slug}
+                        </span>
+                      )}
+                    </div>
+                    {exam.description && (
+                      <p className="mt-3 max-w-3xl text-sm text-slate-600">
+                        {exam.description}
+                      </p>
+                    )}
+                    <p className="mt-2 break-all text-xs text-slate-400">
+                      ID: {exam.id}
+                    </p>
+                  </div>
+
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => startEdit(exam)}
+                      className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => deleteExam(exam)}
+                      className="rounded-lg border border-red-200 px-3 py-2 text-xs font-semibold text-red-700 hover:bg-red-50"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function PanelMessage({ text }: { text: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-sm text-slate-600">
+      {text}
+    </div>
+  );
+}

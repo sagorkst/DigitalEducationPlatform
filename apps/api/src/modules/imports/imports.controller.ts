@@ -22,6 +22,7 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { memoryStorage } from 'multer';
 import { Response } from 'express';
 import * as XLSX from 'xlsx';
+import { simpleParser } from 'mailparser';
 
 import { ImportsService } from './imports.service';
 import { ImportsExportService } from './imports-export.service';
@@ -29,6 +30,7 @@ import { ImportsRollbackService } from './imports-rollback.service';
 import { ImportsErrorReportService } from './imports-error-report.service';
 import { OcrService } from './ocr.service';
 import { OcrHistoryService } from './ocr-history.service';
+import { HtmlQuestionParserService } from './html-question-parser.service';
 import { CommitImportDto } from './dto/commit-import.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -45,6 +47,7 @@ export class ImportsController {
     private readonly errorReportService: ImportsErrorReportService,
     private readonly ocrService: OcrService,
     private readonly ocrHistoryService: OcrHistoryService,
+    private readonly htmlQuestionParserService: HtmlQuestionParserService,
   ) {}
 
   @Post('preview')
@@ -66,7 +69,132 @@ export class ImportsController {
     return this.importsService.preview(file);
   }
 
-  @Post('ocr/preview')
+  @Post('html/preview')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 5 * 1024 * 1024,
+      },
+    }),
+  )
+  async htmlPreview(@UploadedFile() file: Express.Multer.File) {
+    if (!file || !file.buffer) {
+      throw new BadRequestException(
+        'Please upload a saved HTML or HTM file.',
+      );
+    }
+
+    if (!/\.(html?|xhtml|mhtml|mht)$/i.test(file.originalname || '')) {
+      throw new BadRequestException(
+        'Only HTML, HTM or XHTML files are supported.',
+      );
+    }
+
+    const isMhtml = /\.(mhtml|mht)$/i.test(file.originalname || '');
+    let html: string;
+
+    if (isMhtml) {
+      const mimeMessage = await simpleParser(file.buffer);
+      html =
+        typeof mimeMessage.html === 'string'
+          ? mimeMessage.html
+          : '';
+
+      if (!html.trim()) {
+        throw new BadRequestException(
+          'No HTML content was found inside the MHTML file.',
+        );
+      }
+    } else {
+      html = file.buffer
+        .toString('utf8')
+        .replace(/^\uFEFF/, '');
+    }
+
+    if (!html.trim()) {
+      throw new BadRequestException(
+        'The uploaded HTML file is empty.',
+      );
+    }
+
+    const parsed = this.htmlQuestionParserService.parse(
+      html,
+      file.originalname,
+    );
+
+    if (parsed.questions.length > 10000) {
+      throw new BadRequestException(
+        'HTML import cannot contain more than 10,000 questions.',
+      );
+    }
+
+    const rows = parsed.questions.map((question) => {
+      const options = question.options.map((option, index) => ({
+        label: option.label,
+        optionText: option.text,
+        isCorrect: option.isCorrect === true,
+        sortOrder: index + 1,
+      }));
+
+      const correctOption = question.options.find(
+        (option) =>
+          option.label.toUpperCase() ===
+          (question.correctAnswer ?? '').toUpperCase(),
+      );
+
+      return {
+        questionText: question.questionText,
+        questionType: question.questionType,
+        subject: question.subject ?? '',
+        topic: question.topic ?? '',
+        difficulty: 'MEDIUM',
+        status: 'DRAFT',
+        ...(question.questionType === 'MCQ' ? { options } : {}),
+        ...(correctOption
+          ? { correctAnswer: correctOption.text }
+          : {}),
+        ...(question.explanation
+          ? { explanation: question.explanation }
+          : {}),
+        occurrences: [
+          {
+            institution: question.institution ?? '',
+            examName: question.examName ?? '',
+            examYear: question.examYear ?? null,
+            source: 'HTML_IMPORT',
+            sourceUrl: question.sourceUrl ?? undefined,
+          },
+        ],
+        htmlImportMetadata: {
+          sourceUrl: question.sourceUrl,
+          sourceQuestionId: question.sourceQuestionId,
+          imageReferences: question.imageReferences,
+          confidence: question.confidence,
+          warnings: question.warnings,
+        },
+      };
+    });
+
+    const preview = await this.importsService.previewParsedRows(
+      rows,
+      file.originalname,
+      'html',
+    );
+
+    return {
+      ...preview,
+      parser: {
+        detectedStructure: parsed.detectedStructure,
+        totalCandidates: parsed.totalCandidates,
+        extractedCount: parsed.extractedCount,
+        skippedCount: parsed.skippedCount,
+        warnings: parsed.warnings,
+      },
+    };
+  }
+
+@Post('ocr/preview')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('content.manage')
   @UseInterceptors(
@@ -370,6 +498,34 @@ export class ImportsController {
     response.send(result.buffer);
   }
 
+  @Put(':id/metadata')
+  @HttpCode(HttpStatus.OK)
+  applyBatchMetadata(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body()
+    body: {
+      institution?: unknown;
+      examName?: unknown;
+      examYear?: unknown;
+      postName?: unknown;
+    },
+  ) {
+    return this.importsService.applyBatchMetadata(id, body);
+  }
+
+  @Put(':id/rows/:rowId')
+  @HttpCode(HttpStatus.OK)
+  updateImportRow(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('rowId', ParseUUIDPipe) rowId: string,
+    @Body() body: { rawData: unknown },
+  ) {
+    return this.importsService.updateImportRow(
+      id,
+      rowId,
+      body.rawData,
+    );
+  }
   @Get(':id/rows')
   findRows(
     @Param('id', ParseUUIDPipe) id: string,
@@ -419,4 +575,3 @@ export class ImportsController {
     return this.rollbackService.rollback(id);
   }
 }
-

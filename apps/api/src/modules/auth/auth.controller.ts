@@ -1,4 +1,4 @@
-﻿import {
+import {
   Controller,
   Post,
   Get,
@@ -8,6 +8,12 @@
 } from '@nestjs/common';
 import { Request } from 'express';
 import { Throttle } from '@nestjs/throttler';
+import {
+  IsString,
+  Matches,
+  MaxLength,
+  MinLength,
+} from 'class-validator';
 
 import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
@@ -22,6 +28,21 @@ interface AuthenticatedRequest extends Request {
   user: { id: string };
 }
 
+class RegistrationTokenDto {
+  @IsString()
+  @MinLength(20)
+  @MaxLength(2000)
+  token!: string;
+}
+
+class VerifyRegistrationEmailDto extends RegistrationTokenDto {
+  @IsString()
+  @Matches(/^\d{6}$/, {
+    message: 'Verification code must contain exactly 6 digits.',
+  })
+  code!: string;
+}
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -30,9 +51,49 @@ export class AuthController {
     private readonly sessionService: SessionService,
   ) {}
 
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
   @Post('register')
   register(@Body() dto: RegisterDto) {
     return this.authService.register(dto);
+  }
+
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
+  @Post('register/resend-verification')
+  resendRegistrationVerification(
+    @Body() dto: RegistrationTokenDto,
+  ) {
+    return this.authService.resendRegistrationVerification(dto.token);
+  }
+
+  @Throttle({
+    default: {
+      limit: 5,
+      ttl: 60000,
+      blockDuration: 60000,
+    },
+  })
+  @Post('register/verify-email')
+  verifyRegistrationEmail(
+    @Body() dto: VerifyRegistrationEmailDto,
+    @Req() request: Request,
+  ) {
+    return this.authService.verifyRegistrationEmail(
+      dto.token,
+      dto.code,
+      request.ip,
+    );
   }
 
   @Throttle({

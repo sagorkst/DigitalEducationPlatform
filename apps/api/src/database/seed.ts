@@ -1,4 +1,3 @@
-
 import { config } from 'dotenv';
 import { resolve } from 'path';
 import { PrismaPg } from '@prisma/adapter-pg';
@@ -108,7 +107,11 @@ async function main() {
 
   const adminPermissions = permissions
     .map((permission) => permission.key)
-    .filter((key) => key !== 'system.settings.manage');
+    .filter(
+      (key) =>
+        key !== 'system.settings.manage' &&
+        key !== 'rbac.manage',
+    );
 
   const superAdminPermissions = permissions.map(
     (permission) => permission.key,
@@ -148,6 +151,19 @@ async function main() {
     data: assignments,
     skipDuplicates: true,
   });
+
+  // Remove any previously assigned RBAC management permission from ADMIN.
+  const adminRoleId = roleIds['ADMIN'];
+  const rbacManagePermissionId = permissionIds['rbac.manage'];
+
+  if (adminRoleId && rbacManagePermissionId) {
+    await prisma.rolePermission.deleteMany({
+      where: {
+        roleId: adminRoleId,
+        permissionId: rbacManagePermissionId,
+      },
+    });
+  }
 
   console.log('\n========== SEED SUMMARY ==========');
   console.log(`Roles: ${roleRecords.length}`);

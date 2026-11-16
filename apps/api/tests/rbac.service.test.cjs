@@ -234,7 +234,11 @@ test('13 - Reject permission assignment when role does not exist', async () => {
 });
 
 test('14 - Remove permission successfully', async () => {
-  const rbac = service();
+  const rbac = service({
+    role: {
+      findUnique: async () => ({ id: 'role-1', name: 'EDITOR' }),
+    },
+  });
 
   const result = await rbac.removePermission(
     'role-1',
@@ -246,6 +250,9 @@ test('14 - Remove permission successfully', async () => {
 
 test('15 - Reject removal of missing permission relation', async () => {
   const rbac = service({
+    role: {
+      findUnique: async () => ({ id: 'role-1', name: 'EDITOR' }),
+    },
     rolePermission: {
       deleteMany: async () => ({ count: 0 }),
     },
@@ -397,5 +404,52 @@ test('24 - Reject role assignment when role does not exist', async () => {
   await assert.rejects(
     rbac.assignRole('user-1', 'missing-role'),
     NotFoundException,
+  );
+});
+
+test('25 - Reject creation of reserved SUPER_ADMIN role', async () => {
+  const rbac = service();
+
+  await assert.rejects(
+    rbac.createRole({ name: 'SUPER_ADMIN' }),
+    ForbiddenException,
+  );
+});
+
+test('26 - Protect SUPER_ADMIN permissions from assignment changes', async () => {
+  const rbac = service({
+    role: {
+      findUnique: async () => ({
+        id: 'role-1',
+        name: 'SUPER_ADMIN',
+      }),
+    },
+    permission: {
+      findUnique: async () => ({
+        id: 'permission-1',
+        key: 'questions.create',
+      }),
+    },
+  });
+
+  await assert.rejects(
+    rbac.assignPermission('role-1', 'permission-1'),
+    ForbiddenException,
+  );
+});
+
+test('27 - Protect SUPER_ADMIN permissions from removal', async () => {
+  const rbac = service({
+    role: {
+      findUnique: async () => ({
+        id: 'role-1',
+        name: 'SUPER_ADMIN',
+      }),
+    },
+  });
+
+  await assert.rejects(
+    rbac.removePermission('role-1', 'permission-1'),
+    ForbiddenException,
   );
 });

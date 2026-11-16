@@ -1,4 +1,4 @@
-﻿import { Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 
 import { DatabaseModule } from '../../database/database.module';
@@ -7,6 +7,7 @@ import { AuthService } from './auth.service';
 import { PasswordResetService } from './password-reset.service';
 import { SessionService } from './session.service';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { VerificationService } from '../users/verification.service';
 
 @Module({
   imports: [
@@ -36,11 +37,13 @@ import { JwtAuthGuard } from './jwt-auth.guard';
     PasswordResetService,
     SessionService,
     JwtAuthGuard,
+    VerificationService,
   ],
   exports: [
     AuthService,
     JwtAuthGuard,
     JwtModule,
+    VerificationService,
   ],
 })
 export class AuthModule {}

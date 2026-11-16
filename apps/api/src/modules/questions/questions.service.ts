@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -27,7 +27,7 @@ export class QuestionsService {
       (error as { code?: unknown }).code === 'P2002'
     ) {
       throw new ConflictException(
-        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+        'à¦à¦‡ à¦ªà§à¦°à¦¶à§à¦¨à§‡à¦° à¦à¦•à¦‡ à¦ªà¦°à§€à¦•à§à¦·à¦¾à¦° à¦¤à¦¥à§à¦¯ à¦†à¦—à§‡ à¦¥à§‡à¦•à§‡à¦‡ à¦¯à§à¦•à§à¦¤ à¦†à¦›à§‡à¥¤',
       );
     }
 
@@ -312,6 +312,235 @@ export class QuestionsService {
     }
   }
 
+  // ==========================================
+  // GET INSTITUTION / EXAM GROUP OPTIONS
+  // Returns occurrence metadata only, not question contents.
+  // Supports both canonical IDs and legacy text occurrences.
+  // ==========================================
+
+  async getGroupOptions() {
+    const occurrences = await this.prisma.questionOccurrence.findMany({
+      where: {
+        question: {
+          is: {
+            deletedAt: null,
+          },
+        },
+      },
+      select: {
+        institutionId: true,
+        institution: true,
+        examId: true,
+        examName: true,
+        examYear: true,
+        postName: true,
+        department: true,
+        institutionRef: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        examRef: {
+          select: {
+            id: true,
+            name: true,
+            examYear: true,
+            institutionId: true,
+            institution: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+      orderBy: [
+        { institution: 'asc' },
+        { examName: 'asc' },
+        { examYear: 'desc' },
+      ],
+    });
+
+    const institutions = new Map<string, any>();
+    const exams = new Map<string, any>();
+
+    for (const occurrence of occurrences) {
+      const institutionId =
+        occurrence.examRef?.institutionId ??
+        occurrence.institutionId ??
+        null;
+
+      const institutionName =
+        occurrence.examRef?.institution?.name ??
+        occurrence.institutionRef?.name ??
+        occurrence.institution ??
+        'Unknown Institution';
+
+      const institutionKey = institutionId
+        ? `institution:${institutionId}`
+        : `institution-name:${institutionName.trim().toLowerCase()}`;
+
+      if (!institutions.has(institutionKey)) {
+        institutions.set(institutionKey, {
+          id: institutionId,
+          groupKey: institutionKey,
+          name: institutionName,
+          exams: [],
+        });
+      }
+
+      const examName =
+        occurrence.examRef?.name ?? occurrence.examName;
+
+      const examYear =
+        occurrence.examRef?.examYear ?? occurrence.examYear;
+
+      // Canonical Exam ID is preferred.
+      // Legacy groups use the complete identifying combination.
+      const examKey = occurrence.examId
+        ? `exam:${occurrence.examId}`
+        : `legacy:${JSON.stringify([
+            institutionName.trim().toLowerCase(),
+            examName.trim().toLowerCase(),
+            examYear,
+            occurrence.postName ?? null,
+            occurrence.department ?? null,
+          ])}`;
+
+      if (!exams.has(examKey)) {
+        const examGroup = {
+          id: occurrence.examId ?? null,
+          groupKey: examKey,
+          institutionId,
+          institutionName,
+          examName,
+          examYear,
+          postName: occurrence.postName,
+          department: occurrence.department,
+        };
+
+        exams.set(examKey, examGroup);
+        institutions.get(institutionKey).exams.push(examGroup);
+      }
+    }
+
+    return {
+      success: true,
+      data: {
+        institutions: Array.from(institutions.values()).map(
+          (institution) => ({
+            ...institution,
+            exams: institution.exams.sort(
+              (a: any, b: any) =>
+                b.examYear - a.examYear ||
+                a.examName.localeCompare(b.examName),
+            ),
+          }),
+        ),
+        exams: Array.from(exams.values()).sort(
+          (a, b) =>
+            a.institutionName.localeCompare(b.institutionName) ||
+            b.examYear - a.examYear ||
+            a.examName.localeCompare(b.examName),
+        ),
+      },
+    };
+  }
+
+  // ==========================================
+  // GET ALL QUESTIONS FOR ONE EXACT EXAM GROUP
+  // No arbitrary 100-question pagination limit.
+  // One Question record is returned once even if it has
+  // multiple matching occurrences.
+  // ==========================================
+
+  async findByGroup(query: {
+    examId?: string;
+    institution?: string;
+    examName?: string;
+    examYear?: string;
+    postName?: string;
+    department?: string;
+  }) {
+    let occurrenceWhere: Prisma.QuestionOccurrenceWhereInput;
+
+    if (query.examId?.trim()) {
+      occurrenceWhere = {
+        examId: query.examId.trim(),
+      };
+    } else {
+      const institution = query.institution?.trim();
+      const examName = query.examName?.trim();
+      const examYear = Number(query.examYear);
+
+      if (
+        !institution ||
+        !examName ||
+        !query.examYear ||
+        !Number.isInteger(examYear) ||
+        examYear < 1900 ||
+        examYear > 2100
+      ) {
+        throw new BadRequestException(
+          'A valid Exam ID or complete legacy Exam group is required.',
+        );
+      }
+
+      occurrenceWhere = {
+        institution,
+        examName,
+        examYear,
+        postName: query.postName?.trim() || null,
+        department: query.department?.trim() || null,
+        examId: null,
+      };
+    }
+
+    const questions = await this.prisma.question.findMany({
+      where: {
+        deletedAt: null,
+        occurrences: {
+          some: occurrenceWhere,
+        },
+      },
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        options: {
+          orderBy: {
+            sortOrder: 'asc',
+          },
+        },
+        occurrences: {
+          orderBy: {
+            examYear: 'desc',
+          },
+        },
+      },
+    });
+
+    return {
+      success: true,
+      data: questions,
+      pagination: {
+        total: questions.length,
+        page: 1,
+        limit: questions.length,
+        totalPages: questions.length > 0 ? 1 : 0,
+      },
+      group: {
+        examId: query.examId ?? null,
+        institution: query.institution ?? null,
+        examName: query.examName ?? null,
+        examYear: query.examYear ? Number(query.examYear) : null,
+        postName: query.postName ?? null,
+        department: query.department ?? null,
+      },
+    };
+  }
   // ==========================================
   // GET ALL QUESTIONS + ADVANCED FILTERS
   // ==========================================

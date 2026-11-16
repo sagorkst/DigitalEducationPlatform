@@ -10,8 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PermissionsGuard } from './permissions.guard';
-import { RequirePermissions } from './permissions.decorator';
+import { SuperAdminGuard } from './super-admin.guard';
 import { RbacService } from './rbac.service';
 import { CreateRoleDto } from './dto/create-role.dto';
 import { CreatePermissionDto } from './dto/create-permission.dto';
@@ -19,8 +18,7 @@ import { AssignRoleDto } from './dto/assign-role.dto';
 import { AssignPermissionDto } from './dto/assign-permission.dto';
 
 @Controller('rbac')
-@UseGuards(JwtAuthGuard, PermissionsGuard)
-@RequirePermissions('rbac.manage')
+@UseGuards(JwtAuthGuard, SuperAdminGuard)
 export class RbacController {
   constructor(private readonly rbacService: RbacService) {}
 

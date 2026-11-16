@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   ConflictException,
   BadRequestException,
@@ -13,49 +13,95 @@ import * as bcrypt from 'bcryptjs';
 import { PrismaService } from '../../database/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { VerificationService } from '../users/verification.service';
+
+interface RegistrationTokenPayload {
+  sub: string;
+  email: string;
+  purpose: 'registration_email_verification';
+}
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwtService: JwtService,
+    private readonly verificationService: VerificationService,
   ) {}
 
-  async register(dto: RegisterDto) {
-    const name = dto.name.trim();
-    const email = dto.email?.trim().toLowerCase() || null;
-    const phone = dto.phone?.trim() || null;
+  private async verifyRegistrationToken(
+    token: string,
+  ): Promise<RegistrationTokenPayload> {
+    if (!token || typeof token !== 'string') {
+      throw new UnauthorizedException('Registration token required.');
+    }
 
-    if (!email && !phone) {
+    try {
+      const payload =
+        await this.jwtService.verifyAsync<RegistrationTokenPayload>(token);
+
+      if (
+        !payload.sub ||
+        !payload.email ||
+        payload.purpose !== 'registration_email_verification'
+      ) {
+        throw new UnauthorizedException(
+          'Invalid registration verification token.',
+        );
+      }
+
+      return payload;
+    } catch {
+      throw new UnauthorizedException(
+        'Registration token is invalid or expired. Please register again.',
+      );
+    }
+  }
+
+  async register(dto: RegisterDto) {
+    if (
+      !dto ||
+      typeof dto.name !== 'string' ||
+      !dto.name.trim() ||
+      typeof dto.email !== 'string' ||
+      !dto.email.trim() ||
+      typeof dto.phone !== 'string' ||
+      !dto.phone.trim() ||
+      typeof dto.password !== 'string' ||
+      !dto.password ||
+      !['GENERAL', 'STUDENT', 'JOB_SEEKER', 'TEACHER', 'INSTITUTION'].includes(
+        dto.accountType,
+      )
+    ) {
       throw new BadRequestException(
-        'Email or phone number is required.',
+        'Name, email, phone, password and a valid account type are required.',
       );
     }
 
-    if (email) {
-      const existing = await this.prisma.user.findUnique({
-        where: { email },
-        select: { id: true },
-      });
+    const name = dto.name.trim();
+    const email = dto.email.trim().toLowerCase();
+    const phone = dto.phone.trim();
 
-      if (existing) {
-        throw new ConflictException(
-          'An account with this email already exists.',
-        );
-      }
+    const existingEmail = await this.prisma.user.findUnique({
+      where: { email },
+      select: { id: true },
+    });
+
+    if (existingEmail) {
+      throw new ConflictException(
+        'An account with this email already exists.',
+      );
     }
 
-    if (phone) {
-      const existing = await this.prisma.user.findUnique({
-        where: { phone },
-        select: { id: true },
-      });
+    const existingPhone = await this.prisma.user.findUnique({
+      where: { phone },
+      select: { id: true },
+    });
 
-      if (existing) {
-        throw new ConflictException(
-          'An account with this phone number already exists.',
-        );
-      }
+    if (existingPhone) {
+      throw new ConflictException(
+        'An account with this phone number already exists.',
+      );
     }
 
     const passwordHash = await bcrypt.hash(dto.password, 12);
@@ -79,7 +125,9 @@ export class AuthService {
             email,
             phone,
             passwordHash,
+            accountType: dto.accountType,
             status: 'PENDING',
+            emailVerified: false,
             userRoles: {
               create: {
                 roleId: defaultRole.id,
@@ -91,6 +139,7 @@ export class AuthService {
             name: true,
             email: true,
             phone: true,
+            accountType: true,
             status: true,
             createdAt: true,
             userRoles: {
@@ -106,15 +155,41 @@ export class AuthService {
         });
       });
 
+      const registrationToken = await this.jwtService.signAsync(
+        {
+          sub: user.id,
+          email: user.email,
+          purpose: 'registration_email_verification',
+        },
+        { expiresIn: '30m' },
+      );
+
+      let otpSent = true;
+      let otpMessage =
+        'Verification code has been sent to your email address.';
+
+      try {
+        await this.verificationService.requestRegistrationEmailVerification(
+          user.id,
+        );
+      } catch {
+        otpSent = false;
+        otpMessage =
+          'Account created, but email delivery failed. Use resend verification to try again.';
+      }
+
       const { userRoles, ...profile } = user;
 
       return {
         success: true,
-        message:
-          'Registration successful. Your account is waiting for approval.',
+        message: otpMessage,
         data: {
           user: profile,
           roles: userRoles.map((item) => item.role.name),
+          registrationToken,
+          otpSent,
+          expiresInMinutes: 10,
+          registrationTokenExpiresInMinutes: 30,
         },
       };
     } catch (error) {
@@ -131,6 +206,63 @@ export class AuthService {
 
       throw error;
     }
+  }
+
+  async resendRegistrationVerification(token: string) {
+    const payload = await this.verifyRegistrationToken(token);
+
+    const user = await this.prisma.user.findFirst({
+      where: {
+        id: payload.sub,
+        email: payload.email,
+        status: 'PENDING',
+        emailVerified: false,
+        deletedAt: null,
+      },
+      select: { id: true },
+    });
+
+    if (!user) {
+      throw new BadRequestException(
+        'This registration is no longer awaiting email verification.',
+      );
+    }
+
+    const result =
+      await this.verificationService.requestRegistrationEmailVerification(
+        user.id,
+      );
+
+    return {
+      success: true,
+      message: result.message,
+      data: {
+        expiresInMinutes: result.expiresInMinutes,
+        resendAfterSeconds: result.resendAfterSeconds,
+      },
+    };
+  }
+
+  async verifyRegistrationEmail(
+    token: string,
+    code: string,
+    ipAddress?: string,
+  ) {
+    const payload = await this.verifyRegistrationToken(token);
+
+    const result =
+      await this.verificationService.verifyRegistrationEmail(
+        payload.sub,
+        payload.email,
+        code,
+        ipAddress,
+      );
+
+    return {
+      success: true,
+      message: 'Email verified successfully. Your account is now active.',
+      data: result,
+    };
   }
 
   async login(dto: LoginDto) {
@@ -165,7 +297,7 @@ export class AuthService {
 
     if (user.status === 'PENDING') {
       throw new ForbiddenException(
-        'Your account is waiting for approval.',
+        'Please verify your email address before logging in.',
       );
     }
 
@@ -191,6 +323,7 @@ export class AuthService {
           name: user.name,
           email: user.email,
           phone: user.phone,
+          accountType: user.accountType,
           status: user.status,
         },
       },
@@ -210,6 +343,7 @@ export class AuthService {
         email: true,
         phone: true,
         avatar: true,
+        accountType: true,
         status: true,
         emailVerified: true,
         phoneVerified: true,

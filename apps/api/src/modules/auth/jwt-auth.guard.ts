@@ -32,9 +32,14 @@ export class JwtAuthGuard implements CanActivate {
       const payload = await this.jwtService.verifyAsync<{
         sub: string;
         ver?: number;
+        purpose?: string;
       }>(token);
 
-      if (!payload.sub) {
+      // Registration challenge tokens must never authenticate API requests.
+      if (
+        !payload.sub ||
+        payload.purpose !== undefined
+      ) {
         throw new UnauthorizedException('Invalid access token.');
       }
 

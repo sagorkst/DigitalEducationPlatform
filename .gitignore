@@ -48,3 +48,6 @@ apps/web/components/*.before-*
 /update-qbank-three-visibility-toggles.ps1
 # Local layout backups
 apps/web/app/*.bak
+
+# Shikhasetu local uploaded files
+/apps/api/uploads/
