@@ -75,22 +75,83 @@ test('01 - Reject MCQ without at least two options', async () => {
   );
 });
 
-test('02 - does not require a correct option during MCQ validation', async () => {
-  const service = createService({});
+test('02 - accepts MCQ with no correct option selected', async () => {
+  let receivedData;
 
-  await assert.rejects(
-    service.create({
-      questionText: 'Test question',
-      questionType: 'MCQ',
-      subject: 'Math',
-      topic: 'General',
-      occurrences: [],
-      options: [
-        { label: 'A', optionText: 'Option A', isCorrect: false },
-        { label: 'B', optionText: 'Option B', isCorrect: false },
-      ],
-    }),
-    (error) => !String(error.message).includes('exactly one correct option'),
+  const prisma = {
+    $transaction: async (callback) =>
+      callback({
+        question: {
+          create: async (args) => {
+            receivedData = args.data;
+            return {
+              id: QUESTION_ID,
+              ...args.data,
+              options: args.data.options.create,
+              occurrences: [],
+            };
+          },
+        },
+      }),
+  };
+
+  const service = createService(prisma);
+  const result = await service.create({
+    questionText: 'Test question',
+    questionType: 'MCQ',
+    subject: 'Math',
+    topic: 'General',
+    occurrences: [],
+    options: [
+      { label: 'A', optionText: 'Option A', isCorrect: false },
+      { label: 'B', optionText: 'Option B', isCorrect: false },
+    ],
+  });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(
+    receivedData.options.create.map((option) => option.isCorrect),
+    [false, false],
+  );
+});
+
+test('02b - accepts MCQ with multiple correct options', async () => {
+  let receivedData;
+
+  const prisma = {
+    $transaction: async (callback) =>
+      callback({
+        question: {
+          create: async (args) => {
+            receivedData = args.data;
+            return {
+              id: QUESTION_ID,
+              ...args.data,
+              options: args.data.options.create,
+              occurrences: [],
+            };
+          },
+        },
+      }),
+  };
+
+  const service = createService(prisma);
+  const result = await service.create({
+    questionText: 'Test question',
+    questionType: 'MCQ',
+    subject: 'Math',
+    topic: 'General',
+    occurrences: [],
+    options: [
+      { label: 'A', optionText: 'Option A', isCorrect: true },
+      { label: 'B', optionText: 'Option B', isCorrect: true },
+    ],
+  });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(
+    receivedData.options.create.map((option) => option.isCorrect),
+    [true, true],
   );
 });
 
