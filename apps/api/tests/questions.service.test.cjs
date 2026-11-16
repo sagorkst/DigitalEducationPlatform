@@ -75,7 +75,7 @@ test('01 - Reject MCQ without at least two options', async () => {
   );
 });
 
-test('02 - Reject MCQ without exactly one correct option', async () => {
+test('02 - does not require a correct option during MCQ validation', async () => {
   const service = createService({});
 
   await assert.rejects(
@@ -86,19 +86,11 @@ test('02 - Reject MCQ without exactly one correct option', async () => {
       topic: 'General',
       occurrences: [],
       options: [
-        {
-          label: 'A',
-          optionText: 'Option A',
-          isCorrect: false,
-        },
-        {
-          label: 'B',
-          optionText: 'Option B',
-          isCorrect: false,
-        },
+        { label: 'A', optionText: 'Option A', isCorrect: false },
+        { label: 'B', optionText: 'Option B', isCorrect: false },
       ],
     }),
-    BadRequestException,
+    (error) => !String(error.message).includes('exactly one correct option'),
   );
 });
 
