@@ -781,22 +781,11 @@ export class ImportsService {
 
     if (
       questionType === 'MCQ' &&
-      (!dto.options || dto.options.length < 2)
+      (!dto.options || dto.options.length < 2 || dto.options.length > 4)
     ) {
       throw new BadRequestException(
-        'MCQ questions must have at least two options.',
+        'MCQ questions must have 2 to 4 options.',
       );
-    }
-
-    if (questionType === 'MCQ') {
-      const correctOptions =
-        dto.options?.filter((option) => option.isCorrect) ?? [];
-
-      if (correctOptions.length !== 1) {
-        throw new BadRequestException(
-          'MCQ questions must have exactly one correct option.',
-        );
-      }
     }
 
     const questionCode =
