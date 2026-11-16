@@ -146,22 +146,11 @@ export class QuestionsService {
 
     if (
       questionType === 'MCQ' &&
-      (!dto.options || dto.options.length < 2)
+      (!dto.options || dto.options.length < 2 || dto.options.length > 4)
     ) {
       throw new BadRequestException(
-        'MCQ questions must have at least two options.',
+        'MCQ questions must have 2 to 4 options.',
       );
-    }
-
-    if (questionType === 'MCQ') {
-      const correctOptions =
-        dto.options?.filter((option) => option.isCorrect) ?? [];
-
-      if (correctOptions.length !== 1) {
-        throw new BadRequestException(
-          'MCQ questions must have exactly one correct option.',
-        );
-      }
     }
 
     const questionCode = `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
@@ -977,23 +966,11 @@ export class QuestionsService {
 
         if (
           nextQuestionType === 'MCQ' &&
-          nextOptions.length < 2
+          (nextOptions.length < 2 || nextOptions.length > 4)
         ) {
           throw new BadRequestException(
-            'MCQ questions must have at least two options.',
+            'MCQ questions must have 2 to 4 options.',
           );
-        }
-
-        if (nextQuestionType === 'MCQ') {
-          const correctOptions = nextOptions.filter(
-            (option) => option.isCorrect,
-          );
-
-          if (correctOptions.length !== 1) {
-            throw new BadRequestException(
-              'MCQ questions must have exactly one correct option.',
-            );
-          }
         }
 
         // Resolve Master Subject/Topic relations only when UUIDs are supplied.
