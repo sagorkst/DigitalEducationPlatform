@@ -172,7 +172,7 @@ export class CreateQuestionDto {
   @IsOptional()
   @IsArray()
   @ArrayMinSize(2)
-  @ArrayMaxSize(10)
+  @ArrayMaxSize(4)
   @ValidateNested({ each: true })
   @Type(() => QuestionOptionDto)
   options?: QuestionOptionDto[];
