@@ -1,4 +1,4 @@
-import {
+﻿import {
   Injectable,
   BadRequestException,
   NotFoundException,
@@ -132,28 +132,64 @@ export class ImportsService {
 
       const data = { ...(row as ImportData) };
 
-      // optionA-D contain the four choices.
-      // optionE contains the correct answer letter (A/B/C/D).
+      const headerAliases: Record<string, string> = {
+        questionid: 'sourceQuestionId',
+        organization: 'institution',
+        organizationname: 'institution',
+        institutionname: 'institution',
+        institution: 'institution',
+        examname: 'examName',
+        exam: 'examName',
+        year: 'examYear',
+        examyear: 'examYear',
+        postname: 'postName',
+        post: 'postName',
+        department: 'department',
+        questiontype: 'questionType',
+        questiontext: 'questionText',
+        optiona: 'optionA',
+        optionb: 'optionB',
+        optionc: 'optionC',
+        optiond: 'optionD',
+        correctanswer: 'correctAnswer',
+        explanation: 'explanation',
+        difficulty: 'difficulty',
+        repeatgroupid: 'repeatGroupId',
+        source: 'source',
+        sourcepage: 'sourcePage',
+        sourceurl: 'sourceUrl',
+        status: 'status',
+      };
+
+      for (const [header, value] of Object.entries(data)) {
+        const key = header.normalize('NFKC').toLowerCase().replace(/[^a-z0-9]/g, '');
+        const target = headerAliases[key];
+        if (target && (data[target] === undefined || data[target] === null || String(data[target]).trim() === '')) {
+          data[target] = value;
+        }
+      }
+      // optionA-D contain choices. Correct_Answer may contain a letter or exact option text.
       // Legacy JSON options remain supported.
       if (!('options' in data)) {
         const letters = ['A', 'B', 'C', 'D'];
-
-        const correctOption = String(
-          data.optionE ?? '',
-        ).trim().toUpperCase();
+        const correctAnswerValue = String(data.correctAnswer ?? data.optionE ?? '').trim();
+        const correctOption = /^[A-D]$/i.test(correctAnswerValue)
+          ? correctAnswerValue.toUpperCase()
+          : '';
 
         const flatOptions: ImportData[] = [];
 
         letters.forEach((letter, index) => {
-          const optionText = String(
-            data[`option${letter}`] ?? '',
-          ).trim();
+          const optionText = String(data[`option${letter}`] ?? '').trim();
 
           if (optionText) {
             flatOptions.push({
               label: letter,
               optionText,
-              isCorrect: correctOption === letter,
+              isCorrect:
+                correctOption === letter ||
+                (correctAnswerValue !== '' &&
+                  optionText.toLowerCase() === correctAnswerValue.toLowerCase()),
               sortOrder: index + 1,
             });
           }
@@ -163,21 +199,14 @@ export class ImportsService {
           data.options = flatOptions;
         }
 
-        if (
-          (!data.correctAnswer ||
-            !String(data.correctAnswer).trim()) &&
-          correctOption
-        ) {
-          const selected = flatOptions.find(
-            (option) => option.label === correctOption,
-          );
+        const selected = flatOptions.find(
+          (option) => option.isCorrect === true,
+        );
 
-          if (selected) {
-            data.correctAnswer = selected.optionText;
-          }
+        if (selected) {
+          data.correctAnswer = selected.optionText;
         }
-      }
-      // Separate exam columns -> occurrences array.
+      }      // Separate exam columns -> occurrences array.
       // Existing JSON occurrences remain supported.
       if (!('occurrences' in data)) {
         const institution = String(
@@ -569,89 +598,188 @@ export class ImportsService {
   }
 
   /**
-   * Resolves an occurrence from its Exam record.
-   * Legacy occurrences without examId remain unchanged.
+   * Find or create Institution, Post and Exam during import commit.
    */
   private async resolveOccurrenceForImport(
     tx: Prisma.TransactionClient,
     occurrence: CreateQuestionDto['occurrences'][number],
   ) {
-    if (!occurrence.examId) {
-      return {
-        institution: occurrence.institution,
-        examName: occurrence.examName,
-        examYear: occurrence.examYear,
-        postName: occurrence.postName,
-        department: occurrence.department,
-        questionNumber: occurrence.questionNumber,
-        source: occurrence.source,
-        sourcePage: occurrence.sourcePage,
-        sourceUrl: occurrence.sourceUrl,
-        institutionId: occurrence.institutionId,
-        examId: null,
-        postId: occurrence.postId,
-        sourceDocumentId: occurrence.sourceDocumentId,
-      };
+    const institutionName = String(occurrence.institution ?? '').trim();
+    const examName = String(occurrence.examName ?? '').trim();
+    const examYear = Number(occurrence.examYear);
+
+    let institution = occurrence.institutionId
+      ? await tx.institution.findUnique({
+          where: { id: occurrence.institutionId },
+          select: { id: true, name: true },
+        })
+      : null;
+
+    if (occurrence.institutionId && !institution) {
+      throw new BadRequestException('Selected Institution does not exist.');
     }
 
-    const exam = await tx.exam.findUnique({
-      where: {
-        id: occurrence.examId,
-      },
-      select: {
-        id: true,
-        institutionId: true,
-        postId: true,
-        name: true,
-        examYear: true,
-      },
-    });
-
-    if (!exam) {
-      throw new BadRequestException(
-        'Selected Exam does not exist.',
-      );
+    if (!institution) {
+      institution = await tx.institution.findFirst({
+        where: { name: { equals: institutionName, mode: 'insensitive' } },
+        select: { id: true, name: true },
+      });
     }
 
-    if (
-      occurrence.institutionId &&
-      occurrence.institutionId !== exam.institutionId
-    ) {
-      throw new BadRequestException(
-        'Institution ID does not match the selected Exam.',
-      );
+    if (!institution) {
+      const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
+      institution = await tx.institution.create({
+        data: {
+          name: institutionName,
+          slug: `${slug}-${randomBytes(4).toString('hex')}`,
+          isActive: true,
+        },
+        select: { id: true, name: true },
+      });
     }
 
-    if (
-      occurrence.postId &&
-      occurrence.postId !== exam.postId
-    ) {
-      throw new BadRequestException(
-        'Post ID does not match the selected Exam.',
-      );
+    let post: { id: string; name: string } | null = null;
+
+    if (occurrence.postId) {
+      post = await tx.post.findUnique({
+        where: { id: occurrence.postId },
+        select: { id: true, name: true },
+      });
+      if (!post) throw new BadRequestException('Selected Post does not exist.');
+    } else if (occurrence.postName?.trim()) {
+      const postName = occurrence.postName.trim();
+      post = await tx.post.findFirst({
+        where: { name: { equals: postName, mode: 'insensitive' } },
+        select: { id: true, name: true },
+      });
+
+      if (!post) {
+        const slug = this.normalizeText(postName).replace(/\s+/g, '-').slice(0, 50) || 'post';
+        post = await tx.post.create({
+          data: {
+            name: postName,
+            slug: `${slug}-${randomBytes(4).toString('hex')}`,
+          },
+          select: { id: true, name: true },
+        });
+      }
+    }
+
+    let exam: {
+      id: string;
+      institutionId: string | null;
+      postId: string | null;
+      name: string;
+      examYear: number;
+    } | null = null;
+
+    if (occurrence.examId) {
+      exam = await tx.exam.findUnique({
+        where: { id: occurrence.examId },
+        select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
+      });
+
+      if (!exam) throw new BadRequestException('Selected Exam does not exist.');
+      if (exam.institutionId && exam.institutionId !== institution.id) {
+        throw new BadRequestException('Institution does not match the selected Exam.');
+      }
+      if (exam.postId && post && exam.postId !== post.id) {
+        throw new BadRequestException('Post does not match the selected Exam.');
+      }
+    } else {
+      if (!examName || !Number.isInteger(examYear) || examYear < 1900 || examYear > 2100) {
+        throw new BadRequestException('A valid Exam Name and Exam Year are required.');
+      }
+
+      exam = await tx.exam.findFirst({
+        where: {
+          institutionId: institution.id,
+          postId: post?.id ?? null,
+          examYear,
+          name: { equals: examName, mode: 'insensitive' },
+        },
+        select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
+      });
+
+      if (!exam) {
+        const slug = this.normalizeText(`${examName}-${examYear}`).replace(/\s+/g, '-').slice(0, 50) || 'exam';
+        exam = await tx.exam.create({
+          data: {
+            institutionId: institution.id,
+            postId: post?.id ?? null,
+            name: examName,
+            examYear,
+            slug: `${slug}-${randomBytes(4).toString('hex')}`,
+          },
+          select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
+        });
+      }
     }
 
     return {
-      institution: occurrence.institution,
+      institution: institution.name,
       examName: exam.name,
       examYear: exam.examYear,
-      postName: occurrence.postName,
+      postName: post?.name ?? occurrence.postName,
       department: occurrence.department,
       questionNumber: occurrence.questionNumber,
       source: occurrence.source,
       sourcePage: occurrence.sourcePage,
       sourceUrl: occurrence.sourceUrl,
-      institutionId: exam.institutionId,
+      institutionId: institution.id,
       examId: exam.id,
-      postId: exam.postId,
+      postId: exam.postId ?? post?.id ?? null,
       sourceDocumentId: occurrence.sourceDocumentId,
     };
   }
-
   /**
    * Creates a question using the current transaction.
    * Question, options and occurrences are committed together.
    */
+  /**
+   * Links only missing exam occurrences to an existing question.
+   * Never creates or modifies the question or its options.
+   */
+  private async linkOccurrencesToExistingQuestionInTransaction(
+    tx: Prisma.TransactionClient,
+    questionId: string,
+    dto: CreateQuestionDto,
+  ): Promise<string[]> {
+    const occurrenceIds: string[] = [];
+
+    for (const occurrence of dto.occurrences ?? []) {
+      const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
+
+      const existingOccurrence = await tx.questionOccurrence.findFirst({
+        where: {
+          questionId,
+          examId: resolved.examId,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      if (existingOccurrence) {
+        continue;
+      }
+
+      const createdOccurrence = await tx.questionOccurrence.create({
+        data: {
+          questionId,
+          ...resolved,
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      occurrenceIds.push(createdOccurrence.id);
+    }
+
+    return occurrenceIds;
+  }
+
   private async createQuestionInTransaction(
     tx: Prisma.TransactionClient,
     dto: CreateQuestionDto,
@@ -792,6 +920,11 @@ export class ImportsService {
 
         occurrences: {
           create: resolvedOccurrences,
+        },
+      },
+      include: {
+        occurrences: {
+          select: { id: true },
         },
       },
     });
@@ -1379,17 +1512,15 @@ export class ImportsService {
   async commit(batchId: string, rowIds?: string[]) {
     const where: Prisma.ImportRowWhereInput = {
       batchId,
-      status: 'VALID',
+      status: {
+        in: ['VALID', 'DUPLICATE'],
+      },
     };
 
     if (rowIds && rowIds.length > 0) {
-      where.id = {
-        in: rowIds,
-      };
+      where.id = { in: rowIds };
     }
 
-    // Atomically claim the batch. Only one request can move
-    // a REVIEW batch into PROCESSING.
     const rows = await this.prisma.$transaction(async (tx) => {
       const claimed = await tx.importBatch.updateMany({
         where: {
@@ -1405,12 +1536,8 @@ export class ImportsService {
 
       if (claimed.count !== 1) {
         const existing = await tx.importBatch.findUnique({
-          where: {
-            id: batchId,
-          },
-          select: {
-            id: true,
-          },
+          where: { id: batchId },
+          select: { id: true },
         });
 
         if (!existing) {
@@ -1424,14 +1551,12 @@ export class ImportsService {
 
       const selectedRows = await tx.importRow.findMany({
         where,
-        orderBy: {
-          rowNumber: 'asc',
-        },
+        orderBy: { rowNumber: 'asc' },
       });
 
       if (selectedRows.length === 0) {
         throw new BadRequestException(
-          'No valid rows available for import.',
+          'No valid or duplicate rows available for import.',
         );
       }
 
@@ -1441,25 +1566,89 @@ export class ImportsService {
     let importedRows = 0;
     let failedRows = 0;
 
+    const questionIdsByText = new Map<string, string>();
+
     for (const row of rows) {
       try {
-        const dto = row.rawData as unknown as CreateQuestionDto;
+        const rawData = row.rawData as Record<string, unknown>;
+        const dto = rawData as unknown as CreateQuestionDto;
+        const normalizedText = this.normalizeText(
+          String(dto.questionText ?? ''),
+        );
+
+        let processedQuestionId = '';
 
         await this.prisma.$transaction(async (tx) => {
-          const question = await this.createQuestionInTransaction(
-            tx,
-            dto,
-          );
+          let questionId = questionIdsByText.get(normalizedText) ?? null;
+          let action: 'CREATED_QUESTION' | 'LINKED_OCCURRENCE' =
+            'LINKED_OCCURRENCE';
+          let occurrenceIds: string[] = [];
+
+          if (!questionId) {
+            const existingQuestion = await tx.question.findFirst({
+              where: {
+                deletedAt: null,
+                questionText: {
+                  equals: dto.questionText,
+                  mode: 'insensitive',
+                },
+              },
+              select: { id: true },
+            });
+
+            questionId = existingQuestion?.id ?? null;
+          }
+
+          if (!questionId && row.status === 'DUPLICATE') {
+            throw new BadRequestException(
+              'The original question was not found. Include its original row in the commit selection and try again.',
+            );
+          }
+
+          if (!questionId && row.status === 'VALID') {
+            const createdQuestion = await this.createQuestionInTransaction(
+              tx,
+              dto,
+            );
+
+            questionId = createdQuestion.id;
+            action = 'CREATED_QUESTION';
+            occurrenceIds = (createdQuestion.occurrences ?? []).map(
+              (occurrence) => occurrence.id,
+            );
+          } else if (questionId) {
+            occurrenceIds =
+              await this.linkOccurrencesToExistingQuestionInTransaction(
+                tx,
+                questionId,
+                dto,
+              );
+          }
+
+          if (!questionId) {
+            throw new BadRequestException(
+              'Unable to resolve the question for this import row.',
+            );
+          }
+
+          const trackedRawData = {
+            ...rawData,
+            _importTracking: {
+              action,
+              occurrenceIds,
+            },
+          } as Prisma.InputJsonValue;
 
           const updatedRow = await tx.importRow.updateMany({
             where: {
               id: row.id,
               batchId,
-              status: 'VALID',
+              status: row.status,
             },
             data: {
               status: 'IMPORTED',
-              questionId: question.id,
+              questionId,
+              rawData: trackedRawData,
               errorMessages: Prisma.JsonNull,
             },
           });
@@ -1469,7 +1658,13 @@ export class ImportsService {
               'Import row is no longer available for processing.',
             );
           }
+
+          processedQuestionId = questionId;
         });
+
+        if (processedQuestionId) {
+          questionIdsByText.set(normalizedText, processedQuestionId);
+        }
 
         importedRows++;
       } catch (error) {
@@ -1482,7 +1677,7 @@ export class ImportsService {
           where: {
             id: row.id,
             batchId,
-            status: 'VALID',
+            status: row.status,
           },
           data: {
             status: 'INVALID',
@@ -1497,10 +1692,12 @@ export class ImportsService {
     }
 
     const finalBatch = await this.prisma.$transaction(async (tx) => {
-      const remainingValid = await tx.importRow.count({
+      const remainingImportable = await tx.importRow.count({
         where: {
           batchId,
-          status: 'VALID',
+          status: {
+            in: ['VALID', 'DUPLICATE'],
+          },
         },
       });
 
@@ -1510,7 +1707,7 @@ export class ImportsService {
           status: 'PROCESSING',
         },
         data: {
-          status: remainingValid > 0 ? 'REVIEW' : 'COMPLETED',
+          status: remainingImportable > 0 ? 'REVIEW' : 'COMPLETED',
           importedRows: {
             increment: importedRows,
           },
@@ -1528,16 +1725,23 @@ export class ImportsService {
       }
 
       return tx.importBatch.findUniqueOrThrow({
-        where: {
-          id: batchId,
-        },
+        where: { id: batchId },
       });
     });
 
-    const remainingValidRows = await this.prisma.importRow.count({
+    const remainingImportableRows = await this.prisma.importRow.count({
       where: {
         batchId,
-        status: 'VALID',
+        status: {
+          in: ['VALID', 'DUPLICATE'],
+        },
+      },
+    });
+
+    const remainingDuplicateRows = await this.prisma.importRow.count({
+      where: {
+        batchId,
+        status: 'DUPLICATE',
       },
     });
 
@@ -1548,7 +1752,8 @@ export class ImportsService {
         batch: finalBatch,
         importedRows,
         failedRows,
-        remainingValidRows,
+        remainingValidRows: remainingImportableRows,
+        remainingDuplicateRows,
       },
     };
   }

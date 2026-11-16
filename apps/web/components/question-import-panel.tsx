@@ -201,12 +201,12 @@ export default function QuestionImportPanel() {
   }
 
   function selectAllValid() {
-    const validIds = rows
-      .filter((row) => row.status === "VALID")
+    const importableIds = rows
+      .filter((row) => ["VALID", "DUPLICATE"].includes(row.status))
       .map((row) => row.id);
 
     setSelectedIds((current) =>
-      Array.from(new Set([...current, ...validIds])),
+      Array.from(new Set([...current, ...importableIds])),
     );
   }
 
@@ -216,7 +216,7 @@ export default function QuestionImportPanel() {
         ? rows
             .filter(
               (row) =>
-                row.status === "VALID" && selectedIds.includes(row.id),
+                ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id),
             )
             .map((row) => row.id)
         : selectedIds;
@@ -951,10 +951,10 @@ export default function QuestionImportPanel() {
                       <button
                         type="button"
                         onClick={selectAllValid}
-                        disabled={loading || summary.validRows === 0}
+                        disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                       >
-                        Select Valid
+                        Select Valid + Duplicate
                       </button>
                       <button
                         type="button"
@@ -979,7 +979,7 @@ export default function QuestionImportPanel() {
                         loading ||
                         !rows.some(
                           (row) =>
-                            row.status === "VALID" &&
+                            ["VALID", "DUPLICATE"].includes(row.status) &&
                             selectedIds.includes(row.id),
                         )
                       }
