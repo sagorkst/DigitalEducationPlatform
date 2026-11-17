@@ -998,10 +998,8 @@ export class PublicQuestionsService {
     };
 
     const [
-      institutions,
+      occurrenceRows,
       exams,
-      posts,
-      years,
       topics,
       totalQuestions,
       totalSubjects,
@@ -1009,9 +1007,13 @@ export class PublicQuestionsService {
     ] = await Promise.all([
       this.prisma.questionOccurrence.findMany({
         where: occurrenceScope,
-        distinct: ['institution'],
-        orderBy: { institution: 'asc' },
-        select: { institution: true },
+        select: {
+          institution: true,
+          examId: true,
+          postName: true,
+          examYear: true,
+          questionId: true,
+        },
       }),
       this.prisma.exam.findMany({
         where: {
@@ -1038,21 +1040,6 @@ export class PublicQuestionsService {
             select: { id: true, name: true },
           },
         },
-      }),
-      this.prisma.questionOccurrence.findMany({
-        where: {
-          ...occurrenceScope,
-          postName: { not: null },
-        },
-        distinct: ['postName'],
-        orderBy: { postName: 'asc' },
-        select: { postName: true },
-      }),
-      this.prisma.questionOccurrence.findMany({
-        where: occurrenceScope,
-        distinct: ['examYear'],
-        orderBy: { examYear: 'desc' },
-        select: { examYear: true },
       }),
       this.prisma.topic.findMany({
         where: {
@@ -1085,6 +1072,41 @@ export class PublicQuestionsService {
       }),
     ]);
 
+    const uniqueCounts = (key: 'institution' | 'examId' | 'postName' | 'examYear') => {
+      const grouped = new Map<string, Set<string>>();
+      for (const row of occurrenceRows) {
+        const raw = row[key];
+        if (raw === null || raw === undefined || String(raw).trim() === '') continue;
+        const value = String(raw);
+        if (!grouped.has(value)) grouped.set(value, new Set<string>());
+        grouped.get(value)!.add(row.questionId);
+      }
+      return grouped;
+    };
+    const institutionCounts = uniqueCounts('institution');
+    const examCounts = uniqueCounts('examId');
+    const postCounts = uniqueCounts('postName');
+    const yearCounts = uniqueCounts('examYear');
+    const examTypeCounts = new Map<string, Set<string>>();
+    const gradeCounts = new Map<string, Set<string>>();
+    const examById = new Map(exams.map((exam) => [exam.id, exam]));
+    for (const row of occurrenceRows) {
+      if (!row.examId) continue;
+      const exam = examById.get(row.examId);
+      if (!exam) continue;
+      if (exam.examType?.trim()) {
+        if (!examTypeCounts.has(exam.examType)) examTypeCounts.set(exam.examType, new Set());
+        examTypeCounts.get(exam.examType)!.add(row.questionId);
+      }
+      if (exam.grade?.trim()) {
+        if (!gradeCounts.has(exam.grade)) gradeCounts.set(exam.grade, new Set());
+        gradeCounts.get(exam.grade)!.add(row.questionId);
+      }
+    }
+    const countOptions = (counts: Map<string, Set<string>>) =>
+      [...counts.entries()].sort(([a], [b]) => a.localeCompare(b, 'bn', { numeric: true }))
+        .map(([name, ids]) => ({ id: name, name, count: ids.size }));
+
     return {
       success: true,
       data: {
@@ -1095,13 +1117,9 @@ export class PublicQuestionsService {
           subjects: totalSubjects,
           topics: totalTopics,
         },
-        examTypes: [...new Set(exams.map((exam) => exam.examType).filter((value): value is string => Boolean(value?.trim())))].sort(),
-        institutions: institutions
-          .filter((item) => item.institution.trim())
-          .map((item) => ({
-            id: item.institution,
-            name: item.institution,
-          })),
+        examTypes: [...examTypeCounts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, ids]) => ({ name, count: ids.size })),
+        grades: [...gradeCounts.entries()].sort(([a], [b]) => a.localeCompare(b, 'bn', { numeric: true })).map(([name, ids]) => ({ name, count: ids.size })),
+        institutions: countOptions(institutionCounts),
         exams: exams.map((exam) => ({
           id: exam.id,
           name: exam.name,
@@ -1110,15 +1128,11 @@ export class PublicQuestionsService {
           grade: exam.grade,
           institution: exam.institution,
           post: exam.post,
+          questionCount: examCounts.get(exam.id)?.size ?? 0,
         })),
-        posts: posts
-          .filter((item) => item.postName?.trim())
-          .map((item) => ({
-            id: item.postName as string,
-            name: item.postName as string,
-          })),
-        years: years.map((item) => item.examYear),
-        topics,
+        posts: countOptions(postCounts),
+        years: [...yearCounts.entries()].sort(([a], [b]) => Number(b) - Number(a)).map(([year, ids]) => ({ year: Number(year), count: ids.size })),
+        topics: topics.map((topic) => ({ ...topic, count: topic._count?.questions ?? 0 })),
       },
     };
   }
