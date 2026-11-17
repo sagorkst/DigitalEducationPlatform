@@ -1009,7 +1009,9 @@ export class PublicQuestionsService {
         where: occurrenceScope,
         select: {
           institution: true,
+          institutionId: true,
           examId: true,
+          postId: true,
           postName: true,
           examYear: true,
           questionId: true,
@@ -1072,7 +1074,7 @@ export class PublicQuestionsService {
       }),
     ]);
 
-    const uniqueCounts = (key: 'institution' | 'examId' | 'postName' | 'examYear') => {
+    const uniqueCounts = (key: 'institutionId' | 'examId' | 'postId' | 'examYear') => {
       const grouped = new Map<string, Set<string>>();
       for (const row of occurrenceRows) {
         const raw = row[key];
@@ -1083,9 +1085,9 @@ export class PublicQuestionsService {
       }
       return grouped;
     };
-    const institutionCounts = uniqueCounts('institution');
+    const institutionCounts = uniqueCounts('institutionId');
     const examCounts = uniqueCounts('examId');
-    const postCounts = uniqueCounts('postName');
+    const postCounts = uniqueCounts('postId');
     const yearCounts = uniqueCounts('examYear');
     const examTypeCounts = new Map<string, Set<string>>();
     const gradeCounts = new Map<string, Set<string>>();
@@ -1119,7 +1121,13 @@ export class PublicQuestionsService {
         },
         examTypes: [...examTypeCounts.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([name, ids]) => ({ name, count: ids.size })),
         grades: [...gradeCounts.entries()].sort(([a], [b]) => a.localeCompare(b, 'bn', { numeric: true })).map(([name, ids]) => ({ name, count: ids.size })),
-        institutions: countOptions(institutionCounts),
+        institutions: [...institutionCounts.entries()]
+          .map(([id, ids]) => ({
+            id,
+            name: exams.find((exam) => exam.institution?.id === id)?.institution?.name ?? id,
+            count: ids.size,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'bn')),
         exams: exams.map((exam) => ({
           id: exam.id,
           name: exam.name,
@@ -1130,7 +1138,13 @@ export class PublicQuestionsService {
           post: exam.post,
           questionCount: examCounts.get(exam.id)?.size ?? 0,
         })),
-        posts: countOptions(postCounts),
+        posts: [...postCounts.entries()]
+          .map(([id, ids]) => ({
+            id,
+            name: exams.find((exam) => exam.post?.id === id)?.post?.name ?? id,
+            count: ids.size,
+          }))
+          .sort((a, b) => a.name.localeCompare(b.name, 'bn')),
         years: [...yearCounts.entries()].sort(([a], [b]) => Number(b) - Number(a)).map(([year, ids]) => ({ year: Number(year), count: ids.size })),
         topics: topics.map((topic) => ({ ...topic, count: topic._count?.questions ?? 0 })),
       },
