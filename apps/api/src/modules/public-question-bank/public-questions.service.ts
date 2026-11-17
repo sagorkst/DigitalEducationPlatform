@@ -405,6 +405,9 @@ export class PublicQuestionsService {
         ? { institutionId: query.institutionId }
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
+      ...(query.grade?.trim()
+        ? { grade: { equals: query.grade.trim(), mode: 'insensitive' } }
+        : {}),
       ...(examYear !== undefined
         ? { examYear }
         : yearFrom !== undefined && yearTo !== undefined
@@ -534,7 +537,7 @@ export class PublicQuestionsService {
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
       ...(query.grade?.trim()
-        ? { exam: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
+        ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
         : {}),
       ...(query.post?.trim()
         ? { postName: { contains: query.post.trim(), mode: 'insensitive' } }
