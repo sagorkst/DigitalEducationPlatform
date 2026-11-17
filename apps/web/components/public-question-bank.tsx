@@ -412,7 +412,6 @@ export default function PublicQuestionBank({
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loadedPages, setLoadedPages] = useState(1);
-  const [sort, setSort] = useState("newest");
   const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [search, setSearch] = useState("");
@@ -516,7 +515,6 @@ export default function PublicQuestionBank({
     if (difficulty) params.set("difficulty", difficulty);
     if (questionType) params.set("questionType", questionType);
     if (isRepeated) params.set("isRepeated", isRepeated);
-    if (sort !== "newest") params.set("sort", sort);
 
     return params.toString();
   }, [
@@ -538,7 +536,6 @@ export default function PublicQuestionBank({
     difficulty,
     questionType,
     isRepeated,
-    sort,
   ]);
 
   const loadInitial = useCallback(async () => {
@@ -699,7 +696,7 @@ export default function PublicQuestionBank({
   }, [view, loadExams, loadQuestions]);
 
   const filteredExams = useMemo(() => {
-    const copy = exams.filter((exam) => {
+    return exams.filter((exam) => {
       if (exam.examYear === null) {
         return !yearFrom && !yearTo;
       }
@@ -715,37 +712,9 @@ export default function PublicQuestionBank({
 
       return true;
     });
+  }, [exams, yearFrom, yearTo]);
 
-    if (sort === "az") {
-      copy.sort((a, b) => a.name.localeCompare(b.name, "bn"));
-    } else if (sort === "za") {
-      copy.sort((a, b) => b.name.localeCompare(a.name, "bn"));
-    }
-
-    return copy;
-  }, [exams, sort, yearFrom, yearTo]);
-
-  const displayedQuestions = useMemo(() => {
-    const copy = [...questions];
-
-    if (sort === "az") {
-      copy.sort((a, b) =>
-        a.questionText.localeCompare(b.questionText, "bn", {
-          numeric: true,
-        }),
-      );
-    } else if (sort === "za") {
-      copy.sort((a, b) =>
-        b.questionText.localeCompare(a.questionText, "bn", {
-          numeric: true,
-        }),
-      );
-    }
-
-    return copy;
-  }, [questions, sort]);
-
-  const visibleQuestions = displayedQuestions;
+  const visibleQuestions = questions;
 
   const activeFilterCount = [
     institutionId, examId, examType, postId, grade, examYear, subjectId, topicId,
@@ -772,7 +741,6 @@ export default function PublicQuestionBank({
     setDifficulty("");
     setQuestionType("");
     setIsRepeated("");
-    setSort("newest");
     setPage(1);
   };
 
@@ -973,7 +941,7 @@ export default function PublicQuestionBank({
         })}
       </section>
 
-      <section aria-label="প্রশ্ন ব্যাংক ফিল্টার" className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/40 p-3 shadow-sm sm:p-4">
+      <section aria-label="প্রশ্ন ব্যাংক ফিল্টার" className="mb-5 overflow-hidden rounded-2xl border border-slate-300 bg-white p-3 shadow-sm sm:p-4">
         <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
           <button
             type="button"
@@ -1129,21 +1097,6 @@ export default function PublicQuestionBank({
         )}
       </section>
 
-      {(view === "all" || view === "cards") && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {view === "all" && (
-            <div className="min-w-0 flex-1">
-              <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
-            </div>
-          )}
-          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="তালিকা সাজান" className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs">
-            <option value="newest">সর্বশেষ আগে</option>
-            <option value="az">A–Z</option>
-            <option value="za">Z–A</option>
-          </select>
-        </div>
-      )}
-
       <div className="mb-5 w-full">
         <div className="relative">
           <svg aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -1152,6 +1105,18 @@ export default function PublicQuestionBank({
           <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="প্রতিষ্ঠান, পদ, পরীক্ষা, বিষয় ও বছর অনুযায়ী প্রশ্ন খুঁজুন" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
         </div>
       </div>
+
+      {(view === "all" || view === "cards") && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {view === "all" && (
+            <div className="min-w-0 flex-1">
+              <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+            </div>
+          )}
+        </div>
+      )}
+
+
 
       {error && (
         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
