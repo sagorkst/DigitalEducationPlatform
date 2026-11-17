@@ -1129,12 +1129,14 @@ export default function PublicQuestionBank({
         )}
       </section>
 
-      {view === "all" && (
+      {(view === "all" || view === "cards") && (
         <div className="mb-3 flex flex-wrap items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
-          </div>
-          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="প্রশ্ন সাজান" className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs">
+          {view === "all" && (
+            <div className="min-w-0 flex-1">
+              <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+            </div>
+          )}
+          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="তালিকা সাজান" className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs">
             <option value="newest">সর্বশেষ আগে</option>
             <option value="az">A–Z</option>
             <option value="za">Z–A</option>
