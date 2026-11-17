@@ -240,7 +240,7 @@ export default function QuestionImportPanel() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             selectAllBatch
-              ? action === "skip" ? { allRows: true } : {}
+              ? { allRows: true }
               : { rowIds: actionIds },
           ),
         },
