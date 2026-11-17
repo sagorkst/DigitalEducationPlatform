@@ -65,7 +65,7 @@ type Filters = {
   summary: { questions: number; exams: number; institutions: number; subjects: number; topics: number };
 };
 
-type ViewMode = "cards" | "all";
+type ViewMode = "cards" | "all" | "institutions" | "subjects" | "topics";
 
 const PAGE_SIZE = 20;
 
@@ -656,7 +656,7 @@ export default function PublicQuestionBank({
   useEffect(() => {
     if (view === "cards") {
       void loadExams();
-    } else {
+    } else if (view === "all") {
       void loadQuestions();
     }
   }, [view, loadExams, loadQuestions]);
@@ -741,7 +741,54 @@ export default function PublicQuestionBank({
 
   const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "topic") => {
     setActiveSummaryCard(key);
-    setView(key === "exam" ? "cards" : "all");
+    if (key === "exam") {
+      setView("cards");
+    } else if (key === "institution") {
+      setInstitutionId("");
+      setExamId("");
+      setView("institutions");
+    } else if (key === "subject") {
+      setSubjectId("");
+      setTopicId("");
+      setSubTopicId("");
+      setChapterId("");
+      setView("subjects");
+    } else if (key === "topic") {
+      setTopicId("");
+      setSubTopicId("");
+      setChapterId("");
+      setView("topics");
+    } else {
+      setView("all");
+    }
+    setPage(1);
+  };
+
+  const selectInstitution = (id: string) => {
+    setInstitutionId(id);
+    setExamId("");
+    setView("all");
+    setActiveSummaryCard("institution");
+    setPage(1);
+  };
+
+  const selectSubject = (id: string) => {
+    setSubjectId(id);
+    setTopicId("");
+    setSubTopicId("");
+    setChapterId("");
+    setView("all");
+    setActiveSummaryCard("subject");
+    setPage(1);
+  };
+
+  const selectTopic = (topic: Topic) => {
+    setSubjectId(topic.subjectId);
+    setTopicId(topic.id);
+    setSubTopicId("");
+    setChapterId("");
+    setView("all");
+    setActiveSummaryCard("topic");
     setPage(1);
   };
 
@@ -985,6 +1032,55 @@ export default function PublicQuestionBank({
 
       {loading ? (
         <div className="py-16 text-center text-slate-500">লোড হচ্ছে...</div>
+      ) : view === "institutions" ? (
+        <section aria-label="প্রতিষ্ঠান তালিকা">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-slate-900">প্রতিষ্ঠান অনুযায়ী প্রশ্ন</h2>
+            <span className="text-sm text-slate-500">মোট {filters.institutions.length}টি প্রতিষ্ঠান</span>
+          </div>
+          {filters.institutions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-slate-300 p-10 text-center text-slate-500">কোনো প্রতিষ্ঠান পাওয়া যায়নি।</div>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+              {filters.institutions.map((institution) => (
+                <button key={institution.id} type="button" onClick={() => selectInstitution(institution.id)} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50">
+                  <span className="font-semibold text-slate-800">{institution.name}</span>
+                  <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{institution.count.toLocaleString("en-US")} প্রশ্ন</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </section>
+      ) : view === "subjects" ? (
+        <section aria-label="বিষয় তালিকা">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-slate-900">বিষয় অনুযায়ী প্রশ্ন</h2>
+            <span className="text-sm text-slate-500">মোট {subjects.length}টি বিষয়</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {subjects.map((subject) => (
+              <button key={subject.id} type="button" onClick={() => selectSubject(subject.id)} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50">
+                <span className="font-semibold text-slate-800">{subject.name}</span>
+                <span className="shrink-0 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-700">{(subject._count?.questions ?? 0).toLocaleString("en-US")} প্রশ্ন</span>
+              </button>
+            ))}
+          </div>
+        </section>
+      ) : view === "topics" ? (
+        <section aria-label="টপিক তালিকা">
+          <div className="mb-4 flex items-center justify-between gap-3">
+            <h2 className="text-lg font-bold text-slate-900">টপিক অনুযায়ী প্রশ্ন</h2>
+            <span className="text-sm text-slate-500">মোট {filters.topics.length}টি টপিক</span>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+            {filters.topics.map((topic) => (
+              <button key={topic.id} type="button" onClick={() => selectTopic(topic)} className="rounded-xl border border-slate-200 bg-white p-4 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50">
+                <span className="block font-semibold text-slate-800">{topic.name}</span>
+                <span className="mt-1 block text-xs text-slate-500">{(topic.subject?.name ?? "বিষয় অনির্ধারিত") + (topic.count !== undefined ? " · " + topic.count.toLocaleString("en-US") + " প্রশ্ন" : "")}</span>
+              </button>
+            ))}
+          </div>
+        </section>
       ) : view === "cards" ? (
         <>
           <div className="mb-4 text-sm text-slate-600">
