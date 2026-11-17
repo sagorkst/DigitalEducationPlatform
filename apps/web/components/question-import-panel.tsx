@@ -142,8 +142,6 @@ export default function QuestionImportPanel() {
 
     setRows(Array.isArray(result.data) ? result.data : []);
     setPage(pageNumber);
-    setSelectedIds([]);
-    setSelectAllBatch(false);
 
     const pages = Number(result.pagination?.totalPages);
     setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
@@ -161,6 +159,7 @@ export default function QuestionImportPanel() {
     setSummary(null);
     setRows([]);
     setSelectedIds([]);
+    setSelectAllBatch(false);
 
     try {
       const formData = new FormData();
@@ -970,7 +969,7 @@ export default function QuestionImportPanel() {
                         disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                       >
-                        Select All Importable Rows (All Pages)
+                        Select All Rows (Across All Pages)
                       </button>
                       <button
                         type="button"
