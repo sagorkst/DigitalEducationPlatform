@@ -19,6 +19,7 @@ type PublicQuestionFilters = {
   examYear?: string;
   postId?: string;
   post?: string;
+  grade?: string;
   yearFrom?: string;
   yearTo?: string;
   questionType?: string;
@@ -31,6 +32,7 @@ type PublicExamFilters = {
   search?: string;
   institutionId?: string;
   postId?: string;
+  grade?: string;
   examYear?: string;
   yearFrom?: string;
   yearTo?: string;
@@ -241,6 +243,7 @@ export class PublicQuestionsService {
       examYear !== undefined ||
       query.postId ||
       query.post?.trim() ||
+      query.grade?.trim() ||
       yearFrom !== undefined ||
       yearTo !== undefined
     ) {
@@ -276,6 +279,9 @@ export class PublicQuestionsService {
                     mode: 'insensitive',
                   },
                 }
+              : {}),
+            ...(query.grade?.trim()
+              ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
               : {}),
             ...(yearFrom !== undefined && yearTo !== undefined
               ? { examYear: { gte: yearFrom, lte: yearTo } }
@@ -445,6 +451,7 @@ export class PublicQuestionsService {
         slug: true,
         examYear: true,
         examType: true,
+        grade: true,
         institutionId: true,
         postId: true,
         institution: {
@@ -526,6 +533,9 @@ export class PublicQuestionsService {
         ? { examName: { contains: query.exam.trim(), mode: 'insensitive' } }
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
+      ...(query.grade?.trim()
+        ? { exam: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
+        : {}),
       ...(query.post?.trim()
         ? { postName: { contains: query.post.trim(), mode: 'insensitive' } }
         : {}),
@@ -953,6 +963,7 @@ export class PublicQuestionsService {
           name: true,
           examYear: true,
           examType: true,
+          grade: true,
           institution: {
             select: { id: true, name: true },
           },
@@ -1013,6 +1024,7 @@ export class PublicQuestionsService {
           name: exam.name,
           examYear: exam.examYear,
           examType: exam.examType,
+          grade: exam.grade,
           institution: exam.institution,
           post: exam.post,
         })),
