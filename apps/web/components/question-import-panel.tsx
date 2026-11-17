@@ -97,7 +97,7 @@ export default function QuestionImportPanel() {
   ]);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, any> | null>(null);
-  const [optionsJson, setOptionsJson] = useState("[]");
+  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
 
@@ -315,6 +315,27 @@ export default function QuestionImportPanel() {
     setEditingData((current) => current ? { ...current, occurrences: (Array.isArray(current.occurrences) ? current.occurrences : []).filter((_: unknown, i: number) => i !== index) } : current);
   }
 
+  function addEditingOption() {
+    setEditingOptions((current) => [...current, {
+      label: String.fromCharCode(65 + current.length),
+      optionText: "",
+      isCorrect: false,
+      sortOrder: current.length,
+    }]);
+  }
+
+  function updateEditingOption(index: number, field: "optionText" | "label", value: string) {
+    setEditingOptions((current) => current.map((option, i) => i === index ? { ...option, [field]: value } : option));
+  }
+
+  function setCorrectEditingOption(index: number) {
+    setEditingOptions((current) => current.map((option, i) => ({ ...option, isCorrect: i === index })));
+  }
+
+  function removeEditingOption(index: number) {
+    setEditingOptions((current) => current.filter((_, i) => i !== index).map((option, i) => ({ ...option, sortOrder: i })));
+  }
+
   function startManualImportEdit(row: ImportRow) {
     const raw = JSON.parse(JSON.stringify(row.rawData ?? {}));
     const occurrence = Array.isArray(raw.occurrences)
@@ -323,7 +344,7 @@ export default function QuestionImportPanel() {
 
     setEditingRowId(row.id);
     setEditingData(raw);
-    setOptionsJson(JSON.stringify(raw.options ?? [], null, 2));
+    setEditingOptions(Array.isArray(raw.options) ? raw.options.map((option: any, index: number) => ({ label: String(option.label ?? String.fromCharCode(65 + index)), optionText: String(option.optionText ?? ""), isCorrect: Boolean(option.isCorrect), sortOrder: Number(option.sortOrder ?? index) })) : []);
     setError("");
     setMessage("");
   }
@@ -391,19 +412,14 @@ export default function QuestionImportPanel() {
   async function saveManualImportEdit() {
     if (!batchId || !editingRowId || !editingData) return;
 
-    let parsedOptions: unknown;
-
-    try {
-      parsedOptions = JSON.parse(optionsJson);
-      if (!Array.isArray(parsedOptions)) {
-        throw new Error("Options অবশ্যই JSON array হতে হবে।");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Options JSON সঠিক নয়।");
+    const normalizedOptions = editingOptions
+      .filter((option) => option.optionText.trim())
+      .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
+    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.filter((option) => option.isCorrect).length !== 1)) {
+      setError("MCQ-এর জন্য অন্তত ২টি Option এবং ঠিক ১টি সঠিক উত্তর নির্বাচন করুন।");
       return;
     }
-
-    const rawData = { ...editingData, options: parsedOptions };
+    const rawData = { ...editingData, options: normalizedOptions };
 
     setSavingEdit(true);
     setError("");
@@ -838,16 +854,23 @@ export default function QuestionImportPanel() {
                           </div>
                         </div>
 
-                        <label className="block text-xs font-semibold text-slate-600">
-                          Options (JSON Array)
-                          <textarea
-                            value={optionsJson}
-                            onChange={(e) => setOptionsJson(e.target.value)}
-                            rows={6}
-                            spellCheck={false}
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
-                          />
-                        </label>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-700">Question Options</p>
+                            <button type="button" onClick={addEditingOption} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Option</button>
+                          </div>
+                          <div className="space-y-2">
+                            {editingOptions.map((option, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
+                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1}`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                                <label className="flex items-center gap-1 text-xs text-slate-600"><input type="radio" name="correct-import-option" checked={option.isCorrect} onChange={() => setCorrectEditingOption(index)} /> Correct</label>
+                                <button type="button" onClick={() => removeEditingOption(index)} aria-label="Remove option" className="rounded-md border border-red-200 px-2 py-2 text-red-600">×</button>
+                              </div>
+                            ))}
+                            {editingOptions.length === 0 && <p className="text-xs text-slate-500">এই প্রশ্নে এখনো কোনো Option নেই।</p>}
+                          </div>
+                        </div>
 
                         <input
                           value={String(editingData.correctAnswer ?? "")}
