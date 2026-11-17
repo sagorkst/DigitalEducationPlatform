@@ -8,6 +8,8 @@ export default function AdminLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const pathname = usePathname();
+
   const links = [
     { href: "/admin", label: "Dashboard", icon: "▦" },
     { href: "/admin/users", label: "User Management", icon: "♙" },
@@ -39,17 +41,20 @@ export default function AdminLayout({
             </div>
 
             <nav aria-label="Admin navigation" className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  aria-current={pathname === link.href ? "page" : undefined}
-                  className={`flex min-w-0 items-center rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href + "/")) ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"}`}
-                >
-                  <span className="mr-3 text-lg">{link.icon}</span>
-                  {link.label}
-                </Link>
-              ))}
+              {links.map((link) => {
+                const isActive = pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href + "/"));
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`flex min-w-0 items-center rounded-xl px-3 py-3 text-sm font-medium transition ${isActive ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"}`}
+                  >
+                    <span className="mr-3 text-lg">{link.icon}</span>
+                    {link.label}
+                  </Link>
+                );
+              })}
             </nav>
 
             <div className="mt-6 rounded-xl bg-slate-50 p-4">
