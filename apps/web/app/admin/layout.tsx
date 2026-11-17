@@ -1,4 +1,7 @@
 ﻿import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+"use client";
 
 export default function AdminLayout({
   children,
@@ -35,12 +38,13 @@ export default function AdminLayout({
               </p>
             </div>
 
-            <nav aria-label="Admin navigation" className="space-y-1">
+            <nav aria-label="Admin navigation" className="grid grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-1">
               {links.map((link) => (
                 <Link
                   key={link.href}
                   href={link.href}
-                  className="flex items-center rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800"
+                  aria-current={pathname === link.href ? "page" : undefined}
+                  className={`flex min-w-0 items-center rounded-xl px-3 py-3 text-sm font-medium transition ${pathname === link.href || (link.href !== "/admin" && pathname.startsWith(link.href + "/")) ? "bg-emerald-50 text-emerald-800 ring-1 ring-emerald-200" : "text-slate-600 hover:bg-emerald-50 hover:text-emerald-800"}`}
                 >
                   <span className="mr-3 text-lg">{link.icon}</span>
                   {link.label}
