@@ -330,6 +330,7 @@ export default function QuestionImportPanel() {
 
   function setCorrectEditingOption(index: number) {
     setEditingOptions((current) => current.map((option, i) => ({ ...option, isCorrect: i === index })));
+    setEditingData((current) => current ? { ...current, correctAnswer: editingOptions[index]?.label ?? "" } : current);
   }
 
   function removeEditingOption(index: number) {
@@ -857,7 +858,7 @@ export default function QuestionImportPanel() {
                         <div className="rounded-lg border border-slate-200 p-3">
                           <div className="mb-3 flex items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-slate-700">Question Options</p>
-                            <button type="button" onClick={addEditingOption} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Option</button>
+                            <button type="button" onClick={addEditingOption} disabled={editingOptions.length >= 4} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50 disabled:opacity-40">+ Add Option</button>
                           </div>
                           <div className="space-y-2">
                             {editingOptions.map((option, index) => (
