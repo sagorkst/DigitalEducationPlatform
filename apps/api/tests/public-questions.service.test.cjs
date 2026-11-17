@@ -61,3 +61,35 @@ test('exam filter keeps identical exam names separated by exam year', async () =
   assert.equal(occurrenceFilter.occurrences.some.examName.contains, 'Primary Teacher');
   assert.equal(occurrenceFilter.occurrences.some.examYear, 2024);
 });
+
+
+test('public listing filters by job grade and exam type on linked exam records', async () => {
+  let args;
+  const prisma = {
+    question: {
+      findMany: async (value) => { args = value; return []; },
+      count: async () => 0,
+    },
+    $transaction: async (operations) => Promise.all(operations),
+  };
+  const service = new PublicQuestionsService(prisma);
+  await service.findAll({ grade: '9th Grade', examType: 'WRITTEN' });
+  const occurrenceFilter = args.where.AND.find((entry) => entry.occurrences?.some);
+  assert.equal(occurrenceFilter.occurrences.some.examRef.grade.equals, '9th Grade');
+  assert.equal(occurrenceFilter.occurrences.some.examRef.examType.equals, 'WRITTEN');
+});
+
+test('public listing filters questions by answer and explanation availability', async () => {
+  let args;
+  const prisma = {
+    question: {
+      findMany: async (value) => { args = value; return []; },
+      count: async () => 0,
+    },
+    $transaction: async (operations) => Promise.all(operations),
+  };
+  const service = new PublicQuestionsService(prisma);
+  await service.findAll({ hasAnswer: 'true', hasExplanation: 'false' });
+  assert.ok(args.where.AND.some((entry) => Array.isArray(entry.OR) && entry.OR.some((item) => item.correctAnswer)));
+  assert.ok(args.where.AND.some((entry) => entry.explanation === null));
+});
