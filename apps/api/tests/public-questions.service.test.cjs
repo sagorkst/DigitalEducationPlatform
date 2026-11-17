@@ -93,3 +93,58 @@ test('public listing filters questions by answer and explanation availability', 
   assert.ok(args.where.AND.some((entry) => Array.isArray(entry.OR) && entry.OR.some((item) => item.correctAnswer)));
   assert.ok(args.where.AND.some((entry) => entry.explanation === null));
 });
+
+test('filter options return live counts using unique published question IDs', async () => {
+  const institutionId = '22222222-2222-4222-8222-222222222222';
+  const examId = '33333333-3333-4333-8333-333333333333';
+  const postId = '44444444-4444-4444-8444-444444444444';
+  const topicId = '55555555-5555-4555-8555-555555555555';
+  const q1 = '66666666-6666-4666-8666-666666666666';
+  const q2 = '77777777-7777-4777-8777-777777777777';
+
+  const prisma = {
+    questionOccurrence: {
+      findMany: async () => [
+        { institution: 'Education Board', institutionId, examId, postId, postName: 'Assistant', examYear: 2024, questionId: q1 },
+        { institution: 'Education Board', institutionId, examId, postId, postName: 'Assistant', examYear: 2024, questionId: q1 },
+        { institution: 'Education Board', institutionId, examId, postId, postName: 'Assistant', examYear: 2024, questionId: q2 },
+      ],
+    },
+    exam: {
+      findMany: async () => [{
+        id: examId,
+        name: 'Recruitment Exam',
+        examYear: 2024,
+        examType: 'WRITTEN',
+        grade: '9th Grade',
+        institution: { id: institutionId, name: 'Education Board' },
+        post: { id: postId, name: 'Assistant' },
+      }],
+    },
+    topic: {
+      findMany: async () => [{
+        id: topicId,
+        name: 'Grammar',
+        subjectId: ID,
+        parentId: null,
+        subject: { name: 'English' },
+        _count: { questions: 2 },
+      }],
+      count: async () => 1,
+    },
+    question: { count: async () => 2 },
+    subject: { count: async () => 1 },
+  };
+
+  const result = await new PublicQuestionsService(prisma).filterOptions();
+  assert.equal(result.data.summary.questions, 2);
+  assert.equal(result.data.summary.exams, 1);
+  assert.equal(result.data.summary.institutions, 1);
+  assert.deepEqual(result.data.institutions, [{ id: institutionId, name: 'Education Board', count: 2 }]);
+  assert.equal(result.data.exams[0].questionCount, 2);
+  assert.deepEqual(result.data.posts, [{ id: postId, name: 'Assistant', count: 2 }]);
+  assert.deepEqual(result.data.years, [{ year: 2024, count: 2 }]);
+  assert.deepEqual(result.data.examTypes, [{ name: 'WRITTEN', count: 2 }]);
+  assert.deepEqual(result.data.grades, [{ name: '9th Grade', count: 2 }]);
+  assert.equal(result.data.topics[0].count, 2);
+});
