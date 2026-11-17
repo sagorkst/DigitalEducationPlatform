@@ -254,20 +254,24 @@ function VisibilitySwitch({
   onChange: (value: boolean) => void;
   disabled?: boolean;
 }) {
+  const icon = label === "Options" ? "☷" : label === "Answer" ? "✓" : "▤";
+
   return (
     <button
       type="button"
       role="switch"
+      aria-label={`${label} ${value ? "ON" : "OFF"}`}
       aria-checked={value}
       disabled={disabled}
       onClick={() => onChange(!value)}
-      className="inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm disabled:cursor-not-allowed disabled:opacity-40"
+      className="flex min-w-0 items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2 shadow-sm transition hover:border-emerald-300 hover:bg-emerald-50/40 disabled:cursor-not-allowed disabled:opacity-40"
     >
-      <span className="text-xs font-semibold text-slate-700">
-        {label} {value ? "ON" : "OFF"}
+      <span className="flex min-w-0 items-center gap-2">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-slate-100 text-sm font-bold text-slate-600" aria-hidden="true">{icon}</span>
+        <span className="truncate text-xs font-semibold text-slate-700">{label}</span>
       </span>
-      <span className={`relative h-5 w-9 rounded-full transition ${value ? "bg-emerald-600" : "bg-slate-300"}`}>
-        <span className={`absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition ${value ? "left-[18px]" : "left-0.5"}`} />
+      <span className={`shrink-0 rounded-md px-2 py-1 text-[10px] font-extrabold ${value ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`}>
+        {value ? "ON" : "OFF"}
       </span>
     </button>
   );
@@ -319,7 +323,7 @@ function GlobalVisibilityControls({
   onChange: (key: VisibilityKey, value: boolean) => void;
 }) {
   return (
-    <div className="flex flex-wrap items-center gap-2" aria-label="সকল প্রশ্নের দৃশ্যমানতা">
+    <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3" aria-label="সকল প্রশ্নের দৃশ্যমানতা">
       <VisibilitySwitch label="Options" value={visibility.options} onChange={(value) => onChange("options", value)} />
       <VisibilitySwitch label="Answer" value={visibility.answers} onChange={(value) => onChange("answers", value)} />
       <VisibilitySwitch label="Explanation" value={visibility.explanations} onChange={(value) => onChange("explanations", value)} />
@@ -358,9 +362,9 @@ function FilterField({
   children: ReactNode;
 }) {
   return (
-    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-2 transition hover:border-emerald-300 hover:shadow-sm">
-      <label className="mb-1.5 flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-slate-600">
-        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[11px] ${active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`} aria-hidden="true">{icon}</span>
+    <div className="min-w-0 rounded-lg border border-slate-200 bg-white p-1.5 transition hover:border-emerald-300">
+      <label className="mb-1 flex min-w-0 items-center gap-1 text-[10px] font-bold text-slate-600">
+        <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded text-[10px] ${active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`} aria-hidden="true">{icon}</span>
         <span className="truncate">{label}</span>
         {active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-label="সক্রিয়" />}
       </label>
@@ -375,7 +379,7 @@ function FilterField({
 }
 
 const filterSelectClass =
-  "w-full min-w-0 appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2 pl-2.5 pr-7 text-xs font-medium text-slate-700 outline-none transition hover:bg-white focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
+  "h-8 w-full min-w-0 appearance-none truncate rounded-md border border-slate-200 bg-slate-50 py-1 pl-2 pr-6 text-[11px] font-medium text-slate-700 outline-none transition hover:bg-white focus:border-emerald-500 focus:bg-white focus:ring-1 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
 
 const emptyFilters: Filters = {
   institutions: [],
@@ -970,38 +974,30 @@ export default function PublicQuestionBank({
       </section>
 
       <section aria-label="প্রশ্ন ব্যাংক ফিল্টার" className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/40 p-3 shadow-sm sm:p-4">
-        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
-              <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M4 5h16M7 12h10m-7 7h4" /><path d="M6 5v3m12-3v3M9 12v3m6-3v3" />
-              </svg>
+        <div className="mb-2 flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-2">
+          <button
+            type="button"
+            onClick={() => setFiltersExpanded((expanded) => !expanded)}
+            aria-expanded={filtersExpanded}
+            aria-controls="public-question-bank-filter-grid"
+            className="inline-flex min-h-8 items-center gap-2 rounded-md px-1.5 py-1 text-sm font-bold text-slate-800 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+          >
+            <svg aria-hidden="true" className="h-4 w-4 text-emerald-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 5h16M7 12h10m-7 7h4" /><path d="M6 5v3m12-3v3M9 12v3m6-3v3" />
+            </svg>
+            <span>Filter &amp; Search</span>
+            <svg aria-hidden="true" className="h-3.5 w-3.5 text-slate-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              {filtersExpanded ? <path d="m6 9 6 6 6-6" /> : <path d="m6 15 6-6 6 6" />}
+            </svg>
+          </button>
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+              {activeFilterCount}টি সক্রিয়
             </span>
-            <div className="min-w-0">
-              <h2 className="truncate text-sm font-extrabold text-slate-900 sm:text-base">প্রশ্ন খুঁজুন — স্মার্ট ফিল্টার</h2>
-              <p className="text-[11px] text-slate-500">আপনার প্রয়োজন অনুযায়ী ১৮টি ফিল্টার ব্যবহার করুন</p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
-              {activeFilterCount}টি ফিল্টার সক্রিয়
-            </span>
-            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+            <span className="rounded-full bg-slate-100 px-2 py-1 text-[10px] font-semibold text-slate-600">
               {view === "cards" ? filteredExams.length.toLocaleString("en-US") : total.toLocaleString("en-US")} ফলাফল
             </span>
-            <button
-              type="button"
-              onClick={() => setFiltersExpanded((expanded) => !expanded)}
-              aria-expanded={filtersExpanded}
-              aria-controls="public-question-bank-filter-grid"
-              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-100"
-            >
-              <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                {filtersExpanded ? <path d="m6 9 6 6 6-6" /> : <path d="m6 15 6-6 6 6" />}
-              </svg>
-              {filtersExpanded ? "ফিল্টার লুকান" : "ফিল্টার দেখান"}
-            </button>
-            <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-100">
+            <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-white px-2.5 py-1.5 text-[11px] font-bold text-rose-700 transition hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-100">
               <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" /><path d="M3 3v5h5" />
               </svg>
@@ -1014,14 +1010,14 @@ export default function PublicQuestionBank({
           <div id="public-question-bank-filter-grid" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           <FilterField label="সকল প্রতিষ্ঠান" icon="🏢" active={Boolean(institutionId)}>
             <select aria-label="সকল প্রতিষ্ঠান" value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className={filterSelectClass}>
-              <option value="">সকল প্রতিষ্ঠান</option>
+              <option value="">সকল প্রতিষ্ঠান ({filters.summary.institutions.toLocaleString("en-US")})</option>
               {filters.institutions.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
             </select>
           </FilterField>
 
           <FilterField label="সকল পরীক্ষা" icon="📝" active={Boolean(examId)}>
             <select aria-label="সকল পরীক্ষা" value={examId} onChange={(e) => setExamId(e.target.value)} className={filterSelectClass}>
-              <option value="">সকল পরীক্ষা</option>
+              <option value="">সকল পরীক্ষা ({filters.summary.exams.toLocaleString("en-US")})</option>
               {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear ?? "—"} ({exam.questionCount.toLocaleString("en-US")})</option>)}
             </select>
           </FilterField>
@@ -1133,10 +1129,18 @@ export default function PublicQuestionBank({
         )}
       </section>
 
-      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
-        <select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="newest">সর্বশেষ আগে</option><option value="az">A–Z</option><option value="za">Z–A</option></select>
-        <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
-      </div>
+      {view === "all" && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+          </div>
+          <select value={sort} onChange={(event) => setSort(event.target.value)} aria-label="প্রশ্ন সাজান" className="h-9 rounded-lg border border-slate-300 bg-white px-3 text-xs">
+            <option value="newest">সর্বশেষ আগে</option>
+            <option value="az">A–Z</option>
+            <option value="za">Z–A</option>
+          </select>
+        </div>
+      )}
 
       <div className="mb-5 w-full">
         <div className="relative">
