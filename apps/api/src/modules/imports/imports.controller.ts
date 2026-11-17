@@ -561,7 +561,13 @@ export class ImportsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CommitImportDto,
   ) {
-    return this.importsService.commit(id, dto.rowIds);
+    if ((!dto.rowIds || dto.rowIds.length === 0) && dto.allRows !== true) {
+      throw new BadRequestException(
+        'Select at least one row or choose all rows.',
+      );
+    }
+
+    return this.importsService.commit(id, dto.rowIds, dto.allRows === true);
   }
 
   @Put(':id/skip')
