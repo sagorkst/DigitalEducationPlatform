@@ -2,6 +2,7 @@ import {
   IsArray,
   IsOptional,
   IsUUID,
+  IsBoolean,
   ArrayMinSize,
   ArrayMaxSize,
 } from 'class-validator';
@@ -13,4 +14,8 @@ export class CommitImportDto {
   @ArrayMaxSize(10000)
   @IsUUID('4', { each: true })
   rowIds?: string[];
+
+  @IsOptional()
+  @IsBoolean()
+  allRows?: boolean;
 }
