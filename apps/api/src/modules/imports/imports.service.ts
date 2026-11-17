@@ -1245,37 +1245,98 @@ export class ImportsService {
       examName?: unknown;
       examYear?: unknown;
       postName?: unknown;
+      department?: unknown;
+      occurrences?: unknown;
+      rowIds?: unknown;
+      applyTo?: unknown;
+      overwriteExisting?: unknown;
     },
   ) {
     const cleanText = (value: unknown): string | undefined => {
       if (value === undefined || value === null) return undefined;
-
       if (typeof value !== 'string' && typeof value !== 'number') {
         throw new BadRequestException('Metadata values must be text or numbers.');
       }
-
       const result = String(value).trim();
       return result || undefined;
     };
 
-    const institution = cleanText(metadata.institution);
-    const examName = cleanText(metadata.examName);
-    const postName = cleanText(metadata.postName);
+    const common = {
+      institution: cleanText(metadata.institution),
+      examName: cleanText(metadata.examName),
+      examYear: undefined as number | undefined,
+      postName: cleanText(metadata.postName),
+      department: cleanText(metadata.department),
+    };
 
-    let examYear: number | undefined;
-
-    if (metadata.examYear !== undefined &&
-        metadata.examYear !== null &&
+    if (metadata.examYear !== undefined && metadata.examYear !== null &&
         String(metadata.examYear).trim() !== '') {
-      examYear = Number(metadata.examYear);
-
-      if (!Number.isInteger(examYear) || examYear < 1900 || examYear > 2100) {
+      common.examYear = Number(metadata.examYear);
+      if (!Number.isInteger(common.examYear) || common.examYear < 1900 || common.examYear > 2100) {
         throw new BadRequestException('Exam year must be between 1900 and 2100.');
       }
     }
 
-    if (!institution && !examName && !postName && examYear === undefined) {
-      throw new BadRequestException('Provide at least one metadata field.');
+    const suppliedOccurrences = metadata.occurrences;
+    if (suppliedOccurrences !== undefined && !Array.isArray(suppliedOccurrences)) {
+      throw new BadRequestException('Occurrences must be an array.');
+    }
+
+    const cleanOccurrences: Record<string, unknown>[] = (Array.isArray(suppliedOccurrences)
+      ? suppliedOccurrences
+      : []).map((item, index) => {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) {
+          throw new BadRequestException(`Occurrence ${index + 1} must be an object.`);
+        }
+        const occurrence = { ...(item as Record<string, unknown>) };
+        const cleaned: Record<string, unknown> = {};
+        for (const key of [
+          'institution', 'examName', 'postName', 'department', 'source', 'sourceUrl',
+          'examId', 'institutionId', 'postId', 'sourceDocumentId',
+        ]) {
+          const value = cleanText(occurrence[key]);
+          if (value !== undefined) cleaned[key] = value;
+        }
+        for (const key of ['examYear', 'questionNumber', 'sourcePage']) {
+          const value = occurrence[key];
+          if (value !== undefined && value !== null && String(value).trim() !== '') {
+            const number = Number(value);
+            const min = key === 'examYear' ? 1900 : 1;
+            const max = key === 'examYear' ? 2100 : 1000000;
+            if (!Number.isInteger(number) || number < min || number > max) {
+              throw new BadRequestException(`Occurrence ${index + 1}: invalid ${key}.`);
+            }
+            cleaned[key] = number;
+          }
+        }
+        if (!cleaned.examId && !cleaned.examName) {
+          throw new BadRequestException(`Occurrence ${index + 1} requires examName or examId.`);
+        }
+        if (!cleaned.institution && !cleaned.institutionId && !common.institution) {
+          throw new BadRequestException(`Occurrence ${index + 1} requires institution or institutionId.`);
+        }
+        if (cleaned.examYear === undefined && common.examYear !== undefined) {
+          cleaned.examYear = common.examYear;
+        }
+        if (!cleaned.institution && common.institution) cleaned.institution = common.institution;
+        if (!cleaned.postName && common.postName) cleaned.postName = common.postName;
+        if (!cleaned.department && common.department) cleaned.department = common.department;
+        return cleaned;
+      });
+
+    const rowIds = Array.isArray(metadata.rowIds)
+      ? [...new Set(metadata.rowIds.map((id) => cleanText(id)).filter((id): id is string => Boolean(id)))]
+      : undefined;
+    const applyTo = metadata.applyTo === 'selected' ? 'selected' : 'all';
+    const overwriteExisting = metadata.overwriteExisting === true;
+
+    if (applyTo === 'selected' && (!rowIds || rowIds.length === 0)) {
+      throw new BadRequestException('Select at least one import row.');
+    }
+
+    const hasCommonMetadata = Object.values(common).some((value) => value !== undefined);
+    if (!hasCommonMetadata && cleanOccurrences.length === 0) {
+      throw new BadRequestException('Provide at least one metadata field or exam occurrence.');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -1283,9 +1344,7 @@ export class ImportsService {
         where: { id: batchId },
         select: { id: true, status: true },
       });
-
       if (!batch) throw new NotFoundException('Import batch not found.');
-
       if (batch.status !== 'REVIEW') {
         throw new BadRequestException('Only batches in REVIEW status can be edited.');
       }
@@ -1294,51 +1353,61 @@ export class ImportsService {
         where: {
           batchId,
           status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
+          ...(applyTo === 'selected' && rowIds ? { id: { in: rowIds } } : {}),
         },
         select: { id: true, rawData: true },
       });
 
+      if (rows.length === 0) {
+        throw new BadRequestException('No editable import rows matched this selection.');
+      }
+
+      const assignValue = (
+        target: Record<string, unknown>,
+        key: string,
+        value: unknown,
+      ) => {
+        if (value === undefined) return;
+        const current = target[key];
+        if (overwriteExisting || current === undefined || current === null || String(current).trim() === '') {
+          target[key] = value;
+        }
+      };
+
       for (const row of rows) {
-        const data =
-          row.rawData &&
-          typeof row.rawData === 'object' &&
-          !Array.isArray(row.rawData)
-            ? ({ ...(row.rawData as Record<string, unknown>) } as ImportData)
-            : {};
+        const data = row.rawData && typeof row.rawData === 'object' && !Array.isArray(row.rawData)
+          ? ({ ...(row.rawData as Record<string, unknown>) } as ImportData)
+          : {};
+        const existingOccurrences: Record<string, unknown>[] = Array.isArray(data.occurrences)
+          ? data.occurrences.map((item) =>
+              item && typeof item === 'object' && !Array.isArray(item)
+                ? { ...(item as Record<string, unknown>) }
+                : {},
+            )
+          : [];
 
-        const occurrences: Record<string, unknown>[] =
-          Array.isArray(data.occurrences)
-            ? data.occurrences.map((item) =>
-                item && typeof item === 'object' && !Array.isArray(item)
-                  ? { ...(item as Record<string, unknown>) }
-                  : {},
-              )
-            : [];
-
-        if (occurrences.length === 0) occurrences.push({});
-
-        const occurrence = occurrences[0];
-
-        const fillIfMissing = (
-          key: string,
-          value: string | number | undefined,
-        ) => {
-          if (value === undefined) return;
-
-          const current = occurrence[key];
-
-          if (current === undefined || current === null || String(current).trim() === '') {
-            occurrence[key] = value;
+        if (cleanOccurrences.length > 0) {
+          for (const addition of cleanOccurrences) {
+            const next = { ...common, ...addition } as Record<string, unknown>;
+            const keyFor = (item: Record<string, unknown>) =>
+              item.examId
+                ? `id:${String(item.examId).toLowerCase()}`
+                : `name:${String(item.examName ?? '').trim().toLowerCase()}|${String(item.examYear ?? '')}|${String(item.institutionId ?? item.institution ?? '').trim().toLowerCase()}`;
+            const key = keyFor(next);
+            const existing = existingOccurrences.find((item) => keyFor(item) === key);
+            if (existing) {
+              for (const [field, value] of Object.entries(next)) assignValue(existing, field, value);
+            } else {
+              existingOccurrences.push(next);
+            }
           }
-        };
+        } else {
+          if (existingOccurrences.length === 0) existingOccurrences.push({});
+          const target = existingOccurrences[0];
+          for (const [field, value] of Object.entries(common)) assignValue(target, field, value);
+        }
 
-        fillIfMissing('institution', institution);
-        fillIfMissing('examName', examName);
-        fillIfMissing('examYear', examYear);
-        fillIfMissing('postName', postName);
-
-        data.occurrences = occurrences;
-
+        data.occurrences = existingOccurrences;
         await tx.importRow.update({
           where: { id: row.id },
           data: { rawData: data as Prisma.InputJsonValue },
@@ -1346,11 +1415,10 @@ export class ImportsService {
       }
 
       const summary = await this.revalidateBatchRows(tx, batchId);
-
       return {
         success: true,
         message: 'Batch metadata applied successfully.',
-        data: { batchId, summary },
+        data: { batchId, updatedRows: rows.length, summary },
       };
     });
   }
