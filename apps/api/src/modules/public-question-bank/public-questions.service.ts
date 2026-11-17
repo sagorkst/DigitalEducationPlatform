@@ -35,7 +35,9 @@ type PublicExamFilters = {
   search?: string;
   institutionId?: string;
   postId?: string;
+  examId?: string;
   grade?: string;
+  examType?: string;
   examYear?: string;
   yearFrom?: string;
   yearTo?: string;
@@ -355,6 +357,7 @@ export class PublicQuestionsService {
     for (const [field, value] of Object.entries({
       institutionId: query.institutionId,
       postId: query.postId,
+      examId: query.examId,
     })) {
       this.uuid(value, field);
     }
@@ -426,6 +429,7 @@ export class PublicQuestionsService {
     const search = query.search?.trim();
 
     const where: Prisma.ExamWhereInput = {
+      ...(query.examId ? { id: query.examId } : {}),
       ...(query.institutionId
         ? { institutionId: query.institutionId }
         : {}),
