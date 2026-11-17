@@ -511,6 +511,11 @@ export class ImportsController {
       examName?: unknown;
       examYear?: unknown;
       postName?: unknown;
+      department?: unknown;
+      occurrences?: unknown;
+      rowIds?: unknown;
+      applyTo?: unknown;
+      overwriteExisting?: unknown;
     },
   ) {
     return this.importsService.applyBatchMetadata(id, body);
