@@ -141,6 +141,8 @@ export class PublicQuestionsService {
       ['institution', query.institution],
       ['exam', query.exam],
       ['post', query.post],
+      ['grade', query.grade],
+      ['examType', query.examType],
     ] as const) {
       if (value && value.length > 150) {
         throw new BadRequestException(
@@ -1089,7 +1091,7 @@ export class PublicQuestionsService {
         summary: {
           questions: totalQuestions,
           exams: exams.length,
-          institutions: institutions.filter((item) => item.institution.trim()).length,
+          institutions: new Set(exams.map((exam) => exam.institution?.id).filter((id): id is string => Boolean(id))).size,
           subjects: totalSubjects,
           topics: totalTopics,
         },
