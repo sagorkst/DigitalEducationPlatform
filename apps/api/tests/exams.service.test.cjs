@@ -101,6 +101,7 @@ test('create creates an exam with generated slug', async () => {
     name: '  46th BCS Preliminary  ',
     examYear: 2023,
     examType: ' PRELIMINARY ',
+    grade: ' 9th Grade ',
     description: '  Preliminary exam  ',
   });
 
@@ -108,6 +109,7 @@ test('create creates an exam with generated slug', async () => {
   assert.equal(result.data.name, '46th BCS Preliminary');
   assert.equal(createData.slug, '46th-bcs-preliminary');
   assert.equal(createData.examType, 'PRELIMINARY');
+  assert.equal(createData.grade, '9th Grade');
   assert.equal(createData.description, 'Preliminary exam');
 });
 
