@@ -364,6 +364,7 @@ export default function PublicQuestionBank({
   initialTopicId?: string;
 }) {
   const [view, setView] = useState<ViewMode>("all");
+  const [activeSummaryCard, setActiveSummaryCard] = useState<"all" | "exam" | "institution" | "subject" | "topic">("all");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [exams, setExams] = useState<Exam[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -734,6 +735,13 @@ export default function PublicQuestionBank({
 
   const changeView = (next: ViewMode) => {
     setView(next);
+    setActiveSummaryCard(next === "cards" ? "exam" : "all");
+    setPage(1);
+  };
+
+  const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "topic") => {
+    setActiveSummaryCard(key);
+    setView(key === "exam" ? "cards" : "all");
     setPage(1);
   };
 
@@ -848,19 +856,31 @@ export default function PublicQuestionBank({
         <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Compact Design</span>
       </header>
 
-      <section className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+      <section aria-label="Question Bank categories" className="mb-5 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-5">
         {([
-          ["সকল প্রশ্ন", filters.summary.questions],
-          ["Exam Wise", filters.summary.exams],
-          ["Institution", filters.summary.institutions],
-          ["Subject", filters.summary.subjects],
-          ["Topic", filters.summary.topics],
-        ] as [string, number][]).map(([label, value]) => (
-          <button key={label} type="button" onClick={() => changeView(label === "Exam Wise" ? "cards" : "all")} aria-pressed={(label === "Exam Wise" && view === "cards") || (label !== "Exam Wise" && view === "all")} className={`rounded-xl border px-3 py-3 text-left shadow-sm transition hover:border-emerald-400 ${((label === "Exam Wise" && view === "cards") || (label !== "Exam Wise" && view === "all")) ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"}`}>
-            <p className="text-xs font-medium text-slate-500">{label}</p>
-            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{value.toLocaleString("en-US")}</p>
-          </button>
-        ))}
+          { key: "all", label: "সকল প্রশ্ন", value: filters.summary.questions, note: "প্রকাশিত প্রশ্ন" },
+          { key: "exam", label: "Exam Wise", value: filters.summary.exams, note: "পরীক্ষার সংগ্রহ" },
+          { key: "institution", label: "Institution", value: filters.summary.institutions, note: "প্রতিষ্ঠান" },
+          { key: "subject", label: "Subject", value: filters.summary.subjects, note: "বিষয়" },
+          { key: "topic", label: "Topic", value: filters.summary.topics, note: "টপিক" },
+        ] as { key: "all" | "exam" | "institution" | "subject" | "topic"; label: string; value: number; note: string }[]).map((card) => {
+          const active = activeSummaryCard === card.key;
+          return (
+            <button
+              key={card.key}
+              type="button"
+              onClick={() => selectSummaryCard(card.key)}
+              aria-pressed={active}
+              className={`flex min-h-[104px] w-full flex-col justify-between rounded-xl border p-4 text-left shadow-sm transition hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 ${active ? "border-emerald-500 bg-emerald-50 ring-1 ring-emerald-200" : "border-slate-200 bg-white"}`}
+            >
+              <span className="text-xs font-semibold text-slate-500">{card.label}</span>
+              <span className="flex items-end justify-between gap-2">
+                <span className="text-2xl font-bold leading-none tabular-nums text-slate-900">{card.value.toLocaleString("en-US")}</span>
+                <span className="text-[11px] font-medium text-slate-400">{card.note}</span>
+              </span>
+            </button>
+          );
+        })}
       </section>
 
       <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
