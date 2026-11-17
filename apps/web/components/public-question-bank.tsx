@@ -1,7 +1,7 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from "react";
 
 type Exam = {
   id: string;
@@ -345,6 +345,38 @@ function QuestionVisibilityControls({
     </div>
   );
 }
+
+function FilterField({
+  label,
+  icon,
+  active = false,
+  children,
+}: {
+  label: string;
+  icon: string;
+  active?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-2 transition hover:border-emerald-300 hover:shadow-sm">
+      <label className="mb-1.5 flex min-w-0 items-center gap-1.5 text-[11px] font-bold text-slate-600">
+        <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md text-[11px] ${active ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-500"}`} aria-hidden="true">{icon}</span>
+        <span className="truncate">{label}</span>
+        {active && <span className="ml-auto h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-500" aria-label="সক্রিয়" />}
+      </label>
+      <div className="relative">
+        {children}
+        <svg aria-hidden="true" className="pointer-events-none absolute right-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fillRule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clipRule="evenodd" />
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+const filterSelectClass =
+  "w-full min-w-0 appearance-none rounded-lg border border-slate-200 bg-slate-50 py-2 pl-2.5 pr-7 text-xs font-medium text-slate-700 outline-none transition hover:bg-white focus:border-emerald-500 focus:bg-white focus:ring-2 focus:ring-emerald-100 disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400";
+
 const emptyFilters: Filters = {
   institutions: [],
   exams: [],
@@ -710,6 +742,12 @@ export default function PublicQuestionBank({
 
   const visibleQuestions = displayedQuestions;
 
+  const activeFilterCount = [
+    institutionId, examId, examType, postId, grade, examYear, subjectId, topicId,
+    subTopicId, chapterId, questionType, difficulty, hasAnswer, hasExplanation,
+    isRepeated, yearFrom, yearTo,
+  ].filter(Boolean).length;
+
   const resetFilters = () => {
     setSearch("");
     setInstitutionId("");
@@ -930,83 +968,153 @@ export default function PublicQuestionBank({
         })}
       </section>
 
-      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
-          <div className="contents">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-6">
-              <select value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল প্রতিষ্ঠান</option>
-                {filters.institutions.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
-              </select>
-              <select value={examId} onChange={(e) => setExamId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল পরীক্ষা</option>
-                {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear ?? "—"} ({exam.questionCount.toLocaleString("en-US")})</option>)}
-              </select>
-              <select value={examType} onChange={(e) => setExamType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল পরীক্ষার ধরন</option>
-                {filters.examTypes.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
-              </select>
-              <select value={postId} onChange={(e) => setPostId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল পদ</option>
-                {filters.posts.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
-              </select>
-              <select value={grade} onChange={(e) => setGrade(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল পদের গ্রেড</option>
-                {filters.grades.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
-              </select>
-              <select value={examYear} onChange={(e) => setExamYear(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল পরীক্ষার বছর</option>
-                {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
-              </select>
+      <section aria-label="প্রশ্ন ব্যাংক ফিল্টার" className="mb-5 overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white via-white to-emerald-50/40 p-3 shadow-sm sm:p-4">
+        <div className="mb-3 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-700 text-white shadow-sm">
+              <svg aria-hidden="true" className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M4 5h16M7 12h10m-7 7h4" /><path d="M6 5v3m12-3v3M9 12v3m6-3v3" />
+              </svg>
+            </span>
+            <div className="min-w-0">
+              <h2 className="truncate text-sm font-extrabold text-slate-900 sm:text-base">প্রশ্ন খুঁজুন — স্মার্ট ফিল্টার</h2>
+              <p className="text-[11px] text-slate-500">আপনার প্রয়োজন অনুযায়ী ১৮টি ফিল্টার ব্যবহার করুন</p>
             </div>
           </div>
-          <div className="contents">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-4">
-              <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল বিষয়</option>
-                {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}{subject._count?.questions !== undefined ? ` (${subject._count.questions.toLocaleString("en-US")})` : ""}</option>)}
-              </select>
-              <select value={topicId} onChange={(e) => { setTopicId(e.target.value); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল টপিক</option>
-                {filters.topics.filter((topic) => topic.parentId === null && (!subjectId || topic.subjectId === subjectId)).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
-              </select>
-              <select value={subTopicId} onChange={(e) => { setSubTopicId(e.target.value); setChapterId(""); }} disabled={!topicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
-                <option value="">সকল Sub-topic</option>
-                {filters.topics.filter((topic) => topic.parentId === topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
-              </select>
-              <select value={chapterId} onChange={(e) => setChapterId(e.target.value)} disabled={!subTopicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
-                <option value="">সকল Chapter</option>
-                {filters.topics.filter((topic) => topic.parentId === subTopicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
-              </select>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full border border-emerald-100 bg-emerald-50 px-2.5 py-1 text-[11px] font-bold text-emerald-700">
+              {activeFilterCount}টি ফিল্টার সক্রিয়
+            </span>
+            <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
+              {view === "cards" ? filteredExams.length.toLocaleString("en-US") : total.toLocaleString("en-US")} ফলাফল
+            </span>
+            <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-100">
+              <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" /><path d="M3 3v5h5" />
+              </svg>
+              সব Filter Reset করুন
+            </button>
           </div>
-          <div className="contents">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-6">
-              <select value={questionType} onChange={(e) => setQuestionType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল প্রশ্নের ধরন</option><option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the blanks</option><option value="WRITTEN">Written</option>
-              </select>
-              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">সকল কঠিনতার স্তর</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
-              </select>
-              <select value="PUBLISHED" disabled className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"><option value="PUBLISHED">প্রকাশিত প্রশ্ন</option></select>
-              <select value={hasAnswer} onChange={(e) => setHasAnswer(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">উত্তর: সব</option><option value="true">উত্তর আছে</option><option value="false">উত্তর নেই</option>
-              </select>
-              <select value={hasExplanation} onChange={(e) => setHasExplanation(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">ব্যাখ্যা: সব</option><option value="true">ব্যাখ্যা আছে</option><option value="false">ব্যাখ্যা নেই</option>
-              </select>
-              <select value={isRepeated} onChange={(e) => setIsRepeated(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
-                <option value="">Repeated: সব</option><option value="true">শুধু Repeated</option><option value="false">শুধু Non-repeated</option>
-              </select>
-            </div>
-          </div>
-          <div className="contents">
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-5">
-              <select value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year From</option>{filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}</select>
-              <select value={yearTo} onChange={(e) => setYearTo(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year To</option>{filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}</select>
-              <button type="button" onClick={resetFilters} className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 sm:col-span-2">সব Filter Reset করুন</button>
-            </div>
-          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+          <FilterField label="সকল প্রতিষ্ঠান" icon="🏢" active={Boolean(institutionId)}>
+            <select aria-label="সকল প্রতিষ্ঠান" value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className={filterSelectClass}>
+              <option value="">সকল প্রতিষ্ঠান</option>
+              {filters.institutions.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল পরীক্ষা" icon="📝" active={Boolean(examId)}>
+            <select aria-label="সকল পরীক্ষা" value={examId} onChange={(e) => setExamId(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল পরীক্ষা</option>
+              {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear ?? "—"} ({exam.questionCount.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="পরীক্ষার ধরন" icon="📑" active={Boolean(examType)}>
+            <select aria-label="সকল পরীক্ষার ধরন" value={examType} onChange={(e) => setExamType(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল পরীক্ষার ধরন</option>
+              {filters.examTypes.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল পদ" icon="💼" active={Boolean(postId)}>
+            <select aria-label="সকল পদ" value={postId} onChange={(e) => setPostId(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল পদ</option>
+              {filters.posts.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="পদের গ্রেড" icon="🏷️" active={Boolean(grade)}>
+            <select aria-label="সকল পদের গ্রেড" value={grade} onChange={(e) => setGrade(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল পদের গ্রেড</option>
+              {filters.grades.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="পরীক্ষার বছর" icon="📅" active={Boolean(examYear)}>
+            <select aria-label="সকল পরীক্ষার বছর" value={examYear} onChange={(e) => setExamYear(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল পরীক্ষার বছর</option>
+              {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল বিষয়" icon="📚" active={Boolean(subjectId)}>
+            <select aria-label="সকল বিষয়" value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); setSubTopicId(""); setChapterId(""); }} className={filterSelectClass}>
+              <option value="">সকল বিষয়</option>
+              {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}{subject._count?.questions !== undefined ? ` (${subject._count.questions.toLocaleString("en-US")})` : ""}</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল টপিক" icon="🗂️" active={Boolean(topicId)}>
+            <select aria-label="সকল টপিক" value={topicId} onChange={(e) => { setTopicId(e.target.value); setSubTopicId(""); setChapterId(""); }} className={filterSelectClass}>
+              <option value="">সকল টপিক</option>
+              {filters.topics.filter((topic) => topic.parentId === null && (!subjectId || topic.subjectId === subjectId)).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল Sub-topic" icon="📖" active={Boolean(subTopicId)}>
+            <select aria-label="সকল Sub-topic" value={subTopicId} onChange={(e) => { setSubTopicId(e.target.value); setChapterId(""); }} disabled={!topicId} className={filterSelectClass}>
+              <option value="">সকল Sub-topic</option>
+              {filters.topics.filter((topic) => topic.parentId === topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="সকল Chapter" icon="📘" active={Boolean(chapterId)}>
+            <select aria-label="সকল Chapter" value={chapterId} onChange={(e) => setChapterId(e.target.value)} disabled={!subTopicId} className={filterSelectClass}>
+              <option value="">সকল Chapter</option>
+              {filters.topics.filter((topic) => topic.parentId === subTopicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="প্রশ্নের ধরন" icon="❔" active={Boolean(questionType)}>
+            <select aria-label="সকল প্রশ্নের ধরন" value={questionType} onChange={(e) => setQuestionType(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল প্রশ্নের ধরন</option><option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the blanks</option><option value="WRITTEN">Written</option>
+            </select>
+          </FilterField>
+
+          <FilterField label="কঠিনতার স্তর" icon="🎯" active={Boolean(difficulty)}>
+            <select aria-label="সকল কঠিনতার স্তর" value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className={filterSelectClass}>
+              <option value="">সকল কঠিনতার স্তর</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+            </select>
+          </FilterField>
+
+          <FilterField label="প্রশ্নের অবস্থা" icon="🌐">
+            <select aria-label="প্রকাশিত প্রশ্ন" value="PUBLISHED" disabled className={filterSelectClass}><option value="PUBLISHED">প্রকাশিত প্রশ্ন</option></select>
+          </FilterField>
+
+          <FilterField label="উত্তরের অবস্থা" icon="✓" active={Boolean(hasAnswer)}>
+            <select aria-label="উত্তর: সব" value={hasAnswer} onChange={(e) => setHasAnswer(e.target.value)} className={filterSelectClass}>
+              <option value="">উত্তর: সব</option><option value="true">উত্তর আছে</option><option value="false">উত্তর নেই</option>
+            </select>
+          </FilterField>
+
+          <FilterField label="ব্যাখ্যার অবস্থা" icon="💡" active={Boolean(hasExplanation)}>
+            <select aria-label="ব্যাখ্যা: সব" value={hasExplanation} onChange={(e) => setHasExplanation(e.target.value)} className={filterSelectClass}>
+              <option value="">ব্যাখ্যা: সব</option><option value="true">ব্যাখ্যা আছে</option><option value="false">ব্যাখ্যা নেই</option>
+            </select>
+          </FilterField>
+
+          <FilterField label="পুনরাবৃত্ত প্রশ্ন" icon="🔁" active={Boolean(isRepeated)}>
+            <select aria-label="Repeated: সব" value={isRepeated} onChange={(e) => setIsRepeated(e.target.value)} className={filterSelectClass}>
+              <option value="">Repeated: সব</option><option value="true">শুধু Repeated</option><option value="false">শুধু Non-repeated</option>
+            </select>
+          </FilterField>
+
+          <FilterField label="Year From" icon="⏮️" active={Boolean(yearFrom)}>
+            <select aria-label="Year From" value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className={filterSelectClass}>
+              <option value="">Year From</option>
+              {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
+
+          <FilterField label="Year To" icon="⏭️" active={Boolean(yearTo)}>
+            <select aria-label="Year To" value={yearTo} onChange={(e) => setYearTo(e.target.value)} className={filterSelectClass}>
+              <option value="">Year To</option>
+              {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
+            </select>
+          </FilterField>
         </div>
       </section>
 
