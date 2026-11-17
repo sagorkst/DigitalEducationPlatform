@@ -284,11 +284,17 @@ export class PublicQuestionsService {
                   },
                 }
               : {}),
-            ...(query.grade?.trim()
-              ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
-              : {}),
-            ...(query.examType?.trim()
-              ? { examRef: { examType: { equals: query.examType.trim(), mode: 'insensitive' } } }
+            ...(query.grade?.trim() || query.examType?.trim()
+              ? {
+                  examRef: {
+                    ...(query.grade?.trim()
+                      ? { grade: { equals: query.grade.trim(), mode: 'insensitive' } }
+                      : {}),
+                    ...(query.examType?.trim()
+                      ? { examType: { equals: query.examType.trim(), mode: 'insensitive' } }
+                      : {}),
+                  },
+                }
               : {}),
             ...(yearFrom !== undefined && yearTo !== undefined
               ? { examYear: { gte: yearFrom, lte: yearTo } }
@@ -559,11 +565,17 @@ export class PublicQuestionsService {
         ? { examName: { contains: query.exam.trim(), mode: 'insensitive' } }
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
-      ...(query.grade?.trim()
-        ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
-        : {}),
-      ...(query.examType?.trim()
-        ? { examRef: { examType: { equals: query.examType.trim(), mode: 'insensitive' } } }
+      ...(query.grade?.trim() || query.examType?.trim()
+        ? {
+            examRef: {
+              ...(query.grade?.trim()
+                ? { grade: { equals: query.grade.trim(), mode: 'insensitive' } }
+                : {}),
+              ...(query.examType?.trim()
+                ? { examType: { equals: query.examType.trim(), mode: 'insensitive' } }
+                : {}),
+            },
+          }
         : {}),
       ...(query.post?.trim()
         ? { postName: { contains: query.post.trim(), mode: 'insensitive' } }
