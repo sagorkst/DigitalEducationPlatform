@@ -1063,6 +1063,13 @@ export class PublicQuestionsService {
           subject: {
             select: { name: true },
           },
+          _count: {
+            select: {
+              questions: {
+                where: { status: 'PUBLISHED', deletedAt: null },
+              },
+            },
+          },
         },
       }),
       this.prisma.question.count({ where: this.activePublishedWhere() }),
