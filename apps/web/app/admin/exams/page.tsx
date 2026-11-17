@@ -253,6 +253,7 @@ export default function AdminExamsPage() {
       String(exam.examYear ?? "").includes(term) ||
       exam.slug?.toLowerCase().includes(term) ||
       exam.examType?.toLowerCase().includes(term) ||
+      exam.grade?.toLowerCase().includes(term) ||
       exam.institution?.name?.toLowerCase().includes(term);
 
     const matchesInstitution =
