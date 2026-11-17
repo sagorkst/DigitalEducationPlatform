@@ -20,6 +20,9 @@ type PublicQuestionFilters = {
   postId?: string;
   post?: string;
   grade?: string;
+  examType?: string;
+  hasAnswer?: string;
+  hasExplanation?: string;
   yearFrom?: string;
   yearTo?: string;
   questionType?: string;
@@ -244,6 +247,7 @@ export class PublicQuestionsService {
       query.postId ||
       query.post?.trim() ||
       query.grade?.trim() ||
+      query.examType?.trim() ||
       yearFrom !== undefined ||
       yearTo !== undefined
     ) {
@@ -283,6 +287,9 @@ export class PublicQuestionsService {
             ...(query.grade?.trim()
               ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
               : {}),
+            ...(query.examType?.trim()
+              ? { examRef: { examType: { equals: query.examType.trim(), mode: 'insensitive' } } }
+              : {}),
             ...(yearFrom !== undefined && yearTo !== undefined
               ? { examYear: { gte: yearFrom, lte: yearTo } }
               : yearFrom !== undefined || yearTo !== undefined
@@ -307,6 +314,18 @@ export class PublicQuestionsService {
 
     if (query.isRepeated === 'false') {
       and.push({ repeatGroupId: null });
+    }
+
+    if (query.hasAnswer === 'true') {
+      and.push({ OR: [{ correctAnswer: { not: null } }, { options: { some: { isCorrect: true } } }] });
+    } else if (query.hasAnswer === 'false') {
+      and.push({ correctAnswer: null, options: { none: { isCorrect: true } } });
+    }
+
+    if (query.hasExplanation === 'true') {
+      and.push({ explanation: { not: null } });
+    } else if (query.hasExplanation === 'false') {
+      and.push({ explanation: null });
     }
 
     and.push(
@@ -405,8 +424,12 @@ export class PublicQuestionsService {
         ? { institutionId: query.institutionId }
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
+      ...(query.examId ? { examId: query.examId } : {}),
       ...(query.grade?.trim()
         ? { grade: { equals: query.grade.trim(), mode: 'insensitive' } }
+        : {}),
+      ...(query.examType?.trim()
+        ? { examType: { equals: query.examType.trim(), mode: 'insensitive' } }
         : {}),
       ...(examYear !== undefined
         ? { examYear }
@@ -538,6 +561,9 @@ export class PublicQuestionsService {
       ...(query.postId ? { postId: query.postId } : {}),
       ...(query.grade?.trim()
         ? { examRef: { grade: { equals: query.grade.trim(), mode: 'insensitive' } } }
+        : {}),
+      ...(query.examType?.trim()
+        ? { examRef: { examType: { equals: query.examType.trim(), mode: 'insensitive' } } }
         : {}),
       ...(query.post?.trim()
         ? { postName: { contains: query.post.trim(), mode: 'insensitive' } }
@@ -942,6 +968,9 @@ export class PublicQuestionsService {
       posts,
       years,
       topics,
+      totalQuestions,
+      totalSubjects,
+      totalTopics,
     ] = await Promise.all([
       this.prisma.questionOccurrence.findMany({
         where: occurrenceScope,
@@ -1011,11 +1040,26 @@ export class PublicQuestionsService {
           },
         },
       }),
+      this.prisma.question.count({ where: this.activePublishedWhere() }),
+      this.prisma.subject.count({
+        where: { isActive: true, questions: { some: this.activePublishedWhere() } },
+      }),
+      this.prisma.topic.count({
+        where: { isActive: true, subject: { isActive: true }, questions: { some: this.activePublishedWhere() } },
+      }),
     ]);
 
     return {
       success: true,
       data: {
+        summary: {
+          questions: totalQuestions,
+          exams: exams.length,
+          institutions: institutions.filter((item) => item.institution.trim()).length,
+          subjects: totalSubjects,
+          topics: totalTopics,
+        },
+        examTypes: [...new Set(exams.map((exam) => exam.examType).filter((value): value is string => Boolean(value?.trim())))].sort(),
         institutions: institutions
           .filter((item) => item.institution.trim())
           .map((item) => ({
