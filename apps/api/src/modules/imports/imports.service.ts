@@ -1559,7 +1559,11 @@ export class ImportsService {
     };
   }
 
-  async commit(batchId: string, rowIds?: string[]) {
+  async commit(batchId: string, rowIds?: string[], allRows = false) {
+    if (!allRows && (!Array.isArray(rowIds) || rowIds.length === 0)) {
+      throw new BadRequestException('Select at least one row or choose all rows.');
+    }
+
     const where: Prisma.ImportRowWhereInput = {
       batchId,
       status: {
@@ -1567,7 +1571,7 @@ export class ImportsService {
       },
     };
 
-    if (rowIds && rowIds.length > 0) {
+    if (!allRows && rowIds && rowIds.length > 0) {
       where.id = { in: rowIds };
     }
 
