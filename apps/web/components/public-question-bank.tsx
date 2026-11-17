@@ -976,7 +976,7 @@ export default function PublicQuestionBank({
             </button>
           ))}
         </div>
-        <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+        <div className="flex flex-wrap items-center gap-2"><select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="newest">সর্বশেষ আগে</option><option value="az">A–Z</option><option value="za">Z–A</option></select><GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} /></div>
       </nav>
 
       {error && (
