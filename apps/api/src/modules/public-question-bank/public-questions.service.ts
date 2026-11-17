@@ -1047,6 +1047,7 @@ export class PublicQuestionsService {
           id: true,
           name: true,
           subjectId: true,
+          parentId: true,
           subject: {
             select: { name: true },
           },
