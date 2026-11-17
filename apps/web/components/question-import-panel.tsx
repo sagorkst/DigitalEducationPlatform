@@ -79,6 +79,7 @@ export default function QuestionImportPanel() {
   const [summary, setSummary] = useState<ImportSummary | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectAllBatch, setSelectAllBatch] = useState(false);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -89,7 +90,11 @@ export default function QuestionImportPanel() {
     examName: "",
     examYear: "",
     postName: "",
+    department: "",
   });
+  const [batchOccurrences, setBatchOccurrences] = useState([
+    { examName: "", examYear: "", postName: "", department: "" },
+  ]);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, any> | null>(null);
   const [optionsJson, setOptionsJson] = useState("[]");
@@ -120,6 +125,7 @@ export default function QuestionImportPanel() {
     setRows([]);
     setBatchId("");
     setSelectedIds([]);
+    setSelectAllBatch(false);
   }
 
   async function loadRows(id: string, pageNumber = 1) {
@@ -137,6 +143,7 @@ export default function QuestionImportPanel() {
     setRows(Array.isArray(result.data) ? result.data : []);
     setPage(pageNumber);
     setSelectedIds([]);
+    setSelectAllBatch(false);
 
     const pages = Number(result.pagination?.totalPages);
     setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
@@ -193,6 +200,7 @@ export default function QuestionImportPanel() {
   }
 
   function toggleRow(id: string, checked: boolean) {
+    setSelectAllBatch(false);
     setSelectedIds((current) =>
       checked
         ? [...current, id]
@@ -201,13 +209,8 @@ export default function QuestionImportPanel() {
   }
 
   function selectAllValid() {
-    const importableIds = rows
-      .filter((row) => ["VALID", "DUPLICATE"].includes(row.status))
-      .map((row) => row.id);
-
-    setSelectedIds((current) =>
-      Array.from(new Set([...current, ...importableIds])),
-    );
+    setSelectedIds([]);
+    setSelectAllBatch(true);
   }
 
   async function performAction(action: "commit" | "skip") {
@@ -221,7 +224,7 @@ export default function QuestionImportPanel() {
             .map((row) => row.id)
         : selectedIds;
 
-    if (!batchId || actionIds.length === 0) {
+    if (!batchId || (!selectAllBatch && actionIds.length === 0)) {
       setError("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
       return;
     }
@@ -236,7 +239,11 @@ export default function QuestionImportPanel() {
         {
           method: action === "commit" ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rowIds: actionIds }),
+          body: JSON.stringify(
+            selectAllBatch
+              ? action === "skip" ? { allRows: true } : {}
+              : { rowIds: actionIds },
+          ),
         },
       );
 
@@ -247,6 +254,7 @@ export default function QuestionImportPanel() {
       }
 
       setSelectedIds([]);
+      setSelectAllBatch(false);
 
       setMessage(
         action === "commit"
@@ -280,22 +288,32 @@ export default function QuestionImportPanel() {
     );
   }
 
-  function updateEditingOccurrence(field: string, value: string) {
+  function updateEditingOccurrence(index: number, field: string, value: string) {
     setEditingData((current) => {
       if (!current) return current;
-      const occurrences = Array.isArray(current.occurrences)
-        ? [...current.occurrences]
-        : [{}];
-
-      occurrences[0] = {
-        ...(occurrences[0] ?? {}),
-        [field]: field === "examYear" && value.trim() !== ""
-          ? Number(value)
-          : value,
+      const occurrences = Array.isArray(current.occurrences) ? [...current.occurrences] : [];
+      occurrences[index] = {
+        ...(occurrences[index] ?? {}),
+        [field]: field === "examYear" && value.trim() !== "" ? Number(value) : value,
       };
-
       return { ...current, occurrences };
     });
+  }
+
+  function addBatchOccurrence() {
+    setBatchOccurrences((current) => [...current, { examName: "", examYear: "", postName: "", department: "" }]);
+  }
+
+  function updateBatchOccurrence(index: number, field: string, value: string) {
+    setBatchOccurrences((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  }
+
+  function addEditingOccurrence() {
+    setEditingData((current) => current ? { ...current, occurrences: [...(Array.isArray(current.occurrences) ? current.occurrences : []), {}] } : current);
+  }
+
+  function removeEditingOccurrence(index: number) {
+    setEditingData((current) => current ? { ...current, occurrences: (Array.isArray(current.occurrences) ? current.occurrences : []).filter((_: unknown, i: number) => i !== index) } : current);
   }
 
   function startManualImportEdit(row: ImportRow) {
@@ -314,16 +332,26 @@ export default function QuestionImportPanel() {
   async function applyBatchMetadataNow() {
     if (!batchId) return;
 
+    const occurrences = batchOccurrences
+      .filter((item) => item.examName.trim())
+      .map((item) => ({
+        examName: item.examName.trim(),
+        examYear: item.examYear.trim() ? Number(item.examYear) : undefined,
+        postName: item.postName.trim() || undefined,
+        department: item.department.trim() || undefined,
+      }));
     const body = {
       institution: batchMetadata.institution.trim() || undefined,
-      examName: batchMetadata.examName.trim() || undefined,
-      examYear: batchMetadata.examYear.trim()
-        ? Number(batchMetadata.examYear)
-        : undefined,
+      examYear: batchMetadata.examYear.trim() ? Number(batchMetadata.examYear) : undefined,
       postName: batchMetadata.postName.trim() || undefined,
+      department: batchMetadata.department.trim() || undefined,
+      occurrences: occurrences.length ? occurrences : undefined,
+      rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
+      applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
+      overwriteExisting: false,
     };
 
-    if (!body.institution && !body.examName && !body.examYear && !body.postName) {
+    if (!body.institution && !body.examYear && !body.postName && !body.department && !body.occurrences) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
       return;
     }
@@ -352,7 +380,7 @@ export default function QuestionImportPanel() {
         current ? { ...current, ...counts } : current,
       );
       await loadRows(batchId, page);
-      setMessage("Batch Metadata প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।");
+      setMessage(`Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
     } finally {
