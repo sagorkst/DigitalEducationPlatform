@@ -47,6 +47,7 @@ type Topic = {
   id: string;
   name: string;
   subjectId: string;
+  parentId: string | null;
   subject?: { name: string };
 };
 
@@ -56,6 +57,8 @@ type Filters = {
   posts: { id: string; name: string }[];
   years: number[];
   topics: Topic[];
+  examTypes: string[];
+  summary: { questions: number; exams: number; institutions: number; subjects: number; topics: number };
 };
 
 type ViewMode = "cards" | "all";
@@ -344,6 +347,8 @@ const emptyFilters: Filters = {
   posts: [],
   years: [],
   topics: [],
+  examTypes: [],
+  summary: { questions: 0, exams: 0, institutions: 0, subjects: 0, topics: 0 },
 };
 
 export default function PublicQuestionBank({
@@ -371,6 +376,13 @@ export default function PublicQuestionBank({
   const [institutionId, setInstitutionId] = useState("");
   const [postId, setPostId] = useState("");
   const [grade, setGrade] = useState("");
+  const [examId, setExamId] = useState("");
+  const [examType, setExamType] = useState("");
+  const [examYear, setExamYear] = useState("");
+  const [subTopicId, setSubTopicId] = useState("");
+  const [chapterId, setChapterId] = useState("");
+  const [hasAnswer, setHasAnswer] = useState("");
+  const [hasExplanation, setHasExplanation] = useState("");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
   const [subjectId, setSubjectId] = useState(initialSubjectId ?? "");
@@ -448,10 +460,16 @@ export default function PublicQuestionBank({
     if (institutionId) params.set("institutionId", institutionId);
     if (postId) params.set("postId", postId);
     if (grade) params.set("grade", grade);
+    if (examId) params.set("examId", examId);
+    if (examType) params.set("examType", examType);
+    if (examYear) params.set("examYear", examYear);
+    const effectiveTopicId = chapterId || subTopicId || topicId;
+    if (effectiveTopicId) params.set("topicId", effectiveTopicId);
+    if (hasAnswer) params.set("hasAnswer", hasAnswer);
+    if (hasExplanation) params.set("hasExplanation", hasExplanation);
     if (yearFrom) params.set("yearFrom", yearFrom);
     if (yearTo) params.set("yearTo", yearTo);
     if (subjectId) params.set("subjectId", subjectId);
-    if (topicId) params.set("topicId", topicId);
     if (difficulty) params.set("difficulty", difficulty);
     if (questionType) params.set("questionType", questionType);
     if (isRepeated) params.set("isRepeated", isRepeated);
@@ -463,6 +481,13 @@ export default function PublicQuestionBank({
     institutionId,
     postId,
     grade,
+    examId,
+    examType,
+    examYear,
+    subTopicId,
+    chapterId,
+    hasAnswer,
+    hasExplanation,
     yearFrom,
     yearTo,
     subjectId,
@@ -684,6 +709,13 @@ export default function PublicQuestionBank({
     setInstitutionId("");
     setPostId("");
     setGrade("");
+    setExamId("");
+    setExamType("");
+    setExamYear("");
+    setSubTopicId("");
+    setChapterId("");
+    setHasAnswer("");
+    setHasExplanation("");
     setYearFrom("");
     setYearTo("");
     setSubjectId("");
@@ -802,196 +834,123 @@ export default function PublicQuestionBank({
 
   return (
     <main className="mx-auto max-w-7xl px-4 py-8">
-      <header className="mb-7 text-center">
-        <p className="mb-2 text-center text-sm font-semibold text-emerald-700">
-          SHIKHASETU QUESTION BANK
-        </p>
-        <h1 className="text-center text-3xl font-bold text-slate-900">
-          প্রশ্ন ব্যাংক
-        </h1>
+      <header className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-emerald-700">সকল প্রশ্ন</p>
+          <h1 className="text-2xl font-bold text-slate-900">Question Bank</h1>
+          <p className="mt-1 text-sm text-slate-500">{filters.summary.questions.toLocaleString("en-US")} Questions</p>
+        </div>
+        <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">Compact Design</span>
       </header>
 
-      <div className="mb-7 w-full">
-        <div className="relative">
-          <svg
-            aria-hidden="true"
-            className="pointer-events-none absolute left-5 top-1/2 h-6 w-6 -translate-y-1/2 text-emerald-600"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <circle cx="11" cy="11" r="7" />
-            <path d="m20 20-4-4" />
-          </svg>
+      <section className="mb-5 grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+        {([
+          ["সকল প্রশ্ন", filters.summary.questions],
+          ["Exam Wise", filters.summary.exams],
+          ["Institution", filters.summary.institutions],
+          ["Subject", filters.summary.subjects],
+          ["Topic", filters.summary.topics],
+        ] as [string, number][]).map(([label, value]) => (
+          <div key={label} className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+            <p className="text-xs font-medium text-slate-500">{label}</p>
+            <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{value.toLocaleString("en-US")}</p>
+          </div>
+        ))}
+      </section>
 
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="প্রতিষ্ঠান, পদ, পরীক্ষা, বিষয় ও বছর অনুযায়ী প্রকাশিত প্রশ্ন খুঁজুন"
-            className="w-full rounded-2xl border border-slate-300 bg-white py-5 pl-14 pr-5 text-base text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-4 focus:ring-emerald-100"
-          />
+      <div className="mb-4 w-full">
+        <div className="relative">
+          <svg aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
+          </svg>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="প্রতিষ্ঠান, পদ, পরীক্ষা, বিষয় ও বছর অনুযায়ী প্রশ্ন খুঁজুন" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
         </div>
       </div>
 
-      <section className="mb-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-          <select
-            value={institutionId}
-            onChange={(e) => setInstitutionId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল প্রতিষ্ঠান</option>
-            {filters.exams
-              .filter((exam) => exam.institution)
-              .filter(
-                (exam, index, list) =>
-                  list.findIndex(
-                    (item) => item.institution?.id === exam.institution?.id,
-                  ) === index,
-              )
-              .map((exam) => (
-                <option key={exam.institution!.id} value={exam.institution!.id}>
-                  {exam.institution!.name}
-                </option>
-              ))}
-          </select>
+      <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+        <div className="grid gap-3 lg:grid-cols-2">
+          <div className="rounded-xl border border-slate-200 p-3">
+            <h2 className="mb-3 text-sm font-bold text-slate-800">১. প্রতিষ্ঠান ও পরীক্ষা</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <select value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল প্রতিষ্ঠান</option>
+                {filters.exams.filter((exam) => exam.institution).filter((exam, index, list) => list.findIndex((item) => item.institution?.id === exam.institution?.id) === index).map((exam) => <option key={exam.institution!.id} value={exam.institution!.id}>{exam.institution!.name}</option>)}
+              </select>
+              <select value={examId} onChange={(e) => setExamId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল পরীক্ষা</option>
+                {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear}</option>)}
+              </select>
+              <select value={examType} onChange={(e) => setExamType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল পরীক্ষার ধরন</option>
+                {filters.examTypes.map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+              <select value={postId} onChange={(e) => setPostId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল পদ</option>
+                {filters.exams.filter((exam) => exam.post).filter((exam, index, list) => list.findIndex((item) => item.post?.id === exam.post?.id) === index).map((exam) => <option key={exam.post!.id} value={exam.post!.id}>{exam.post!.name}</option>)}
+              </select>
+              <select value={grade} onChange={(e) => setGrade(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল পদের গ্রেড</option>
+                {[...new Set(filters.exams.map((exam) => exam.grade).filter((value): value is string => Boolean(value?.trim())))].sort((a, b) => a.localeCompare(b, "bn", { numeric: true })).map((value) => <option key={value} value={value}>{value}</option>)}
+              </select>
+              <select value={examYear} onChange={(e) => setExamYear(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল পরীক্ষার বছর</option>
+                {filters.years.map((year) => <option key={year} value={year}>{year}</option>)}
+              </select>
+            </div>
+          </div>
 
-          <select
-            value={postId}
-            onChange={(e) => setPostId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল পদ</option>
-            {filters.exams
-              .filter((exam) => exam.post)
-              .filter(
-                (exam, index, list) =>
-                  list.findIndex(
-                    (item) => item.post?.id === exam.post?.id,
-                  ) === index,
-              )
-              .map((exam) => (
-                <option key={exam.post!.id} value={exam.post!.id}>
-                  {exam.post!.name}
-                </option>
-              ))}
-          </select>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <h2 className="mb-3 text-sm font-bold text-slate-800">২. Academic Filter</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল বিষয়</option>
+                {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
+              </select>
+              <select value={topicId} onChange={(e) => { setTopicId(e.target.value); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল টপিক</option>
+                {filters.topics.filter((topic) => topic.parentId === null && (!subjectId || topic.subjectId === subjectId)).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+              </select>
+              <select value={subTopicId} onChange={(e) => { setSubTopicId(e.target.value); setChapterId(""); }} disabled={!topicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
+                <option value="">সকল Sub-topic</option>
+                {filters.topics.filter((topic) => topic.parentId === topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+              </select>
+              <select value={chapterId} onChange={(e) => setChapterId(e.target.value)} disabled={!subTopicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
+                <option value="">সকল Chapter</option>
+                {filters.topics.filter((topic) => topic.parentId === subTopicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+              </select>
+            </div>
+          </div>
 
-          <select
-            value={grade}
-            onChange={(e) => setGrade(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল গ্রেড</option>
-            {[...new Set(filters.exams.map((exam) => exam.grade).filter((value): value is string => Boolean(value?.trim())))].sort((a, b) => a.localeCompare(b, "bn", { numeric: true })).map((value) => (
-              <option key={value} value={value}>{value}</option>
-            ))}
-          </select>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <h2 className="mb-3 text-sm font-bold text-slate-800">৩. Question Filter</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <select value={questionType} onChange={(e) => setQuestionType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল প্রশ্নের ধরন</option><option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the blanks</option><option value="WRITTEN">Written</option>
+              </select>
+              <select value={difficulty} onChange={(e) => setDifficulty(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">সকল কঠিনতার স্তর</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+              </select>
+              <select value="PUBLISHED" disabled className="rounded-lg border border-slate-300 bg-slate-50 px-3 py-2 text-sm"><option value="PUBLISHED">প্রকাশিত প্রশ্ন</option></select>
+              <select value={hasAnswer} onChange={(e) => setHasAnswer(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">উত্তর: সব</option><option value="true">উত্তর আছে</option><option value="false">উত্তর নেই</option>
+              </select>
+              <select value={hasExplanation} onChange={(e) => setHasExplanation(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">ব্যাখ্যা: সব</option><option value="true">ব্যাখ্যা আছে</option><option value="false">ব্যাখ্যা নেই</option>
+              </select>
+              <select value={isRepeated} onChange={(e) => setIsRepeated(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                <option value="">Repeated: সব</option><option value="true">শুধু Repeated</option><option value="false">শুধু Non-repeated</option>
+              </select>
+            </div>
+          </div>
 
-          <select
-            value={yearFrom}
-            onChange={(e) => setYearFrom(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Year From</option>
-            {filters.years.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-
-          <select
-            value={yearTo}
-            onChange={(e) => setYearTo(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Year To</option>
-            {filters.years.map((year) => (
-              <option key={year} value={year}>{year}</option>
-            ))}
-          </select>
-
-          <select
-            value={subjectId}
-            onChange={(e) => {
-              setSubjectId(e.target.value);
-              setTopicId("");
-            }}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল বিষয়</option>
-            {subjects.map((subject) => (
-              <option key={subject.id} value={subject.id}>{subject.name}</option>
-            ))}
-          </select>
-
-          <select
-            value={topicId}
-            onChange={(e) => setTopicId(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল টপিক</option>
-            {filters.topics
-              .filter((topic) => !subjectId || topic.subjectId === subjectId)
-              .map((topic) => (
-                <option key={topic.id} value={topic.id}>{topic.name}</option>
-              ))}
-          </select>
-
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল কঠিনতার স্তর</option>
-            <option value="EASY">Easy</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="HARD">Hard</option>
-          </select>
-
-          <select
-            value={questionType}
-            onChange={(e) => setQuestionType(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">সকল প্রশ্নের ধরন</option>
-            <option value="MCQ">MCQ</option>
-            <option value="TRUE_FALSE">True / False</option>
-            <option value="FILL_IN_THE_BLANKS">Fill in the blanks</option>
-            <option value="WRITTEN">Written</option>
-          </select>
-
-          <select
-            value={isRepeated}
-            onChange={(e) => setIsRepeated(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="">Repeated: সব</option>
-            <option value="true">শুধু Repeated</option>
-            <option value="false">শুধু Non-repeated</option>
-          </select>
-
-          <select
-            value={sort}
-            onChange={(e) => setSort(e.target.value)}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-          >
-            <option value="newest">সর্বশেষ আগে</option>
-            <option value="az">A–Z</option>
-            <option value="za">Z–A</option>
-          </select>
-        </div>
-
-        <div className="mt-3 flex justify-end">
-          <button
-            type="button"
-            onClick={resetFilters}
-            className="text-sm font-semibold text-rose-700 hover:underline"
-          >
-            সব Filter মুছুন
-          </button>
+          <div className="rounded-xl border border-slate-200 p-3">
+            <h2 className="mb-3 text-sm font-bold text-slate-800">৪. সময়সীমা ও অনুসন্ধান</h2>
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <select value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year From</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
+              <select value={yearTo} onChange={(e) => setYearTo(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year To</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
+              <button type="button" onClick={resetFilters} className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 sm:col-span-2">সব Filter Reset করুন</button>
+            </div>
+          </div>
         </div>
       </section>
 
