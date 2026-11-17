@@ -1166,7 +1166,7 @@ export default function QuestionImportPanel() {
                           {rows.length === 0 && (
                             <tr>
                               <td
-                                colSpan={5}
+                                colSpan={6}
                                 className="p-10 text-center text-sm text-slate-500"
                               >
                                 এই পেজে কোনো Row পাওয়া যায়নি।
