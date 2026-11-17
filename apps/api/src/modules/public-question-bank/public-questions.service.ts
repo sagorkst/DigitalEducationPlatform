@@ -1105,10 +1105,6 @@ export class PublicQuestionsService {
         gradeCounts.get(exam.grade)!.add(row.questionId);
       }
     }
-    const countOptions = (counts: Map<string, Set<string>>) =>
-      [...counts.entries()].sort(([a], [b]) => a.localeCompare(b, 'bn', { numeric: true }))
-        .map(([name, ids]) => ({ id: name, name, count: ids.size }));
-
     return {
       success: true,
       data: {
