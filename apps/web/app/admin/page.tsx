@@ -273,10 +273,35 @@ export default function AdminDashboardPage() {
           Administration modules
         </h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          পরবর্তী ধাপে User Management, Role Management, Permission
-          Management, Role Assignment এবং Audit Logs-এর কার্যকর interface
-          তৈরি করা হবে।
+          Admin-এর প্রতিটি গুরুত্বপূর্ণ বিভাগে দ্রুত প্রবেশ, তথ্য পরিচালনা এবং
+          platform-এর কার্যক্রম নিয়ন্ত্রণ করো।
         </p>
+        <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {[
+            { href: "/admin/questions", title: "Question Bank", description: "প্রশ্ন, উত্তর, ব্যাখ্যা, history ও import পরিচালনা", icon: "📚" },
+            { href: "/admin/exams", title: "Exam Management", description: "পরীক্ষা, পদ, বছর ও grade পরিচালনা", icon: "📝" },
+            { href: "/admin/institutions", title: "Institutions", description: "প্রতিষ্ঠান ও তাদের তথ্য পরিচালনা", icon: "🏢" },
+            { href: "/admin/users", title: "User Management", description: "অ্যাকাউন্ট, status ও ব্যবহারকারী নিয়ন্ত্রণ", icon: "👥" },
+            { href: "/admin/roles", title: "Role Management", description: "System role তৈরি ও পরিচালনা", icon: "🛡️" },
+            { href: "/admin/permissions", title: "Permissions", description: "অনুমতি ও access control পরিচালনা", icon: "🔐" },
+            { href: "/admin/role-assignments", title: "Role Assignments", description: "ব্যবহারকারীর role assignment পরিচালনা", icon: "🧩" },
+            { href: "/admin/audit-logs", title: "Audit Logs", description: "Admin কার্যক্রম ও পরিবর্তনের রেকর্ড", icon: "📋" },
+            { href: "/admin/analytics", title: "Analytics", description: "Platform-এর পরিসংখ্যান ও রিপোর্ট", icon: "📊" },
+          ].map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              className="group flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50"
+            >
+              <span aria-hidden="true" className="text-2xl">{item.icon}</span>
+              <span className="min-w-0">
+                <span className="block font-semibold text-slate-900 group-hover:text-emerald-800">{item.title}</span>
+                <span className="mt-1 block text-xs leading-5 text-slate-500">{item.description}</span>
+              </span>
+              <span aria-hidden="true" className="ml-auto text-slate-400 transition group-hover:translate-x-0.5 group-hover:text-emerald-700">→</span>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
