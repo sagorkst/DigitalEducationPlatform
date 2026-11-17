@@ -8,6 +8,7 @@ type Exam = {
   name: string;
   examYear: number | null;
   examType: string | null;
+  grade: string | null;
   questionCount: number;
   institution: { id: string; name: string } | null;
   post: { id: string; name: string } | null;
@@ -369,6 +370,7 @@ export default function PublicQuestionBank({
   const [search, setSearch] = useState("");
   const [institutionId, setInstitutionId] = useState("");
   const [postId, setPostId] = useState("");
+  const [grade, setGrade] = useState("");
   const [yearFrom, setYearFrom] = useState("");
   const [yearTo, setYearTo] = useState("");
   const [subjectId, setSubjectId] = useState(initialSubjectId ?? "");
@@ -445,6 +447,7 @@ export default function PublicQuestionBank({
     if (search.trim()) params.set("search", search.trim());
     if (institutionId) params.set("institutionId", institutionId);
     if (postId) params.set("postId", postId);
+    if (grade) params.set("grade", grade);
     if (yearFrom) params.set("yearFrom", yearFrom);
     if (yearTo) params.set("yearTo", yearTo);
     if (subjectId) params.set("subjectId", subjectId);
@@ -459,6 +462,7 @@ export default function PublicQuestionBank({
     search,
     institutionId,
     postId,
+    grade,
     yearFrom,
     yearTo,
     subjectId,
@@ -679,6 +683,7 @@ export default function PublicQuestionBank({
     setSearch("");
     setInstitutionId("");
     setPostId("");
+    setGrade("");
     setYearFrom("");
     setYearTo("");
     setSubjectId("");
@@ -876,6 +881,17 @@ export default function PublicQuestionBank({
           </select>
 
           <select
+            value={grade}
+            onChange={(e) => setGrade(e.target.value)}
+            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+          >
+            <option value="">সকল গ্রেড</option>
+            {[...new Set(filters.exams.map((exam) => exam.grade).filter((value): value is string => Boolean(value?.trim())))].sort((a, b) => a.localeCompare(b, "bn", { numeric: true })).map((value) => (
+              <option key={value} value={value}>{value}</option>
+            ))}
+          </select>
+
+          <select
             value={yearFrom}
             onChange={(e) => setYearFrom(e.target.value)}
             className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
@@ -1051,6 +1067,11 @@ export default function PublicQuestionBank({
                         {exam.institution?.name || "উল্লেখ নেই"}
                       </span>
                     </p>
+                    {exam.grade && (
+                      <p>
+                        পদের গ্রেড: <span className="font-medium text-slate-700">{exam.grade}</span>
+                      </p>
+                    )}
                     {exam.examType && (
                       <p>
                         পরীক্ষার ধরন:{" "}
