@@ -363,7 +363,7 @@ export default function PublicQuestionBank({
   initialSubjectId?: string;
   initialTopicId?: string;
 }) {
-  const [view, setView] = useState<ViewMode>("cards");
+  const [view, setView] = useState<ViewMode>("all");
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [exams, setExams] = useState<Exam[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
@@ -856,10 +856,10 @@ export default function PublicQuestionBank({
           ["Subject", filters.summary.subjects],
           ["Topic", filters.summary.topics],
         ] as [string, number][]).map(([label, value]) => (
-          <div key={label} className="rounded-xl border border-slate-200 bg-white px-3 py-3 shadow-sm">
+          <button key={label} type="button" onClick={() => changeView(label === "Exam Wise" ? "cards" : "all")} aria-pressed={(label === "Exam Wise" && view === "cards") || (label !== "Exam Wise" && view === "all")} className={`rounded-xl border px-3 py-3 text-left shadow-sm transition hover:border-emerald-400 ${((label === "Exam Wise" && view === "cards") || (label !== "Exam Wise" && view === "all")) ? "border-emerald-500 bg-emerald-50" : "border-slate-200 bg-white"}`}>
             <p className="text-xs font-medium text-slate-500">{label}</p>
             <p className="mt-1 text-xl font-bold tabular-nums text-slate-900">{value.toLocaleString("en-US")}</p>
-          </div>
+          </button>
         ))}
       </section>
 
@@ -935,7 +935,7 @@ export default function PublicQuestionBank({
           </div>
           <div className="contents">
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-5">
-              <select value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year From</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
+              <select value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year From</option>{filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}</select>
               <select value={yearTo} onChange={(e) => setYearTo(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year To</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
               <button type="button" onClick={resetFilters} className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 sm:col-span-2">সব Filter Reset করুন</button>
             </div>
