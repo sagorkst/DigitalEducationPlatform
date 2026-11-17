@@ -569,13 +569,13 @@ export class ImportsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CommitImportDto,
   ) {
-    if (!dto.rowIds || dto.rowIds.length === 0) {
+    if ((!dto.rowIds || dto.rowIds.length === 0) && dto.allRows !== true) {
       throw new BadRequestException(
-        'At least one row ID is required.',
+        'Select at least one row or choose all rows.',
       );
     }
 
-    return this.importsService.skipRows(id, dto.rowIds);
+    return this.importsService.skipRows(id, dto.rowIds, dto.allRows === true);
   }
 
   @Post(':id/rollback')
