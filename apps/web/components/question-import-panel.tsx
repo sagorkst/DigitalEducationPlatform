@@ -107,7 +107,7 @@ export default function QuestionImportPanel() {
     const extension = `.${selectedFile.name.split(".").pop()?.toLowerCase()}`;
 
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      setError("শুধুমাত্র Excel, CSV অথবা JSON ফাইল নির্বাচন করুন।");
+      setError("Excel, CSV, JSON অথবা HTML/MHTML ফাইল নির্বাচন করুন।");
       return;
     }
 
@@ -342,6 +342,7 @@ export default function QuestionImportPanel() {
       }));
     const body = {
       institution: batchMetadata.institution.trim() || undefined,
+      examName: batchMetadata.examName.trim() || undefined,
       examYear: batchMetadata.examYear.trim() ? Number(batchMetadata.examYear) : undefined,
       postName: batchMetadata.postName.trim() || undefined,
       department: batchMetadata.department.trim() || undefined,
@@ -351,7 +352,7 @@ export default function QuestionImportPanel() {
       overwriteExisting: false,
     };
 
-    if (!body.institution && !body.examYear && !body.postName && !body.department && !body.occurrences) {
+    if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
       return;
     }
@@ -735,33 +736,35 @@ export default function QuestionImportPanel() {
                       আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
                     </p>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <input
-                        value={batchMetadata.institution}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))}
-                        placeholder="Institution"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.examName}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))}
-                        placeholder="Exam Name"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.examYear}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))}
-                        placeholder="Exam Year"
-                        inputMode="numeric"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.postName}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))}
-                        placeholder="Post Name"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <input value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Shared Institution" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Default Exam Name (optional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Default Exam Year" inputMode="numeric" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Shared Post Name" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.department} onChange={(e) => setBatchMetadata((v) => ({ ...v, department: e.target.value }))} placeholder="Shared Department" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </div>
+                    <div className="mt-4 rounded-lg border border-slate-200 p-3">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-700">একই প্রশ্নের জন্য একাধিক Exam যুক্ত করুন</p>
+                        <button type="button" onClick={addBatchOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
+                      </div>
+                      <div className="space-y-3">
+                        {batchOccurrences.map((item, index) => (
+                          <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <input value={item.examName} onChange={(e) => updateBatchOccurrence(index, "examName", e.target.value)} placeholder={`Exam Name ${index + 1}`} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <input value={item.examYear} onChange={(e) => updateBatchOccurrence(index, "examYear", e.target.value)} placeholder="Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <input value={item.postName} onChange={(e) => updateBatchOccurrence(index, "postName", e.target.value)} placeholder="Post" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <div className="flex gap-2">
+                              <input value={item.department} onChange={(e) => updateBatchOccurrence(index, "department", e.target.value)} placeholder="Department" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                              <button type="button" onClick={() => setBatchOccurrences((current) => current.filter((_, i) => i !== index))} disabled={batchOccurrences.length === 1} aria-label="Remove exam" className="rounded-md border border-red-200 px-2 text-red-600 disabled:opacity-30">×</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-slate-500">
+                      Apply target: {selectAllBatch ? "সব import row" : selectedIds.length ? `${selectedIds.length}টি selected row` : "সব import row"}।
+                    </p>
 
                     <button
                       type="button"
@@ -982,12 +985,12 @@ export default function QuestionImportPanel() {
                         disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                       >
-                        Select Valid + Duplicate
+                        Select All Importable Rows (All Pages)
                       </button>
                       <button
                         type="button"
-                        onClick={() => setSelectedIds([])}
-                        disabled={loading || selectedIds.length === 0}
+                        onClick={() => { setSelectedIds([]); setSelectAllBatch(false); }}
+                        disabled={loading || (selectedIds.length === 0 && !selectAllBatch)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
                       >
                         Clear Selection
@@ -997,7 +1000,7 @@ export default function QuestionImportPanel() {
 
                   <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
                     <span className="mr-auto text-xs font-semibold text-slate-600">
-                      {selectedIds.length} selected
+                      {selectAllBatch ? "All eligible rows across every page selected" : `${selectedIds.length} selected`}
                     </span>
 
                     <button
@@ -1005,11 +1008,9 @@ export default function QuestionImportPanel() {
                       onClick={() => performAction("commit")}
                       disabled={
                         loading ||
-                        !rows.some(
-                          (row) =>
-                            ["VALID", "DUPLICATE"].includes(row.status) &&
-                            selectedIds.includes(row.id),
-                        )
+                        (selectAllBatch
+                          ? summary.validRows + summary.duplicateRows === 0
+                          : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))
                       }
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40"
                     >
@@ -1019,7 +1020,7 @@ export default function QuestionImportPanel() {
                     <button
                       type="button"
                       onClick={() => performAction("skip")}
-                      disabled={loading || selectedIds.length === 0}
+                      disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)}
                       className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
                     >
                       Skip Selected
