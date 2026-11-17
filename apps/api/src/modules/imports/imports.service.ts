@@ -1820,7 +1820,11 @@ export class ImportsService {
     return this.prisma.$transaction(async (tx) => {
       const claimed = await tx.importBatch.updateMany({
         where: { id: batchId, status: 'REVIEW' },
-        data: { skippedRows: { increment: 0 } },
+        data: {
+          status: 'PROCESSING',
+          startedAt: new Date(),
+          completedAt: null,
+        },
       });
 
       if (claimed.count !== 1) {
@@ -1829,7 +1833,9 @@ export class ImportsService {
           select: { id: true },
         });
         if (!batch) throw new NotFoundException('Import batch not found.');
-        throw new BadRequestException('Rows can only be skipped while the batch is in REVIEW status.');
+        throw new BadRequestException(
+          'Rows can only be skipped while the batch is in REVIEW status.',
+        );
       }
 
       const result = await tx.importRow.updateMany({
@@ -1848,10 +1854,32 @@ export class ImportsService {
         });
       }
 
+      const remainingRows = await tx.importRow.count({
+        where: {
+          batchId,
+          status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
+        },
+      });
+
+      const finalBatch = await tx.importBatch.update({
+        where: { id: batchId },
+        data: {
+          status: remainingRows > 0 ? 'REVIEW' : 'COMPLETED',
+          completedAt: new Date(),
+        },
+      });
+
       return {
         success: true,
-        message: allRows ? 'All review rows skipped successfully.' : 'Selected rows skipped successfully.',
-        data: { skippedRows: result.count },
+        message: allRows
+          ? 'All review rows skipped successfully.'
+          : 'Selected rows skipped successfully.',
+        data: {
+          skippedRows: result.count,
+          remainingRows,
+          batchStatus: finalBatch.status,
+        },
       };
     });
   }
+}
