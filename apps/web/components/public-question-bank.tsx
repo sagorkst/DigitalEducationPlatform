@@ -48,16 +48,20 @@ type Topic = {
   name: string;
   subjectId: string;
   parentId: string | null;
+  count?: number;
   subject?: { name: string };
 };
 
+type CountOption = { id: string; name: string; count: number };
+
 type Filters = {
-  institutions: { id: string; name: string }[];
+  institutions: CountOption[];
   exams: Exam[];
-  posts: { id: string; name: string }[];
-  years: number[];
+  posts: CountOption[];
+  years: { year: number; count: number }[];
   topics: Topic[];
-  examTypes: string[];
+  examTypes: { name: string; count: number }[];
+  grades: { name: string; count: number }[];
   summary: { questions: number; exams: number; institutions: number; subjects: number; topics: number };
 };
 
@@ -348,6 +352,7 @@ const emptyFilters: Filters = {
   years: [],
   topics: [],
   examTypes: [],
+  grades: [],
   summary: { questions: 0, exams: 0, institutions: 0, subjects: 0, topics: 0 },
 };
 
@@ -362,7 +367,7 @@ export default function PublicQuestionBank({
   const [filters, setFilters] = useState<Filters>(emptyFilters);
   const [exams, setExams] = useState<Exam[]>([]);
   const [questions, setQuestions] = useState<Question[]>([]);
-  const [subjects, setSubjects] = useState<{ id: string; name: string }[]>([]);
+  const [subjects, setSubjects] = useState<{ id: string; name: string; _count?: { questions: number } }[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
@@ -858,72 +863,58 @@ export default function PublicQuestionBank({
         ))}
       </section>
 
-      <div className="mb-4 w-full">
-        <div className="relative">
-          <svg aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
-          </svg>
-          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="প্রতিষ্ঠান, পদ, পরীক্ষা, বিষয় ও বছর অনুযায়ী প্রশ্ন খুঁজুন" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
-        </div>
-      </div>
-
       <section className="mb-5 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-        <div className="grid gap-3 lg:grid-cols-2">
-          <div className="rounded-xl border border-slate-200 p-3">
-            <h2 className="mb-3 text-sm font-bold text-slate-800">১. প্রতিষ্ঠান ও পরীক্ষা</h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="contents">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-6">
               <select value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল প্রতিষ্ঠান</option>
-                {filters.exams.filter((exam) => exam.institution).filter((exam, index, list) => list.findIndex((item) => item.institution?.id === exam.institution?.id) === index).map((exam) => <option key={exam.institution!.id} value={exam.institution!.id}>{exam.institution!.name}</option>)}
+                {filters.institutions.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
               </select>
               <select value={examId} onChange={(e) => setExamId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল পরীক্ষা</option>
-                {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear}</option>)}
+                {filters.exams.filter((exam) => !institutionId || exam.institution?.id === institutionId).map((exam) => <option key={exam.id} value={exam.id}>{exam.name} · {exam.examYear ?? "—"} ({exam.questionCount.toLocaleString("en-US")})</option>)}
               </select>
               <select value={examType} onChange={(e) => setExamType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল পরীক্ষার ধরন</option>
-                {filters.examTypes.map((value) => <option key={value} value={value}>{value}</option>)}
+                {filters.examTypes.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
               </select>
               <select value={postId} onChange={(e) => setPostId(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল পদ</option>
-                {filters.exams.filter((exam) => exam.post).filter((exam, index, list) => list.findIndex((item) => item.post?.id === exam.post?.id) === index).map((exam) => <option key={exam.post!.id} value={exam.post!.id}>{exam.post!.name}</option>)}
+                {filters.posts.map((item) => <option key={item.id} value={item.id}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
               </select>
               <select value={grade} onChange={(e) => setGrade(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল পদের গ্রেড</option>
-                {[...new Set(filters.exams.map((exam) => exam.grade).filter((value): value is string => Boolean(value?.trim())))].sort((a, b) => a.localeCompare(b, "bn", { numeric: true })).map((value) => <option key={value} value={value}>{value}</option>)}
+                {filters.grades.map((item) => <option key={item.name} value={item.name}>{item.name} ({item.count.toLocaleString("en-US")})</option>)}
               </select>
               <select value={examYear} onChange={(e) => setExamYear(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল পরীক্ষার বছর</option>
-                {filters.years.map((year) => <option key={year} value={year}>{year}</option>)}
+                {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
               </select>
             </div>
           </div>
-
-          <div className="rounded-xl border border-slate-200 p-3">
-            <h2 className="mb-3 text-sm font-bold text-slate-800">২. Academic Filter</h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="contents">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-4">
               <select value={subjectId} onChange={(e) => { setSubjectId(e.target.value); setTopicId(""); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল বিষয়</option>
-                {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}</option>)}
+                {subjects.map((subject) => <option key={subject.id} value={subject.id}>{subject.name}{subject._count?.questions !== undefined ? ` (${subject._count.questions.toLocaleString("en-US")})` : ""}</option>)}
               </select>
               <select value={topicId} onChange={(e) => { setTopicId(e.target.value); setSubTopicId(""); setChapterId(""); }} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল টপিক</option>
-                {filters.topics.filter((topic) => topic.parentId === null && (!subjectId || topic.subjectId === subjectId)).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+                {filters.topics.filter((topic) => topic.parentId === null && (!subjectId || topic.subjectId === subjectId)).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
               </select>
               <select value={subTopicId} onChange={(e) => { setSubTopicId(e.target.value); setChapterId(""); }} disabled={!topicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
                 <option value="">সকল Sub-topic</option>
-                {filters.topics.filter((topic) => topic.parentId === topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+                {filters.topics.filter((topic) => topic.parentId === topicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
               </select>
               <select value={chapterId} onChange={(e) => setChapterId(e.target.value)} disabled={!subTopicId} className="rounded-lg border border-slate-300 px-3 py-2 text-sm disabled:bg-slate-50">
                 <option value="">সকল Chapter</option>
-                {filters.topics.filter((topic) => topic.parentId === subTopicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}</option>)}
+                {filters.topics.filter((topic) => topic.parentId === subTopicId).map((topic) => <option key={topic.id} value={topic.id}>{topic.name}{topic.count !== undefined ? ` (${topic.count.toLocaleString("en-US")})` : ""}</option>)}
               </select>
             </div>
           </div>
-
-          <div className="rounded-xl border border-slate-200 p-3">
-            <h2 className="mb-3 text-sm font-bold text-slate-800">৩. Question Filter</h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="contents">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-6">
               <select value={questionType} onChange={(e) => setQuestionType(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
                 <option value="">সকল প্রশ্নের ধরন</option><option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the blanks</option><option value="WRITTEN">Written</option>
               </select>
@@ -942,10 +933,8 @@ export default function PublicQuestionBank({
               </select>
             </div>
           </div>
-
-          <div className="rounded-xl border border-slate-200 p-3">
-            <h2 className="mb-3 text-sm font-bold text-slate-800">৪. সময়সীমা ও অনুসন্ধান</h2>
-            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+          <div className="contents">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 xl:col-span-5 xl:grid-cols-5">
               <select value={yearFrom} onChange={(e) => setYearFrom(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year From</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
               <select value={yearTo} onChange={(e) => setYearTo(e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm"><option value="">Year To</option>{filters.years.map((year) => <option key={year} value={year}>{year}</option>)}</select>
               <button type="button" onClick={resetFilters} className="rounded-lg border border-rose-200 px-3 py-2 text-sm font-semibold text-rose-700 hover:bg-rose-50 sm:col-span-2">সব Filter Reset করুন</button>
@@ -954,30 +943,19 @@ export default function PublicQuestionBank({
         </div>
       </section>
 
-      <nav className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div className="flex flex-wrap gap-2">
-          {(
-            [
-              ["cards", "প্রতিষ্ঠান / পদ অনুযায়ী"],
-              ["all", "সব প্রশ্ন"],
-            ] as [ViewMode, string][]
-          ).map(([value, label]) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => changeView(value)}
-              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
-                view === value
-                  ? "bg-emerald-700 text-white"
-                  : "border border-slate-300 bg-white text-slate-700 hover:bg-slate-50"
-              }`}
-            >
-              {label}
-            </button>
-          ))}
+      <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
+        <select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="newest">সর্বশেষ আগে</option><option value="az">A–Z</option><option value="za">Z–A</option></select>
+        <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
+      </div>
+
+      <div className="mb-5 w-full">
+        <div className="relative">
+          <svg aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-emerald-600" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="11" cy="11" r="7" /><path d="m20 20-4-4" />
+          </svg>
+          <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="প্রতিষ্ঠান, পদ, পরীক্ষা, বিষয় ও বছর অনুযায়ী প্রশ্ন খুঁজুন" className="w-full rounded-xl border border-slate-300 bg-white py-3 pl-11 pr-4 text-sm text-slate-800 shadow-sm outline-none transition placeholder:text-slate-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100" />
         </div>
-        <div className="flex flex-wrap items-center gap-2"><select value={sort} onChange={(event) => setSort(event.target.value)} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"><option value="newest">সর্বশেষ আগে</option><option value="az">A–Z</option><option value="za">Z–A</option></select><GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} /></div>
-      </nav>
+      </div>
 
       {error && (
         <div className="mb-5 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
