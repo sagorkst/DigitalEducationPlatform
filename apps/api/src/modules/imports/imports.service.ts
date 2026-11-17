@@ -1808,81 +1808,46 @@ export class ImportsService {
     };
   }
 
-  async skipRows(batchId: string, rowIds: string[]) {
-    if (!Array.isArray(rowIds) || rowIds.length === 0) {
-      throw new BadRequestException(
-        'At least one row ID must be provided.',
-      );
+  async skipRows(batchId: string, rowIds?: string[], allRows = false) {
+    if (!allRows && (!Array.isArray(rowIds) || rowIds.length === 0)) {
+      throw new BadRequestException('Select at least one row or choose all rows.');
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // Lock/claim the REVIEW batch before changing its rows.
       const claimed = await tx.importBatch.updateMany({
-        where: {
-          id: batchId,
-          status: 'REVIEW',
-        },
-        data: {
-          skippedRows: {
-            increment: 0,
-          },
-        },
+        where: { id: batchId, status: 'REVIEW' },
+        data: { skippedRows: { increment: 0 } },
       });
 
       if (claimed.count !== 1) {
         const batch = await tx.importBatch.findUnique({
-          where: {
-            id: batchId,
-          },
-          select: {
-            id: true,
-          },
+          where: { id: batchId },
+          select: { id: true },
         });
-
-        if (!batch) {
-          throw new NotFoundException('Import batch not found.');
-        }
-
-        throw new BadRequestException(
-          'Rows can only be skipped while the batch is in REVIEW status.',
-        );
+        if (!batch) throw new NotFoundException('Import batch not found.');
+        throw new BadRequestException('Rows can only be skipped while the batch is in REVIEW status.');
       }
 
       const result = await tx.importRow.updateMany({
         where: {
           batchId,
-          id: {
-            in: rowIds,
-          },
-          status: {
-            in: ['VALID', 'INVALID', 'DUPLICATE'],
-          },
+          ...(!allRows ? { id: { in: rowIds ?? [] } } : {}),
+          status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
         },
-        data: {
-          status: 'SKIPPED',
-        },
+        data: { status: 'SKIPPED' },
       });
 
       if (result.count > 0) {
         await tx.importBatch.update({
-          where: {
-            id: batchId,
-          },
-          data: {
-            skippedRows: {
-              increment: result.count,
-            },
-          },
+          where: { id: batchId },
+          data: { skippedRows: { increment: result.count } },
         });
       }
 
       return {
         success: true,
-        message: 'Selected rows skipped successfully.',
-        data: {
-          skippedRows: result.count,
-        },
+        message: allRows ? 'All review rows skipped successfully.' : 'Selected rows skipped successfully.',
+        data: { skippedRows: result.count },
       };
     });
   }
-}
