@@ -409,6 +409,7 @@ export default function PublicQuestionBank({
   const [totalPages, setTotalPages] = useState(1);
   const [loadedPages, setLoadedPages] = useState(1);
   const [sort, setSort] = useState("newest");
+  const [filtersExpanded, setFiltersExpanded] = useState(true);
 
   const [search, setSearch] = useState("");
   const [institutionId, setInstitutionId] = useState("");
@@ -988,6 +989,18 @@ export default function PublicQuestionBank({
             <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">
               {view === "cards" ? filteredExams.length.toLocaleString("en-US") : total.toLocaleString("en-US")} ফলাফল
             </span>
+            <button
+              type="button"
+              onClick={() => setFiltersExpanded((expanded) => !expanded)}
+              aria-expanded={filtersExpanded}
+              aria-controls="public-question-bank-filter-grid"
+              className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-white px-3 py-2 text-xs font-bold text-emerald-700 shadow-sm transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-100"
+            >
+              <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                {filtersExpanded ? <path d="m6 9 6 6 6-6" /> : <path d="m6 15 6-6 6 6" />}
+              </svg>
+              {filtersExpanded ? "ফিল্টার লুকান" : "ফিল্টার দেখান"}
+            </button>
             <button type="button" onClick={resetFilters} className="inline-flex items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 py-2 text-xs font-bold text-rose-700 shadow-sm transition hover:border-rose-300 hover:bg-rose-50 focus:outline-none focus:ring-2 focus:ring-rose-100">
               <svg aria-hidden="true" className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M3 12a9 9 0 1 0 2.64-6.36L3 8" /><path d="M3 3v5h5" />
@@ -997,7 +1010,8 @@ export default function PublicQuestionBank({
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
+        {filtersExpanded && (
+          <div id="public-question-bank-filter-grid" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
           <FilterField label="সকল প্রতিষ্ঠান" icon="🏢" active={Boolean(institutionId)}>
             <select aria-label="সকল প্রতিষ্ঠান" value={institutionId} onChange={(e) => { setInstitutionId(e.target.value); setExamId(""); }} className={filterSelectClass}>
               <option value="">সকল প্রতিষ্ঠান</option>
@@ -1115,7 +1129,8 @@ export default function PublicQuestionBank({
               {filters.years.map((item) => <option key={item.year} value={item.year}>{item.year} ({item.count.toLocaleString("en-US")})</option>)}
             </select>
           </FilterField>
-        </div>
+          </div>
+        )}
       </section>
 
       <div className="mb-4 flex flex-wrap items-center justify-end gap-2">
