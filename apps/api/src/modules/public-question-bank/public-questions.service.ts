@@ -38,6 +38,8 @@ type PublicExamFilters = {
   examId?: string;
   grade?: string;
   examType?: string;
+  hasAnswer?: string;
+  hasExplanation?: string;
   examYear?: string;
   yearFrom?: string;
   yearTo?: string;
@@ -207,6 +209,12 @@ export class PublicQuestionsService {
       !['true', 'false'].includes(query.isRepeated)
     ) {
       throw new BadRequestException('isRepeated must be true or false.');
+    }
+
+    for (const [field, value] of [['hasAnswer', query.hasAnswer], ['hasExplanation', query.hasExplanation]] as const) {
+      if (value !== undefined && !['true', 'false'].includes(value)) {
+        throw new BadRequestException(`${field} must be true or false.`);
+      }
     }
 
     const and: Prisma.QuestionWhereInput[] = [];
@@ -424,6 +432,16 @@ export class PublicQuestionsService {
       ...(query.questionType
         ? { questionType: query.questionType as any }
         : {}),
+      ...(query.hasAnswer === 'true'
+        ? { OR: [{ correctAnswer: { not: null } }, { options: { some: { isCorrect: true } } }] }
+        : query.hasAnswer === 'false'
+          ? { correctAnswer: null, options: { none: { isCorrect: true } } }
+          : {}),
+      ...(query.hasExplanation === 'true'
+        ? { explanation: { not: null } }
+        : query.hasExplanation === 'false'
+          ? { explanation: null }
+          : {}),
     };
 
     const search = query.search?.trim();
@@ -434,7 +452,6 @@ export class PublicQuestionsService {
         ? { institutionId: query.institutionId }
         : {}),
       ...(query.postId ? { postId: query.postId } : {}),
-      ...(query.examId ? { examId: query.examId } : {}),
       ...(query.grade?.trim()
         ? { grade: { equals: query.grade.trim(), mode: 'insensitive' } }
         : {}),
