@@ -142,6 +142,7 @@ export class ExamsService {
     const post = await this.ensurePostExists(dto.postId);
 
     const examType = dto.examType?.trim() || null;
+    const grade = dto.grade?.trim() || null;
 
     const slug = dto.slug?.trim()
       ? this.generateSlug(dto.slug)
@@ -164,6 +165,7 @@ export class ExamsService {
           slug,
           examYear: dto.examYear,
           examType,
+          grade,
           description: dto.description?.trim() || null,
 
           ...(institution
@@ -490,6 +492,10 @@ export class ExamsService {
 
     if (dto.examType !== undefined) {
       data.examType = examType;
+    }
+
+    if (dto.grade !== undefined) {
+      data.grade = dto.grade.trim() || null;
     }
 
     if (dto.description !== undefined) {
