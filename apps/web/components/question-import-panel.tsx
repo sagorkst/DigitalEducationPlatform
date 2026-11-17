@@ -792,7 +792,7 @@ export default function QuestionImportPanel() {
                     </button>
                   </section>
 
-                  <section className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
+                  <section id="manual-question-edit-form" className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
                     <h3 className="text-base font-bold text-slate-900">
                       Manual Question Edit
                     </h3>
@@ -1052,6 +1052,7 @@ export default function QuestionImportPanel() {
                             <th className="p-3">Question</th>
                             <th className="p-3">Subject / Topic</th>
                             <th className="p-3">Status / Errors</th>
+                            <th className="w-24 p-3">Action</th>
                           </tr>
                         </thead>
 
@@ -1144,6 +1145,19 @@ export default function QuestionImportPanel() {
                                       ))}
                                     </ul>
                                   )}
+                                </td>
+                                <td className="p-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      startManualImportEdit(row);
+                                      document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    }}
+                                    disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    Edit
+                                  </button>
                                 </td>
                               </tr>
                             );
