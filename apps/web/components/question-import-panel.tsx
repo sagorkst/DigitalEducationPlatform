@@ -815,43 +815,28 @@ export default function QuestionImportPanel() {
                         />
 
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <input
-                            value={String(editingData.subject ?? "")}
-                            onChange={(e) => updateEditingField("subject", e.target.value)}
-                            placeholder="Subject"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.topic ?? "")}
-                            onChange={(e) => updateEditingField("topic", e.target.value)}
-                            placeholder="Topic"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.institution ?? "")}
-                            onChange={(e) => updateEditingOccurrence("institution", e.target.value)}
-                            placeholder="Institution"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.examName ?? "")}
-                            onChange={(e) => updateEditingOccurrence("examName", e.target.value)}
-                            placeholder="Exam Name"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.examYear ?? "")}
-                            onChange={(e) => updateEditingOccurrence("examYear", e.target.value)}
-                            placeholder="Exam Year"
-                            inputMode="numeric"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.postName ?? "")}
-                            onChange={(e) => updateEditingOccurrence("postName", e.target.value)}
-                            placeholder="Post Name"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
+                          <input value={String(editingData.subject ?? "")} onChange={(e) => updateEditingField("subject", e.target.value)} placeholder="Subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                          <input value={String(editingData.topic ?? "")} onChange={(e) => updateEditingField("topic", e.target.value)} placeholder="Topic" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-700">Exam Occurrences</p>
+                            <button type="button" onClick={addEditingOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
+                          </div>
+                          <div className="space-y-3">
+                            {(Array.isArray(editingData.occurrences) ? editingData.occurrences : []).map((occurrence: Record<string, unknown>, index: number) => (
+                              <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <input value={String(occurrence.institution ?? "")} onChange={(e) => updateEditingOccurrence(index, "institution", e.target.value)} placeholder="Institution" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.examName ?? "")} onChange={(e) => updateEditingOccurrence(index, "examName", e.target.value)} placeholder="Exam Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.examYear ?? "")} onChange={(e) => updateEditingOccurrence(index, "examYear", e.target.value)} placeholder="Exam Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <div className="flex gap-2">
+                                  <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                  <button type="button" onClick={() => removeEditingOccurrence(index)} aria-label="Remove exam occurrence" className="rounded-md border border-red-200 px-2 text-red-600">×</button>
+                                </div>
+                              </div>
+                            ))}
+                            {(!Array.isArray(editingData.occurrences) || editingData.occurrences.length === 0) && <p className="text-xs text-slate-500">এখনো কোনো Exam যুক্ত হয়নি।</p>}
+                          </div>
                         </div>
 
                         <label className="block text-xs font-semibold text-slate-600">
