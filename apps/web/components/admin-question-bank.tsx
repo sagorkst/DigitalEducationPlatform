@@ -1103,6 +1103,7 @@ export default function QuestionBankPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
               {!showTrash && (
+              <>
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300 hover:bg-emerald-50/40">
                 <QuestionImportPanel />
               </div>
@@ -1115,6 +1116,7 @@ export default function QuestionBankPage() {
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-amber-300 hover:bg-amber-50/40">
                 <QuestionImportHistory />
               </div>
+              </>
               )}
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-red-300 hover:bg-red-50/40">
                 <button type="button" onClick={toggleTrash} className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50">
