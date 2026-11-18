@@ -1937,7 +1937,7 @@ export default function QuestionBankPage() {
                 {filteredQuestions.map((q) => (
                   <div
                     key={q.id}
-                    className={`relative rounded-lg border border-slate-200 bg-white pl-11 transition hover:border-blue-300 hover:shadow-sm ${tableDensity === "ultra" ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
+                    className={`relative rounded-lg border pl-11 transition hover:border-blue-300 hover:shadow-sm ${allMatchingSelected ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-white"} ${tableDensity === "ultra" ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
                   >
                     {true && (
                       <>
@@ -1981,6 +1981,11 @@ export default function QuestionBankPage() {
                       }
                       className="w-full text-left"
                     >
+                      {allMatchingSelected && (
+                        <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-bold text-white">
+                          <span aria-hidden="true">✓</span> Selected — All filtered rows
+                        </span>
+                      )}
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <span className="text-xs font-bold text-blue-700">
                           {q.id}
