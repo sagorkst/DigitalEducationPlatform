@@ -1086,12 +1086,6 @@ export default function QuestionBankPage() {
           </div>
 
           <div className="flex flex-wrap items-center justify-end gap-2">
-  <Button variant="outline" onClick={toggleTrash} className="h-10 min-w-[120px] justify-center">
-    🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
-    {deletedQuestions.length > 0
-      ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})`
-      : ""}
-  </Button>
   {!showTrash && (
     <Button onClick={openAddForm} className="h-10 min-w-[140px] justify-center">
       + নতুন প্রশ্ন
@@ -1100,15 +1094,15 @@ export default function QuestionBankPage() {
 </div>
         </div>
 
-        {!showTrash && (
-          <Card className="border-slate-200 shadow-sm">
+        <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle>Import &amp; Data Tools</CardTitle>
               <p className="text-sm text-slate-500">
                 প্রশ্ন Import, OCR, templates ও পূর্ববর্তী Import পরিচালনা করুন।
               </p>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+              {!showTrash && (
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300 hover:bg-emerald-50/40">
                 <QuestionImportPanel />
               </div>
@@ -1121,9 +1115,15 @@ export default function QuestionBankPage() {
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-amber-300 hover:bg-amber-50/40">
                 <QuestionImportHistory />
               </div>
+              )}
+              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-red-300 hover:bg-red-50/40">
+                <button type="button" onClick={toggleTrash} className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50">
+                  🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
+                  {deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}
+                </button>
+              </div>
             </CardContent>
           </Card>
-        )}
 
         {!showTrash && (
           <>
