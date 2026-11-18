@@ -14,7 +14,6 @@ import {
   Badge,
 } from "@shikhasetu/ui";
 import QuestionImportPanel from "./question-import-panel";
-import OcrQuestionImportPanel from "./ocr-question-import-panel";
 import QuestionImportTemplates from "./question-import-templates";
 import QuestionImportHistory from "./question-import-history";
 
@@ -1096,19 +1095,21 @@ export default function QuestionBankPage() {
 
         <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
-              <CardTitle>Import &amp; Data Tools</CardTitle>
-              <p className="text-sm text-slate-500">
-                প্রশ্ন Import, OCR, templates ও পূর্ববর্তী Import পরিচালনা করুন।
-              </p>
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </div>
+                <div>
+                  <CardTitle>Import &amp; Data Tools</CardTitle>
+                  <p className="mt-1 text-sm text-slate-500">প্রশ্ন প্রস্তুত, OCR এবং ডেটা পরিচালনা করুন</p>
+                </div>
+              </div>
             </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
+            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
               {!showTrash && (
               <>
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300 hover:bg-emerald-50/40">
                 <QuestionImportPanel />
-              </div>
-              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-blue-300 hover:bg-blue-50/40">
-                <OcrQuestionImportPanel />
               </div>
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-violet-300 hover:bg-violet-50/40">
                 <QuestionImportTemplates />
