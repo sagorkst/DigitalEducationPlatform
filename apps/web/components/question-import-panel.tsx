@@ -1024,7 +1024,7 @@ export default function QuestionImportPanel() {
                       disabled={
                         loading ||
                         (selectAllBatch
-                          ? summary.validRows + summary.duplicateRows === 0
+                          ? summary.validRows + summary.duplicateRows <= excludedIds.length
                           : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))
                       }
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40"
@@ -1086,7 +1086,11 @@ export default function QuestionImportPanel() {
                                         ? ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)
                                         : selectedIds.includes(row.id)
                                     }
-                                    disabled={!selectable || loading}
+                                    disabled={
+                                      !selectable ||
+                                      loading ||
+                                      (selectAllBatch && !["VALID", "DUPLICATE"].includes(row.status))
+                                    }
                                     onChange={(event) =>
                                       toggleRow(row.id, event.target.checked)
                                     }
