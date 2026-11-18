@@ -2,6 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import OcrQuestionImportPanel from "./ocr-question-import-panel";
 
 type ImportSummary = {
   totalRows: number;
@@ -483,15 +484,22 @@ export default function QuestionImportPanel() {
 
   return (
     <>
+      <OcrQuestionImportPanel embedded />
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-slate-900 px-3 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200"
+        className="flex h-auto min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-slate-900 transition hover:bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
           <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        প্রশ্ন Import
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </span>
+        <span className="min-w-0">
+          <span className="block text-sm font-bold">প্রশ্ন Import</span>
+          <span className="mt-0.5 block text-xs font-normal text-slate-500">ফাইল থেকে প্রশ্ন যুক্ত করুন</span>
+        </span>
       </button>
 
       {open && (
@@ -634,37 +642,27 @@ export default function QuestionImportPanel() {
                     </p>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-lg">
-                        PDF
+                  <div className="mt-5 rounded-xl border border-violet-200 bg-violet-50/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                            <path d="M5 3h9l5 5v13H5zM14 3v5h5M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">PDF / Image থেকে OCR Import</p>
+                          <p className="mt-0.5 text-xs text-slate-500">স্ক্যান করা PDF, PDF text এবং JPG/PNG থেকে প্রশ্ন শনাক্ত ও যাচাই করুন</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          PDF Import
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Text extraction & OCR â€” Coming in a later phase
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-lg">
-                        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-amber-700">
-                          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.7" />
-                          <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="m4 17 5-5 3 3 3-4 5 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          Image Import
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          OCR & question extraction â€” Coming in a later phase
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event("shikhasetu:open-ocr-import"))}
+                        disabled={loading}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                      >
+                        <span>＋</span> OCR PDF / Image Add
+                      </button>
                     </div>
                   </div>
                 </>
