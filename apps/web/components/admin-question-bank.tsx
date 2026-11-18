@@ -268,7 +268,7 @@ export default function QuestionBankPage() {
       if (filters.post) params.set("post", filters.post);
       if (filters.subject) params.set("subject", filters.subject);
       if (filters.topic) params.set("topic", filters.topic);
-      if (filters.status) params.set("status", filters.status);
+      if (filters.status) params.set("status", filters.status.toUpperCase());
 
       const response = await fetch(`/api/questions?${params.toString()}`, {
         method: "GET",
@@ -486,7 +486,7 @@ export default function QuestionBankPage() {
     post: filters.post || undefined,
     subject: filters.subject || undefined,
     topic: filters.topic || undefined,
-    status: filters.status || undefined,
+    status: filters.status ? filters.status.toUpperCase() : undefined,
   });
 
   const toggleCurrentPageSelection = () => {
