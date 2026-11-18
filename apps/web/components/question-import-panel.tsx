@@ -81,6 +81,7 @@ export default function QuestionImportPanel() {
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAllBatch, setSelectAllBatch] = useState(false);
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -200,16 +201,24 @@ export default function QuestionImportPanel() {
   }
 
   function toggleRow(id: string, checked: boolean) {
-    setSelectAllBatch(false);
+    if (selectAllBatch) {
+      setExcludedIds((current) =>
+        checked
+          ? current.filter((item) => item !== id)
+          : current.includes(id) ? current : [...current, id],
+      );
+      return;
+    }
     setSelectedIds((current) =>
       checked
-        ? [...current, id]
+        ? current.includes(id) ? current : [...current, id]
         : current.filter((item) => item !== id),
     );
   }
 
   function selectAllValid() {
     setSelectedIds([]);
+    setExcludedIds([]);
     setSelectAllBatch(true);
   }
 
@@ -241,7 +250,7 @@ export default function QuestionImportPanel() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(
             selectAllBatch
-              ? { allRows: true }
+              ? { allRows: true, excludedRowIds: excludedIds }
               : { rowIds: actionIds },
           ),
         },
@@ -995,7 +1004,7 @@ export default function QuestionImportPanel() {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setSelectedIds([]); setSelectAllBatch(false); }}
+                        onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }}
                         disabled={loading || (selectedIds.length === 0 && !selectAllBatch)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
                       >
@@ -1006,7 +1015,7 @@ export default function QuestionImportPanel() {
 
                   <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
                     <span className="mr-auto text-xs font-semibold text-slate-600">
-                      {selectAllBatch ? "All eligible rows across every page selected" : `${selectedIds.length} selected`}
+                      {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
                     </span>
 
                     <button
@@ -1074,10 +1083,10 @@ export default function QuestionImportPanel() {
                                     type="checkbox"
                                     checked={
                                       selectAllBatch
-                                        ? ["VALID", "DUPLICATE"].includes(row.status)
+                                        ? ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)
                                         : selectedIds.includes(row.id)
                                     }
-                                    disabled={!selectable || loading || selectAllBatch}
+                                    disabled={!selectable || loading}
                                     onChange={(event) =>
                                       toggleRow(row.id, event.target.checked)
                                     }
