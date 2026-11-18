@@ -1072,8 +1072,12 @@ export default function QuestionImportPanel() {
                                 <td className="p-3">
                                   <input
                                     type="checkbox"
-                                    checked={selectedIds.includes(row.id)}
-                                    disabled={!selectable || loading}
+                                    checked={
+                                      selectAllBatch
+                                        ? ["VALID", "DUPLICATE"].includes(row.status)
+                                        : selectedIds.includes(row.id)
+                                    }
+                                    disabled={!selectable || loading || selectAllBatch}
                                     onChange={(event) =>
                                       toggleRow(row.id, event.target.checked)
                                     }
