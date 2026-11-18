@@ -3,7 +3,7 @@
 export default function QuestionImportTemplates() {
   return (
     <details className="group relative">
-      <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50/50 [&::-webkit-details-marker]:hidden">
+      <summary className="flex h-10 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50/50 [&::-webkit-details-marker]:hidden">
         <svg
           viewBox="0 0 24 24"
           fill="none"
