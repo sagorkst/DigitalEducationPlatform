@@ -1940,24 +1940,40 @@ export default function QuestionBankPage() {
                     className={`relative rounded-lg border border-slate-200 bg-white pl-11 transition hover:border-blue-300 hover:shadow-sm ${tableDensity === "ultra" ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
                   >
                     {true && (
-                      <input
-                        type="checkbox"
-                        aria-label="প্রশ্ন নির্বাচন করুন"
-                        checked={allMatchingSelected || selectedQuestionIds.includes(q.id)}
-                        disabled={bulkSaving || allMatchingSelected}
-                        onChange={() => {
-                          setSelectedQuestionIds((previous) =>
-                            previous.includes(q.id)
-                              ? previous.filter((id) => id !== q.id)
-                              : previous.length < 500
-                                ? [...previous, q.id]
-                                : previous,
-                          );
-                          setBulkError("");
-                          setBulkSuccess("");
-                        }}
-                        className="absolute left-4 top-5 h-4 w-4 accent-blue-600 disabled:opacity-100 disabled:cursor-not-allowed"
-                      />
+                      <>
+                        <input
+                          type="checkbox"
+                          aria-label="প্রশ্ন নির্বাচন করুন"
+                          checked={allMatchingSelected || selectedQuestionIds.includes(q.id)}
+                          disabled={bulkSaving || allMatchingSelected}
+                          onChange={() => {
+                            setSelectedQuestionIds((previous) =>
+                              previous.includes(q.id)
+                                ? previous.filter((id) => id !== q.id)
+                                : previous.length < 500
+                                  ? [...previous, q.id]
+                                  : previous,
+                            );
+                            setBulkError("");
+                            setBulkSuccess("");
+                          }}
+                          className="absolute left-4 top-5 z-10 h-5 w-5 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                        />
+                        <span
+                          aria-hidden="true"
+                          className={`pointer-events-none absolute left-4 top-5 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
+                            allMatchingSelected || selectedQuestionIds.includes(q.id)
+                              ? "border-blue-600 bg-blue-600 text-white"
+                              : "border-slate-400 bg-white"
+                          }`}
+                        >
+                          {(allMatchingSelected || selectedQuestionIds.includes(q.id)) && (
+                            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none">
+                              <path d="m3 8 3.2 3.2L13 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </span>
+                      </>
                     )}
                     <button
                       onClick={() =>
