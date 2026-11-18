@@ -212,6 +212,7 @@ export default function QuestionBankPage() {
   const [totalQuestions, setTotalQuestions] = useState(0);
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
   const [bulkDifficulty, setBulkDifficulty] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -471,7 +472,25 @@ export default function QuestionBankPage() {
     void refreshDraftCount();
   }, [refreshDraftCount]);
 
+  useEffect(() => {
+    setSelectedQuestionIds([]);
+    setAllMatchingSelected(false);
+  }, [search, filters]);
+
+  const currentFilterPayload = () => ({
+    search: search.trim() || undefined,
+    yearFrom: filters.from || undefined,
+    yearTo: filters.to || undefined,
+    institution: filters.institution || undefined,
+    exam: filters.exam || undefined,
+    post: filters.post || undefined,
+    subject: filters.subject || undefined,
+    topic: filters.topic || undefined,
+    status: filters.status || undefined,
+  });
+
   const toggleCurrentPageSelection = () => {
+    setAllMatchingSelected(false);
     const currentIds = filteredQuestions.map((question) => question.id);
     const allSelected =
       currentIds.length > 0 &&
@@ -500,12 +519,12 @@ export default function QuestionBankPage() {
   };
 
   const applyBulkEdit = async () => {
-    if (selectedQuestionIds.length === 0) {
-      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
+    if (!allMatchingSelected && selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
       return;
     }
 
-    if (selectedQuestionIds.length > 500) {
+    if (!allMatchingSelected && selectedQuestionIds.length > 500) {
       setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন পরিবর্তন করা যাবে।");
       return;
     }
@@ -521,7 +540,7 @@ export default function QuestionBankPage() {
     }
 
     if (!window.confirm(
-      `${selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
+      `${allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
     )) {
       return;
     }
@@ -531,16 +550,12 @@ export default function QuestionBankPage() {
     setBulkSuccess("");
 
     try {
-      const response = await fetch("/api/questions/bulk", {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/filtered" : "/api/questions/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ids: selectedQuestionIds,
-          updates: {
-            ...updates,
-            changeNote: "Bulk update from Question Bank management.",
-          },
-        }),
+        body: JSON.stringify(allMatchingSelected
+          ? { filters: currentFilterPayload(), updates: { ...updates, changeNote: "Bulk update across all filtered questions." } }
+          : { ids: selectedQuestionIds, updates: { ...updates, changeNote: "Bulk update from Question Bank management." } }),
       });
 
       const result = await response.json();
@@ -553,6 +568,7 @@ export default function QuestionBankPage() {
 
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে পরিবর্তন হয়েছে।`);
       setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
       setBulkDifficulty("");
       setBulkStatus("");
 
@@ -569,18 +585,18 @@ export default function QuestionBankPage() {
   };
 
   const bulkDeleteQuestions = async () => {
-    if (selectedQuestionIds.length === 0) {
-      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
+    if (!allMatchingSelected && selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
       return;
     }
 
-    if (selectedQuestionIds.length > 500) {
+    if (!allMatchingSelected && selectedQuestionIds.length > 500) {
       setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন Trash-এ পাঠানো যাবে।");
       return;
     }
 
     if (!window.confirm(
-      `আপনি কি নির্বাচিত ${selectedQuestionIds.length}টি প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
+      `আপনি কি ${allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি matching প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
     )) {
       return;
     }
@@ -592,10 +608,10 @@ export default function QuestionBankPage() {
     try {
       const idsToDelete = [...selectedQuestionIds];
 
-      const response = await fetch("/api/questions/bulk/delete", {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/delete-filtered" : "/api/questions/bulk/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: idsToDelete }),
+        body: JSON.stringify(allMatchingSelected ? { filters: currentFilterPayload() } : { ids: idsToDelete }),
       });
 
       const result = await response.json();
@@ -604,10 +620,11 @@ export default function QuestionBankPage() {
         throw new Error(result.message || "নির্বাচিত প্রশ্ন Trash-এ পাঠানো যায়নি।");
       }
 
-      const count = Number(result.deletedCount ?? idsToDelete.length);
+      const count = Number(result.deletedCount ?? (allMatchingSelected ? totalQuestions : idsToDelete.length));
 
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে Trash-এ পাঠানো হয়েছে।`);
       setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
 
       if (selected && idsToDelete.includes(selected)) {
         setSelected(null);
@@ -1790,8 +1807,18 @@ export default function QuestionBankPage() {
                 </Button>
 
                 <span className="text-sm text-slate-600">
-                  নির্বাচিত: {selectedQuestionIds.length}টি
+                  নির্বাচিত: {allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি {allMatchingSelected ? "(সব Filtered)" : ""}
                 </span>
+
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setBulkError(""); setBulkSuccess(""); }}
+                  disabled={loading || totalQuestions === 0 || bulkSaving || viewMode !== "single"}
+                >
+                  সব Filtered প্রশ্ন নির্বাচন ({totalQuestions.toLocaleString("bn-BD")})
+                </Button>
 
                 <Button
                   type="button"
@@ -1799,10 +1826,11 @@ export default function QuestionBankPage() {
                   variant="ghost"
                   onClick={() => {
                     setSelectedQuestionIds([]);
+                    setAllMatchingSelected(false);
                     setBulkError("");
                     setBulkSuccess("");
                   }}
-                  disabled={selectedQuestionIds.length === 0 || bulkSaving}
+                  disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}
                 >
                   Selection Clear
                 </Button>
@@ -1839,7 +1867,7 @@ export default function QuestionBankPage() {
                 <Button
                   type="button"
                   onClick={() => void applyBulkEdit()}
-                  disabled={bulkSaving || selectedQuestionIds.length === 0}
+                  disabled={bulkSaving || (selectedQuestionIds.length === 0 && !allMatchingSelected)}
                 >
                   {bulkSaving ? "Processing..." : "Apply Bulk Edit"}
                 </Button>
@@ -1876,7 +1904,7 @@ export default function QuestionBankPage() {
               )}
 
               <p className="text-xs text-slate-500">
-                Select All বর্তমান loaded তালিকার প্রশ্ন নির্বাচন করে। Bulk Edit সর্বোচ্চ ৫০০টি প্রশ্নে কাজ করে। Publish All Drafts database-এর সব active Draft প্রশ্নে কাজ করে; Trash-এর প্রশ্ন এতে অন্তর্ভুক্ত নয়।
+                বর্তমান পেজের নির্বাচন আলাদা। “সব Filtered প্রশ্ন নির্বাচন” সক্রিয় Filter/Search অনুযায়ী সব matching প্রশ্ন server-side-এ নির্বাচন করে; এটি ৫০০টির সীমায় আবদ্ধ নয়। Publish All Drafts database-এর সব active Draft প্রশ্নে কাজ করে; Trash-এর প্রশ্ন এতে অন্তর্ভুক্ত নয়।
               </p>
             </CardContent>
           </Card>
