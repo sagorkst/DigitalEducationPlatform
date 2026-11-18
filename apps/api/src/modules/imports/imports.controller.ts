@@ -567,7 +567,12 @@ export class ImportsController {
       );
     }
 
-    return this.importsService.commit(id, dto.rowIds, dto.allRows === true);
+    return this.importsService.commit(
+      id,
+      dto.rowIds,
+      dto.allRows === true,
+      dto.excludedRowIds,
+    );
   }
 
   @Put(':id/skip')
@@ -581,7 +586,12 @@ export class ImportsController {
       );
     }
 
-    return this.importsService.skipRows(id, dto.rowIds, dto.allRows === true);
+    return this.importsService.skipRows(
+      id,
+      dto.rowIds,
+      dto.allRows === true,
+      dto.excludedRowIds,
+    );
   }
 
   @Post(':id/rollback')
