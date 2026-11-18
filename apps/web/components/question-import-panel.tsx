@@ -223,41 +223,84 @@ export default function QuestionImportPanel() {
   }
 
   async function performAction(action: "commit" | "skip") {
-    const actionIds =
-      action === "commit"
-        ? rows
-            .filter(
-              (row) =>
-                ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id),
-            )
-            .map((row) => row.id)
-        : selectedIds;
-
-    if (!batchId || (!selectAllBatch && actionIds.length === 0)) {
-      setError("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
-      return;
-    }
+    let actionIds = selectedIds;
 
     setLoading(true);
     setError("");
     setMessage("");
 
     try {
+      if (action === "commit" && selectAllBatch) {
+        const firstResponse = await fetch(
+          `/api/imports/${batchId}/rows?page=1&limit=${PAGE_SIZE}`,
+          { cache: "no-store" },
+        );
+        const firstResult = await firstResponse.json();
+
+        if (!firstResponse.ok || !firstResult.success) {
+          throw new Error(firstResult.message || "সব Import Row লোড করা যায়নি।");
+        }
+
+        const allRows: ImportRow[] = Array.isArray(firstResult.data)
+          ? firstResult.data
+          : [];
+        const pageCount = Math.max(
+          1,
+          Number(firstResult.pagination?.totalPages) || 1,
+        );
+
+        if (pageCount > 1) {
+          const remainingPages = await Promise.all(
+            Array.from({ length: pageCount - 1 }, async (_, index) => {
+              const pageNumber = index + 2;
+              const pageResponse = await fetch(
+                `/api/imports/${batchId}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`,
+                { cache: "no-store" },
+              );
+              const pageResult = await pageResponse.json();
+
+              if (!pageResponse.ok || !pageResult.success) {
+                throw new Error(
+                  pageResult.message || `Import Row page ${pageNumber} লোড করা যায়নি।`,
+                );
+              }
+
+              return Array.isArray(pageResult.data)
+                ? (pageResult.data as ImportRow[])
+                : [];
+            }),
+          );
+          allRows.push(...remainingPages.flat());
+        }
+
+        actionIds = allRows
+          .filter((row) => ["VALID", "DUPLICATE"].includes(row.status))
+          .filter((row) => !excludedIds.includes(row.id))
+          .map((row) => row.id);
+      }
+
+      if (!batchId || actionIds.length === 0) {
+        throw new Error("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
+      }
+
+      const requestBody =
+        action === "commit"
+          ? { rowIds: actionIds }
+          : selectAllBatch
+            ? {
+                allRows: true,
+                ...(excludedIds.length > 0
+                  ? { excludedRowIds: excludedIds }
+                  : {}),
+              }
+            : { rowIds: actionIds };
+
       const response = await fetch(
         `/api/imports/${batchId}/${action}`,
         {
           method: action === "commit" ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(
-            selectAllBatch
-              ? {
-                  allRows: true,
-                  ...(excludedIds.length > 0
-                    ? { excludedRowIds: excludedIds }
-                    : {}),
-                }
-              : { rowIds: actionIds },
-          ),
+          body: JSON.stringify(requestBody),
         },
       );
 
@@ -269,10 +312,11 @@ export default function QuestionImportPanel() {
 
       setSelectedIds([]);
       setSelectAllBatch(false);
+      setExcludedIds([]);
 
       setMessage(
         action === "commit"
-          ? `${result.data?.importedRows ?? 0}টি প্রশ্ন Import হয়েছে।`
+          ? `${result.data?.importedRows ?? 0}টি প্রশ্ন Import হয়েছে।${result.data?.failedRows ? ` ${result.data.failedRows}টি Row Import হয়নি—Row-এর Error দেখুন।` : ""}`
           : `${result.data?.skippedRows ?? actionIds.length}টি Row Skip হয়েছে।`,
       );
 
