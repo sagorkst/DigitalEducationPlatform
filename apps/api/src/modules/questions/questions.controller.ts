@@ -19,6 +19,7 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { BulkUpdateQuestionsDto } from './dto/bulk-update-questions.dto';
 import { BulkDeleteQuestionsDto } from './dto/bulk-delete-questions.dto';
+import { BulkFilteredQuestionsDto } from './dto/bulk-filtered-questions.dto';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -46,6 +47,22 @@ export class QuestionsController {
   @HttpCode(HttpStatus.OK)
   async bulkSoftDelete(@Body() dto: BulkDeleteQuestionsDto) {
     return this.questionsBulkService.bulkSoftDelete(dto.ids);
+  }
+
+  // APPLY BULK UPDATE TO ALL QUESTIONS MATCHING ACTIVE FILTERS
+  @Post('bulk/filtered')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkUpdateFiltered(@Body() dto: BulkFilteredQuestionsDto) {
+    return this.questionsBulkService.bulkUpdateFiltered(dto);
+  }
+
+  // MOVE ALL QUESTIONS MATCHING ACTIVE FILTERS TO TRASH
+  @Post('bulk/delete-filtered')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkSoftDeleteFiltered(@Body() dto: BulkFilteredQuestionsDto) {
+    return this.questionsBulkService.bulkSoftDeleteFiltered(dto);
   }
 
   // PUBLISH ALL ACTIVE DRAFT QUESTIONS
