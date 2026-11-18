@@ -1501,7 +1501,8 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <Card className="border-slate-200 shadow-sm">
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
+        <Card className="border-0 shadow-none">
           <CardHeader className="pb-2">
             <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
             <p className="text-sm text-slate-500">
@@ -1548,7 +1549,7 @@ export default function QuestionBankPage() {
         </Card>
 
         {true && (
-        <Card className="border-slate-200 shadow-sm">
+        <Card className="border-0 shadow-none">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
@@ -1758,7 +1759,7 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <Card className="border-slate-200 shadow-sm">
+          <Card className="border-0 shadow-none">
             <CardHeader className="pb-3">
               <CardTitle>Bulk Question Management</CardTitle>
               <p className="text-sm text-slate-500">
@@ -1872,6 +1873,7 @@ export default function QuestionBankPage() {
             </CardContent>
           </Card>
         )}
+        </div>
 
         {(viewMode === "single" || selectedExamGroup) && (
         <Card className="border-slate-200 shadow-sm">
