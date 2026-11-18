@@ -213,6 +213,7 @@ export default function QuestionBankPage() {
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [allMatchingSelected, setAllMatchingSelected] = useState(false);
+  const [tableDensity, setTableDensity] = useState<"compact" | "ultra">("compact");
   const [bulkDifficulty, setBulkDifficulty] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -1284,7 +1285,7 @@ export default function QuestionBankPage() {
                         <Badge>Trash</Badge>
                       </div>
 
-                      <p className="mt-3 font-bold text-slate-900">
+                      <p className={`${tableDensity === "ultra" ? "mt-1 text-sm" : "mt-2 font-bold text-slate-900"}`}>
                         {q.question}
                       </p>
 
@@ -1913,11 +1914,17 @@ export default function QuestionBankPage() {
 
         {(viewMode === "single" || selectedExamGroup) && (
         <Card className="border-slate-200 shadow-sm">
-          <CardHeader className="pb-3">
-            <CardTitle>প্রশ্নের তালিকা</CardTitle>
-            <p className="text-sm text-slate-500">
-              প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
-            </p>
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3">
+            <div>
+              <CardTitle>প্রশ্নের তালিকা</CardTitle>
+              <p className="text-sm text-slate-500">
+                প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1" aria-label="Table density">
+              <button type="button" onClick={() => setTableDensity("compact")} aria-pressed={tableDensity === "compact"} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${tableDensity === "compact" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Compact</button>
+              <button type="button" onClick={() => setTableDensity("ultra")} aria-pressed={tableDensity === "ultra"} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${tableDensity === "ultra" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Ultra compact</button>
+            </div>
           </CardHeader>
 
           <CardContent>
@@ -1926,11 +1933,11 @@ export default function QuestionBankPage() {
                 Database থেকে প্রশ্ন লোড হচ্ছে...
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className={tableDensity === "ultra" ? "space-y-1.5" : "space-y-2.5"}>
                 {filteredQuestions.map((q) => (
                   <div
                     key={q.id}
-                    className="relative rounded-lg border border-slate-200 bg-white p-3 pl-11 transition hover:border-blue-300 hover:shadow-sm"
+                    className={`relative rounded-lg border border-slate-200 bg-white pl-11 transition hover:border-blue-300 hover:shadow-sm ${tableDensity === "ultra" ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
                   >
                     {true && (
                       <input
