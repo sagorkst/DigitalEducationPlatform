@@ -3,7 +3,7 @@
 export default function QuestionImportTemplates() {
   return (
     <details className="group relative">
-      <summary className="flex h-10 w-full cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-300 hover:bg-blue-50/50 [&::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-[68px] w-full cursor-pointer list-none items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-slate-900 transition hover:bg-violet-50/50 [&::-webkit-details-marker]:hidden">
         <svg
           viewBox="0 0 24 24"
           fill="none"
@@ -23,12 +23,18 @@ export default function QuestionImportTemplates() {
           />
         </svg>
 
-        <span>Import Templates</span>
+        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="block text-sm font-bold text-slate-900">Import Templates</span>
+          <span className="mt-0.5 block text-xs font-normal text-slate-500">Excel ও CSV টেমপ্লেট ডাউনলোড</span>
+        </span>
 
         <svg
           viewBox="0 0 24 24"
           fill="none"
-          className="h-4 w-4 text-slate-400 transition group-open:rotate-180"
+          className="h-4 w-4 shrink-0 text-slate-400 transition group-open:rotate-180"
         >
           <path
             d="m7 10 5 5 5-5"
