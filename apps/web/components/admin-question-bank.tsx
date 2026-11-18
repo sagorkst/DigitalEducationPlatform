@@ -626,7 +626,7 @@ export default function QuestionBankPage() {
       setSelectedQuestionIds([]);
       setAllMatchingSelected(false);
 
-      if (selected && idsToDelete.includes(selected)) {
+      if (allMatchingSelected || (selected && idsToDelete.includes(selected))) {
         setSelected(null);
       }
 
@@ -1876,7 +1876,7 @@ export default function QuestionBankPage() {
                   type="button"
                   variant="outline"
                   onClick={() => void bulkDeleteQuestions()}
-                  disabled={bulkSaving || selectedQuestionIds.length === 0}
+                  disabled={bulkSaving || (selectedQuestionIds.length === 0 && !allMatchingSelected)}
                   className="border-red-300 text-red-700 hover:bg-red-50"
                 >
                   {bulkSaving ? "Processing..." : "নির্বাচিত প্রশ্ন Trash-এ পাঠান"}
