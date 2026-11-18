@@ -18,4 +18,10 @@ export class CommitImportDto {
   @IsOptional()
   @IsBoolean()
   allRows?: boolean;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayMaxSize(10000)
+  @IsUUID("4", { each: true })
+  excludedRowIds?: string[];
 }
