@@ -1120,9 +1120,14 @@ export default function QuestionBankPage() {
               </>
               )}
               <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-red-300 hover:bg-red-50/40">
-                <button type="button" onClick={toggleTrash} className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-red-200 bg-white px-3 text-sm font-semibold text-red-700 transition hover:bg-red-50">
-                  🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
-                  {deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}
+                <button type="button" onClick={toggleTrash} className="flex min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-red-700 transition hover:bg-red-50/60">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold">{showTrash ? "Trash বন্ধ করুন" : "Trash"}</span>
+                    <span className="mt-0.5 block text-xs font-normal text-slate-500">{deletedQuestions.length > 0 ? `${deletedQuestions.length.toLocaleString("bn-BD")}টি মুছে ফেলা প্রশ্ন` : "মুছে ফেলা প্রশ্ন পুনরুদ্ধার করুন"}</span>
+                  </span>
                 </button>
               </div>
             </CardContent>
