@@ -35,12 +35,13 @@ export class QuestionsBulkService {
   }
 
   async bulkUpdateFiltered(dto: BulkFilteredQuestionsDto) {
-    if (!dto.updates) throw new BadRequestException('Bulk updates are required.');
+    const updates = dto.updates;
+    if (!updates) throw new BadRequestException('Bulk updates are required.');
     const ids = await this.collectFilteredIds(dto.filters);
     let updatedCount = 0;
     let batches = 0;
     for (let index = 0; index < ids.length; index += 500) {
-      const result = await this.bulkUpdate({ ids: ids.slice(index, index + 500), updates: dto.updates });
+      const result = await this.bulkUpdate({ ids: ids.slice(index, index + 500), updates });
       updatedCount += result.updatedCount;
       batches += 1;
     }
