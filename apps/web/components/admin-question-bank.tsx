@@ -1936,8 +1936,8 @@ export default function QuestionBankPage() {
                       <input
                         type="checkbox"
                         aria-label="প্রশ্ন নির্বাচন করুন"
-                        checked={selectedQuestionIds.includes(q.id)}
-                        disabled={bulkSaving}
+                        checked={allMatchingSelected || selectedQuestionIds.includes(q.id)}
+                        disabled={bulkSaving || allMatchingSelected}
                         onChange={() => {
                           setSelectedQuestionIds((previous) =>
                             previous.includes(q.id)
