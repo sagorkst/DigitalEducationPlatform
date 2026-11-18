@@ -1961,7 +1961,7 @@ export default function QuestionBankPage() {
                         />
                         <span
                           aria-hidden="true"
-                          className={`pointer-events-none absolute left-4 top-5 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
+                          className={`pointer-events-none absolute left-4 top-5 z-20 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
                             allMatchingSelected || selectedQuestionIds.includes(q.id)
                               ? "border-blue-600 bg-blue-600 text-white"
                               : "border-slate-400 bg-white"
