@@ -121,7 +121,7 @@ type QuestionApiResponse = {
 
 const OPTION_KEYS: OptionKey[] = ["A", "B", "C", "D"];
 
-export default function OcrQuestionImportPanel() {
+export default function OcrQuestionImportPanel({ embedded = false }: { embedded?: boolean }) {
   const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
 
@@ -1086,6 +1086,13 @@ export default function OcrQuestionImportPanel() {
   }
 
   useEffect(() => {
+    if (!embedded) return;
+    const openEmbeddedOcr = () => setOpen(true);
+    window.addEventListener("shikhasetu:open-ocr-import", openEmbeddedOcr);
+    return () => window.removeEventListener("shikhasetu:open-ocr-import", openEmbeddedOcr);
+  }, [embedded]);
+
+  useEffect(() => {
     if (
       !open ||
       !historyBatchId ||
@@ -1243,14 +1250,16 @@ export default function OcrQuestionImportPanel() {
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl border border-violet-200 bg-violet-50 px-4 py-2.5 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-100"
-      >
-        <span className="text-base">▤</span>
-        OCR Import
-      </button>
+      {!embedded && (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg border border-violet-200 bg-violet-50 px-3 text-sm font-semibold text-violet-800 shadow-sm transition hover:bg-violet-100"
+        >
+          <span className="text-base">▤</span>
+          OCR Import
+        </button>
+      )}
 
       {open && (
         <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-5">

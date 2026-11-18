@@ -1,73 +1,137 @@
-﻿import Link from "next/link";
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+
+const navigation = [
+  {
+    title: "OVERVIEW",
+    items: [
+      { href: "/admin", label: "Dashboard", icon: "▦" },
+      { href: "/admin/analytics", label: "Analytics & Reports", icon: "▥" },
+      { href: "/admin/audit-logs", label: "Audit Trail", icon: "◷" },
+    ],
+  },
+  {
+    title: "CONTENT MANAGEMENT",
+    items: [
+      { href: "/admin/questions", label: "Question Bank", icon: "❖" },
+      { href: "/admin/exams", label: "Exams & Posts", icon: "▣" },
+      { href: "/admin/institutions", label: "Institutions", icon: "▤" },
+    ],
+  },
+  {
+    title: "ACCESS MANAGEMENT",
+    items: [
+      { href: "/admin/users", label: "Users", icon: "♙" },
+      { href: "/admin/roles", label: "Roles", icon: "⚙" },
+      { href: "/admin/permissions", label: "Permissions", icon: "♧" },
+      { href: "/admin/role-assignments", label: "Role Assignments", icon: "♧" },
+    ],
+  },
+];
 
 export default function AdminLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const links = [
-    { href: "/admin", label: "Dashboard", icon: "▦" },
-    { href: "/admin/users", label: "User Management", icon: "♙" },
-    { href: "/admin/roles", label: "Role Management", icon: "⚙" },
-    { href: "/admin/permissions", label: "Permission Management", icon: "♧" },
-    { href: "/admin/role-assignments", label: "Role Assignment", icon: "♙" },
-    { href: "/admin/institutions", label: "Institutions", icon: "▤" },
-    { href: "/admin/exams", label: "Exams Management", icon: "▣" },
-    { href: "/admin/questions", label: "Question Bank", icon: "❖" },
-    { href: "/admin/audit-logs", label: "Audit Logs", icon: "◷" },
-    { href: "/admin/analytics", label: "Analytics", icon: "▥" },
-  ];
+  const pathname = usePathname();
 
   return (
-    <div className="min-h-[75vh] bg-slate-50">
-      <div className="mx-auto flex w-full max-w-[1600px] flex-col gap-6 px-4 py-6 sm:px-6 lg:flex-row lg:px-8">
-        <aside className="w-full shrink-0 lg:sticky lg:top-6 lg:w-64 lg:self-start">
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-            <div className="mb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">
-                Shikhasetu
-              </p>
-              <h2 className="mt-1 text-xl font-bold text-slate-900">
-                Admin Control
-              </h2>
-              <p className="mt-1 text-sm text-slate-500">
-                Platform administration
-              </p>
+    <div className="min-h-[80vh] bg-slate-100">
+      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5 px-3 py-4 sm:px-5 lg:flex-row lg:gap-6 lg:px-6 lg:py-6">
+        <aside className="w-full shrink-0 lg:sticky lg:top-5 lg:w-[270px] lg:self-start">
+          <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white shadow-xl shadow-slate-900/10">
+            <div className="border-b border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/70 p-5">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-400 text-xl font-black text-slate-950 shadow-lg shadow-emerald-950/30">
+                  S
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-emerald-300">
+                    Shikhasetu
+                  </p>
+                  <h2 className="mt-0.5 text-lg font-bold tracking-tight">
+                    Control Center
+                  </h2>
+                </div>
+              </div>
+              <div className="mt-5 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2.5">
+                <div>
+                  <p className="text-xs font-semibold text-white">Platform Admin</p>
+                  <p className="mt-0.5 text-[11px] text-slate-400">Management workspace</p>
+                </div>
+                <span className="rounded-full bg-emerald-400/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-emerald-300">
+                  Secure
+                </span>
+              </div>
             </div>
 
-            <nav aria-label="Admin navigation" className="space-y-1">
-              {links.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="flex items-center rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-800"
-                >
-                  <span className="mr-3 text-lg">{link.icon}</span>
-                  {link.label}
-                </Link>
+            <nav aria-label="Admin navigation" className="space-y-5 p-3">
+              {navigation.map((group) => (
+                <div key={group.title}>
+                  <p className="px-3 pb-2 text-[10px] font-bold tracking-[0.16em] text-slate-500">
+                    {group.title}
+                  </p>
+                  <div className="space-y-1">
+                    {group.items.map((link) => {
+                      const isActive =
+                        pathname === link.href ||
+                        (link.href !== "/admin" && pathname.startsWith(link.href + "/"));
+
+                      return (
+                        <Link
+                          key={link.href}
+                          href={link.href}
+                          aria-current={isActive ? "page" : undefined}
+                          className={`group flex min-w-0 items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${isActive ? "bg-emerald-400 text-slate-950 shadow-md shadow-emerald-950/20" : "text-slate-300 hover:bg-white/8 hover:text-white"}`}
+                        >
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-base ${isActive ? "bg-slate-950/10" : "bg-white/5 text-emerald-300 group-hover:bg-white/10"}`}>
+                            {link.icon}
+                          </span>
+                          <span className="truncate">{link.label}</span>
+                          {isActive && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-slate-950" />}
+                        </Link>
+                      );
+                    })}
+                  </div>
+                </div>
               ))}
             </nav>
 
-            <div className="mt-6 rounded-xl bg-slate-50 p-4">
-              <p className="text-sm font-semibold text-slate-700">
-                Administration
-              </p>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Central platform administration and monitoring.
+            <div className="border-t border-white/10 p-4">
+              <Link
+                href="/"
+                className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-300 transition hover:bg-white/8 hover:text-white"
+              >
+                <span className="text-lg">←</span>
+                Back to website
+              </Link>
+              <p className="mt-3 px-3 text-[10px] leading-4 text-slate-500">
+                Shikhasetu administration · Protected workspace
               </p>
             </div>
-
-            <Link
-              href="/"
-              className="mt-5 flex items-center rounded-xl px-4 py-3 text-sm font-medium text-slate-600 transition hover:bg-slate-100"
-            >
-              <span className="mr-3">←</span>
-              Back to website
-            </Link>
           </div>
         </aside>
 
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
+            <div>
+              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
+                SHIKHASETU / ADMIN
+              </p>
+              <p className="mt-1 text-sm font-semibold text-slate-800">
+                Platform management workspace
+              </p>
+            </div>
+            <div className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
+              <span className="h-2 w-2 rounded-full bg-emerald-500" />
+              Admin area
+            </div>
+          </div>
+          {children}
+        </main>
       </div>
     </div>
   );

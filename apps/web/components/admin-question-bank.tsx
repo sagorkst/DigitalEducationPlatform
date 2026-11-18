@@ -14,7 +14,6 @@ import {
   Badge,
 } from "@shikhasetu/ui";
 import QuestionImportPanel from "./question-import-panel";
-import OcrQuestionImportPanel from "./ocr-question-import-panel";
 import QuestionImportTemplates from "./question-import-templates";
 import QuestionImportHistory from "./question-import-history";
 
@@ -1070,8 +1069,8 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-7">
+    <main className="min-h-screen bg-slate-50 p-3 md:p-6">
+      <div className="mx-auto max-w-[1600px] space-y-4">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
@@ -1085,37 +1084,54 @@ export default function QuestionBankPage() {
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
+          <div className="flex flex-wrap items-center justify-end gap-2">
   {!showTrash && (
-    <>
-      <div className="flex items-center">
-        <QuestionImportPanel />
-      </div>
-
-      <div className="flex items-center">
-        <OcrQuestionImportPanel />
-      </div>
-
-      <QuestionImportTemplates />
-
-      <div className="flex items-center">
-        <QuestionImportHistory />
-      </div>
-    </>
+    <Button onClick={openAddForm} className="h-10 min-w-[140px] justify-center">
+      + নতুন প্রশ্ন
+    </Button>
   )}
-
-  <div className="flex items-center">
-    <Button variant="outline" onClick={toggleTrash}>
-              🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
-              {deletedQuestions.length > 0
-                ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})`
-                : ""}
-            </Button>
-  </div>
-
-  {!showTrash && <Button onClick={openAddForm}>+ নতুন প্রশ্ন</Button>}
 </div>
         </div>
+
+        <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
+                  <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                </div>
+                <div>
+                  <CardTitle>Import &amp; Data Tools</CardTitle>
+                  <p className="mt-1 text-sm text-slate-500">প্রশ্ন প্রস্তুত, OCR এবং ডেটা পরিচালনা করুন</p>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              {!showTrash && (
+              <>
+              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300 hover:bg-emerald-50/40">
+                <QuestionImportPanel />
+              </div>
+              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-violet-300 hover:bg-violet-50/40">
+                <QuestionImportTemplates />
+              </div>
+              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-amber-300 hover:bg-amber-50/40">
+                <QuestionImportHistory />
+              </div>
+              </>
+              )}
+              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-red-300 hover:bg-red-50/40">
+                <button type="button" onClick={toggleTrash} className="flex min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-red-700 transition hover:bg-red-50/60">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <span className="min-w-0">
+                    <span className="block text-sm font-bold">{showTrash ? "Trash বন্ধ করুন" : "Trash"}</span>
+                    <span className="mt-0.5 block text-xs font-normal text-slate-500">{deletedQuestions.length > 0 ? `${deletedQuestions.length.toLocaleString("bn-BD")}টি মুছে ফেলা প্রশ্ন` : "মুছে ফেলা প্রশ্ন পুনরুদ্ধার করুন"}</span>
+                  </span>
+                </button>
+              </div>
+            </CardContent>
+          </Card>
 
         {!showTrash && (
           <>
@@ -1493,14 +1509,15 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
+        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
+        <Card className="border-0 shadow-none">
+          <CardHeader className="pb-2">
             <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
             <p className="text-sm text-slate-500">
               সব প্রশ্ন একসঙ্গে, Exam অনুযায়ী অথবা Institution অনুযায়ী দেখুন।
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+          <CardContent className="flex flex-wrap gap-2 pt-0">
             <Button
               variant={viewMode === "single" ? "outline" : "ghost"}
               onClick={() => {
@@ -1540,8 +1557,8 @@ export default function QuestionBankPage() {
         </Card>
 
         {true && (
-        <Card>
-          <CardHeader>
+        <Card className="border-0 shadow-none">
+          <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Advanced Question Search</CardTitle>
@@ -1555,14 +1572,14 @@ export default function QuestionBankPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-3 pt-0">
             <Input
               placeholder="প্রশ্ন, Keyword, Exam অথবা Question ID দিয়ে খুঁজুন..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Select
                 label="Year From"
                 value={filters.from}
@@ -1622,7 +1639,7 @@ export default function QuestionBankPage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
               <p className="text-sm text-slate-600">
                 পাওয়া গেছে:{" "}
                 <strong className="text-blue-700">
@@ -1750,15 +1767,15 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <Card>
-            <CardHeader>
+          <Card className="border-0 shadow-none">
+            <CardHeader className="pb-3">
               <CardTitle>Bulk Question Management</CardTitle>
               <p className="text-sm text-slate-500">
                 একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
+            <CardContent className="space-y-3 pt-0">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-3">
                 <Button
                   type="button"
                   size="sm"
@@ -1818,7 +1835,7 @@ export default function QuestionBankPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                 <Button
                   type="button"
                   onClick={() => void applyBulkEdit()}
@@ -1864,10 +1881,11 @@ export default function QuestionBankPage() {
             </CardContent>
           </Card>
         )}
+        </div>
 
         {(viewMode === "single" || selectedExamGroup) && (
-        <Card>
-          <CardHeader>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
             <CardTitle>প্রশ্নের তালিকা</CardTitle>
             <p className="text-sm text-slate-500">
               প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
@@ -1884,7 +1902,7 @@ export default function QuestionBankPage() {
                 {filteredQuestions.map((q) => (
                   <div
                     key={q.id}
-                    className="relative rounded-xl border border-slate-200 p-4 pl-12 transition hover:border-blue-300"
+                    className="relative rounded-lg border border-slate-200 bg-white p-3 pl-11 transition hover:border-blue-300 hover:shadow-sm"
                   >
                     {true && (
                       <input

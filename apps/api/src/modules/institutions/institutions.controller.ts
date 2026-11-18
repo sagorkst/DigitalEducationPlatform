@@ -66,12 +66,6 @@ export class InstitutionsController {
     return this.institutionsService.update(id, dto);
   }
 
-  @Delete('bulk-delete')
-  @UseGuards(JwtAuthGuard, PermissionsGuard)
-  @RequirePermissions('content.manage')
-  removeAllUnlinked() {
-    return this.institutionsService.removeAllUnlinked();
-  }
   @Delete(':id')
   @UseGuards(JwtAuthGuard, PermissionsGuard)
   @RequirePermissions('content.manage')
