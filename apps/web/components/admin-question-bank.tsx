@@ -1070,8 +1070,8 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-7">
+    <main className="min-h-screen bg-slate-50 p-3 md:p-6">
+      <div className="mx-auto max-w-[1600px] space-y-4">
         <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
           <div>
             <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
@@ -1501,14 +1501,14 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-2">
             <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
             <p className="text-sm text-slate-500">
               সব প্রশ্ন একসঙ্গে, Exam অনুযায়ী অথবা Institution অনুযায়ী দেখুন।
             </p>
           </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
+          <CardContent className="flex flex-wrap gap-2 pt-0">
             <Button
               variant={viewMode === "single" ? "outline" : "ghost"}
               onClick={() => {
@@ -1548,8 +1548,8 @@ export default function QuestionBankPage() {
         </Card>
 
         {true && (
-        <Card>
-          <CardHeader>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <CardTitle>Advanced Question Search</CardTitle>
@@ -1563,14 +1563,14 @@ export default function QuestionBankPage() {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-5">
+          <CardContent className="space-y-3 pt-0">
             <Input
               placeholder="প্রশ্ন, Keyword, Exam অথবা Question ID দিয়ে খুঁজুন..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
 
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               <Select
                 label="Year From"
                 value={filters.from}
@@ -1630,7 +1630,7 @@ export default function QuestionBankPage() {
               ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
               <p className="text-sm text-slate-600">
                 পাওয়া গেছে:{" "}
                 <strong className="text-blue-700">
@@ -1758,15 +1758,15 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <Card>
-            <CardHeader>
+          <Card className="border-slate-200 shadow-sm">
+            <CardHeader className="pb-3">
               <CardTitle>Bulk Question Management</CardTitle>
               <p className="text-sm text-slate-500">
                 একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
               </p>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
+            <CardContent className="space-y-3 pt-0">
+              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-3">
                 <Button
                   type="button"
                   size="sm"
@@ -1826,7 +1826,7 @@ export default function QuestionBankPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
                 <Button
                   type="button"
                   onClick={() => void applyBulkEdit()}
@@ -1874,8 +1874,8 @@ export default function QuestionBankPage() {
         )}
 
         {(viewMode === "single" || selectedExamGroup) && (
-        <Card>
-          <CardHeader>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="pb-3">
             <CardTitle>প্রশ্নের তালিকা</CardTitle>
             <p className="text-sm text-slate-500">
               প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
@@ -1892,7 +1892,7 @@ export default function QuestionBankPage() {
                 {filteredQuestions.map((q) => (
                   <div
                     key={q.id}
-                    className="relative rounded-xl border border-slate-200 p-4 pl-12 transition hover:border-blue-300"
+                    className="relative rounded-lg border border-slate-200 bg-white p-3 pl-11 transition hover:border-blue-300 hover:shadow-sm"
                   >
                     {true && (
                       <input
