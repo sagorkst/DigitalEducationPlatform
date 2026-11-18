@@ -328,7 +328,7 @@ export default function QuestionImportHistory() {
       <button
         type="button"
         onClick={openHistory}
-        className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+        className="inline-flex h-10 w-full items-center justify-center rounded-lg border border-gray-300 px-3 text-sm font-semibold hover:bg-gray-50"
       >
         Import History
       </button>
