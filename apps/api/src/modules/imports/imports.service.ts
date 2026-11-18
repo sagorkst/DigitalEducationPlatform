@@ -1559,7 +1559,12 @@ export class ImportsService {
     };
   }
 
-  async commit(batchId: string, rowIds?: string[], allRows = false) {
+  async commit(
+    batchId: string,
+    rowIds?: string[],
+    allRows = false,
+    excludedRowIds: string[] = [],
+  ) {
     if (!allRows && (!Array.isArray(rowIds) || rowIds.length === 0)) {
       throw new BadRequestException('Select at least one row or choose all rows.');
     }
@@ -1573,6 +1578,8 @@ export class ImportsService {
 
     if (!allRows && rowIds && rowIds.length > 0) {
       where.id = { in: rowIds };
+    } else if (allRows && excludedRowIds.length > 0) {
+      where.id = { notIn: excludedRowIds };
     }
 
     const rows = await this.prisma.$transaction(async (tx) => {
@@ -1812,7 +1819,12 @@ export class ImportsService {
     };
   }
 
-  async skipRows(batchId: string, rowIds?: string[], allRows = false) {
+  async skipRows(
+    batchId: string,
+    rowIds?: string[],
+    allRows = false,
+    excludedRowIds: string[] = [],
+  ) {
     if (!allRows && (!Array.isArray(rowIds) || rowIds.length === 0)) {
       throw new BadRequestException('Select at least one row or choose all rows.');
     }
@@ -1841,7 +1853,11 @@ export class ImportsService {
       const result = await tx.importRow.updateMany({
         where: {
           batchId,
-          ...(!allRows ? { id: { in: rowIds ?? [] } } : {}),
+          ...(!allRows
+            ? { id: { in: rowIds ?? [] } }
+            : excludedRowIds.length > 0
+              ? { id: { notIn: excludedRowIds } }
+              : {}),
           status: { in: ['PENDING', 'VALID', 'INVALID', 'DUPLICATE'] },
         },
         data: { status: 'SKIPPED' },
