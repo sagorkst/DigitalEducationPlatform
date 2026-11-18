@@ -1956,7 +1956,7 @@ export default function QuestionBankPage() {
                           setBulkError("");
                           setBulkSuccess("");
                         }}
-                        className="absolute left-4 top-5 h-4 w-4"
+                        className="absolute left-4 top-5 h-4 w-4 accent-blue-600 disabled:opacity-100 disabled:cursor-not-allowed"
                       />
                     )}
                     <button
