@@ -11,6 +11,14 @@ type ImportSummary = {
   duplicateRows: number;
 };
 
+type HtmlParserSummary = {
+  detectedStructure: string;
+  totalCandidates: number;
+  extractedCount: number;
+  skippedCount: number;
+  warnings: string[];
+};
+
 type ImportRow = {
   id: string;
   rowNumber: number;
@@ -78,6 +86,7 @@ export default function QuestionImportPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [parserSummary, setParserSummary] = useState<HtmlParserSummary | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAllBatch, setSelectAllBatch] = useState(false);
@@ -124,6 +133,7 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setBatchId("");
     setSelectedIds([]);
@@ -159,6 +169,7 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setSelectAllBatch(false);
@@ -189,6 +200,7 @@ export default function QuestionImportPanel() {
 
       setBatchId(id);
       setSummary(result.data.summary);
+      setParserSummary(result.parser ?? null);
       await loadRows(id, 1);
       setMessage("ফাইল সফলভাবে Preview তৈরি হয়েছে।");
     } catch (err) {
@@ -532,6 +544,7 @@ export default function QuestionImportPanel() {
     setFile(null);
     setBatchId("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setPage(1);
@@ -1032,6 +1045,45 @@ export default function QuestionImportPanel() {
                     ))}
                   </div>
 
+                  {parserSummary && (
+                    <section className="mb-5 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-blue-950">
+                          Source Extraction Report
+                        </h4>
+                        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-800">
+                          {parserSummary.detectedStructure}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Source Records", value: parserSummary.totalCandidates },
+                          { label: "Text Extracted", value: parserSummary.extractedCount },
+                          { label: "Needs Review", value: parserSummary.skippedCount },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-lg border border-blue-100 bg-white p-3">
+                            <p className="text-[10px] font-semibold text-slate-500">{item.label}</p>
+                            <p className="mt-1 text-xl font-black tabular-nums text-slate-900">
+                              {item.value.toLocaleString("en-US")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      {parserSummary.skippedCount > 0 && (
+                        <p className="mt-3 text-xs font-medium text-amber-800">
+                          {parserSummary.skippedCount}টি Source Record থেকে প্রশ্নের লেখা পুরোপুরি পাওয়া যায়নি। কোনো Record বাদ দেওয়া হয়নি—সবগুলো Preview-তে রাখা হয়েছে, অসম্পূর্ণগুলো INVALID হিসেবে সংশোধন করতে হবে।
+                        </p>
+                      )}
+                      {parserSummary.warnings.length > 0 && (
+                        <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600">
+                          {parserSummary.warnings.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  )}
+
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">
@@ -1152,6 +1204,13 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
+                                  {raw.htmlImportMetadata &&
+                                    typeof raw.htmlImportMetadata === "object" &&
+                                    typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
+                                      <p className="mb-1 text-[10px] font-semibold text-blue-700">
+                                        Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
+                                      </p>
+                                    )}
                                   {String(raw.questionText ?? "â€”")}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
                                     <div className="mt-3 space-y-1.5">
