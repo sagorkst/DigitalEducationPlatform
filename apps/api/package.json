@@ -14,7 +14,8 @@
     "test:auth": "node --test tests/auth.service.test.cjs",
     "test:users": "node --test tests/users.service.test.cjs",
     "test:public-questions": "npm run build && node --test tests/public-questions.service.test.cjs",
-    "test:questions-security": "node --test test/questions-security.integration.test.cjs"
+    "test:questions-security": "node --test test/questions-security.integration.test.cjs",
+    "test:html-import": "npm run build && node --test tests/html-question-parser.service.test.cjs"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.11",
