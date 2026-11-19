@@ -296,6 +296,8 @@ export class ImportsService {
       !questionText.trim()
     ) {
       errors.push('Question text is required.');
+    } else if (questionText.trim().length < 3) {
+      errors.push('Question text must contain at least 3 characters.');
     } else if (questionText.length > 1000) {
       errors.push('Question text cannot exceed 1000 characters.');
     }
