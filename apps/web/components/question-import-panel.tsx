@@ -399,9 +399,22 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => current.map((option, i) => i === index ? { ...option, [field]: value } : option));
   }
 
-  function setCorrectEditingOption(index: number) {
-    setEditingOptions((current) => current.map((option, i) => ({ ...option, isCorrect: i === index })));
-    setEditingData((current) => current ? { ...current, correctAnswer: editingOptions[index]?.label ?? "" } : current);
+  function toggleCorrectEditingOption(index: number) {
+    const nextOptions = editingOptions.map((option, i) =>
+      i === index ? { ...option, isCorrect: !option.isCorrect } : option,
+    );
+    setEditingOptions(nextOptions);
+    setEditingData((current) =>
+      current
+        ? {
+            ...current,
+            correctAnswer: nextOptions
+              .filter((option) => option.isCorrect)
+              .map((option) => option.label)
+              .join(", "),
+          }
+        : current,
+    );
   }
 
   function removeEditingOption(index: number) {
@@ -487,8 +500,8 @@ export default function QuestionImportPanel() {
     const normalizedOptions = editingOptions
       .filter((option) => option.optionText.trim())
       .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
-    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.filter((option) => option.isCorrect).length !== 1)) {
-      setError("MCQ-এর জন্য অন্তত ২টি Option এবং ঠিক ১টি সঠিক উত্তর নির্বাচন করুন।");
+    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.length > 4)) {
+      setError("MCQ-এর জন্য ২ থেকে ৪টি Option দিতে হবে। সঠিক উত্তর একাধিক বা অনির্ধারিত থাকতে পারে।");
       return;
     }
     const rawData = { ...editingData, options: normalizedOptions };
@@ -934,7 +947,7 @@ export default function QuestionImportPanel() {
                               <div key={index} className="flex items-center gap-2">
                                 <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
                                 <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1}`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
-                                <label className="flex items-center gap-1 text-xs text-slate-600"><input type="radio" name="correct-import-option" checked={option.isCorrect} onChange={() => setCorrectEditingOption(index)} /> Correct</label>
+                                <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={option.isCorrect} onChange={() => toggleCorrectEditingOption(index)} /> Correct</label>
                                 <button type="button" onClick={() => removeEditingOption(index)} aria-label="Remove option" className="rounded-md border border-red-200 px-2 py-2 text-red-600">×</button>
                               </div>
                             ))}
