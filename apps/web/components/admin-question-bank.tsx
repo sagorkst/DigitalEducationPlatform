@@ -539,6 +539,35 @@ export default function QuestionBankPage() {
     setBulkSuccess("");
   };
 
+  const invertCurrentPageSelection = () => {
+    const currentIds = filteredQuestions.map((question) => question.id);
+
+    if (allMatchingSelected) {
+      const nextExcluded = new Set(excludedQuestionIds);
+      currentIds.forEach((id) => {
+        if (nextExcluded.has(id)) nextExcluded.delete(id);
+        else nextExcluded.add(id);
+      });
+      setExcludedQuestionIds(Array.from(nextExcluded));
+    } else {
+      const currentSelectedIds = currentIds.filter((id) => selectedQuestionIds.includes(id));
+      const nextIds = selectedQuestionIds.filter((id) => !currentIds.includes(id));
+      const newlySelectedIds = currentIds.filter((id) => !selectedQuestionIds.includes(id));
+      const combinedIds = [...nextIds, ...newlySelectedIds];
+
+      if (combinedIds.length > 500) {
+        setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন নির্বাচন করা যাবে। কিছু নির্বাচন Clear করে আবার চেষ্টা করুন।");
+        setBulkSuccess("");
+        return;
+      }
+
+      setSelectedQuestionIds(combinedIds);
+    }
+
+    setBulkError("");
+    setBulkSuccess("");
+  };
+
   const applyBulkEdit = async (statusOverride?: string) => {
     if (!allMatchingSelected && selectedQuestionIds.length === 0) {
       setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
@@ -1618,257 +1647,8 @@ export default function QuestionBankPage() {
             </div>
           </section>
 
-          <aside aria-hidden="true" className="hidden min-h-full border-l border-slate-100 xl:block" />
-        </div>
-
-        {viewMode !== "single" && (
-          <Card>
-            <CardHeader>
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <CardTitle>
-                    {viewMode === "exam" ? "পরীক্ষাভিত্তিক প্রশ্ন" : "প্রতিষ্ঠানভিত্তিক প্রশ্ন"}
-                  </CardTitle>
-                  <p className="mt-1 text-sm text-slate-500">
-                    একটি নির্দিষ্ট Exam নির্বাচন করলে শুধু সেই Exam-এর প্রশ্ন লোড হবে।
-                  </p>
-                </div>
-                {selectedExamGroup && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => {
-                      setSelectedExamGroup(null);
-                      setSelected(null);
-                      setQuestions([]);
-                      setTotalQuestions(0);
-                    }}
-                  >
-                    ← Exam তালিকায় ফিরুন
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {!selectedExamGroup && viewMode === "institution" && (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {groupOptions.institutions.map((institution) => (
-                    <div
-                      key={institution.groupKey}
-                      className={`rounded-xl border p-4 transition ${
-                        selectedInstitutionKey === institution.groupKey
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 bg-white hover:border-blue-300"
-                      }`}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedInstitutionKey(institution.groupKey)}
-                        className="w-full text-left"
-                      >
-                        <p className="font-bold text-slate-900">{institution.name}</p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {institution.exams.length.toLocaleString("bn-BD")} টি Exam
-                        </p>
-                      </button>
-                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={bulkSaving}
-                          onClick={() => void trashQuestionsByScope(
-                            institution.name,
-                            { institution: institution.name },
-                          )}
-                          className="border-red-200 text-red-700 hover:bg-red-50"
-                        >
-                          প্রতিষ্ঠানের সব প্রশ্ন Trash
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setFilters({ ...initialFilters, institution: institution.name });
-                            setSearch("");
-                            setViewMode("single");
-                            setSelectedInstitutionKey(null);
-                            setSelectedExamGroup(null);
-                          }}
-                        >
-                          প্রশ্নগুলো দেখুন
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!selectedExamGroup && (
-                <div className="space-y-2">
-                  {(
-                    viewMode === "exam"
-                      ? groupOptions.exams
-                      : groupOptions.institutions.find(
-                          (item) => item.groupKey === selectedInstitutionKey,
-                        )?.exams ?? []
-                  ).map((group) => (
-                    <div
-                      key={group.groupKey}
-                      className="w-full rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-300"
-                    >
-                      <button
-                        type="button"
-                        onClick={() => void loadGroupQuestions(group)}
-                        className="w-full text-left"
-                      >
-                        <p className="font-bold text-slate-900">{group.examName}</p>
-                        <p className="mt-1 text-sm text-slate-500">
-                          {group.institutionName} · {group.examYear}
-                          {group.postName ? ` · ${group.postName}` : ""}                          {group.department ? ` · ${group.department}` : ""}                        </p>
-                      </button>
-                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">                        <Button
-                          type="button"
-                          size="sm"
-                          variant="outline"
-                          disabled={bulkSaving}
-                          onClick={() => void trashQuestionsByScope(
-                            `${group.institutionName} / ${group.examName} / ${group.examYear}`,
-                            {
-                              institution: group.institutionName,
-                              exam: group.examName,
-                              yearFrom: String(group.examYear),
-                              yearTo: String(group.examYear),
-                              ...(group.postName ? { post: group.postName } : {}),
-                            },
-                          )}
-                          className="border-red-200 text-red-700 hover:bg-red-50"
-                        >
-                          এই Exam-এর সব প্রশ্ন Trash
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          variant="ghost"
-                          onClick={() => {
-                            setFilters({
-                              ...initialFilters,
-                              institution: group.institutionName,
-                              exam: group.examName,
-                              from: String(group.examYear),
-                              to: String(group.examYear),
-                              ...(group.postName ? { post: group.postName } : {}),
-                            });
-                            setSearch("");
-                            setViewMode("single");
-                            setSelectedExamGroup(null);
-                          }}
-                        >
-                          প্রশ্নগুলো দেখুন
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {!selectedExamGroup &&
-                (viewMode === "exam" ? groupOptions.exams.length === 0 : groupOptions.institutions.length === 0) && (
-                  <p className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                    কোনো Exam group পাওয়া যায়নি।
-                  </p>
-                )}
-
-              {!selectedExamGroup &&
-                viewMode === "institution" &&
-                selectedInstitutionKey &&
-                (groupOptions.institutions.find(
-                  (item) => item.groupKey === selectedInstitutionKey,
-                )?.exams.length ?? 0) === 0 && (
-                  <p className="rounded-xl bg-slate-50 p-8 text-center text-slate-500">
-                    এই প্রতিষ্ঠানের কোনো Exam পাওয়া যায়নি।
-                  </p>
-                )}
-
-              {selectedExamGroup && (
-                <div className="rounded-xl bg-blue-50 p-4">
-                  <p className="font-bold text-blue-900">
-                    {selectedExamGroup.institutionName} — {selectedExamGroup.examName}
-                  </p>
-                  <p className="mt-1 text-sm text-blue-800">
-                    {selectedExamGroup.examYear}
-                    {selectedExamGroup.postName ? ` · ${selectedExamGroup.postName}` : ""}
-                    {selectedExamGroup.department ? ` · ${selectedExamGroup.department}` : ""}
-                    {" · "}
-                    {totalQuestions.toLocaleString("bn-BD")} টি প্রশ্ন
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-
-        {!showTrash && viewMode === "single" && (
-          <section className="w-full rounded-lg border border-emerald-200 bg-white shadow-sm">
-            <div className="space-y-2 p-2.5">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <Button type="button" size="sm" variant="outline" className="h-8 rounded-md px-2.5 text-xs"
-                  onClick={toggleCurrentPageSelection}
-                  disabled={loading || filteredQuestions.length === 0 || bulkSaving || allMatchingSelected}>
-                  {filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))
-                    ? "বর্তমান পৃষ্ঠা Clear" : "বর্তমান পৃষ্ঠা Select"}
-                </Button>
-                <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-8 rounded-md px-2.5 text-xs"
-                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                  disabled={loading || totalQuestions === 0 || bulkSaving}>
-                  {allMatchingSelected ? "সব Filtered নির্বাচিত" : `সব Filtered Select (${totalQuestions.toLocaleString("bn-BD")})`}
-                </Button>
-                <span className="rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
-                  নির্বাচিত: {bulkSelectionCount.toLocaleString("bn-BD")}{allMatchingSelected ? ` / ${totalQuestions.toLocaleString("bn-BD")}` : ""}
-                </span>
-                {allMatchingSelected && excludedQuestionIds.length > 0 && (
-                  <span className="text-xs font-semibold text-amber-700">বাদ: {excludedQuestionIds.length.toLocaleString("bn-BD")}টি</span>
-                )}
-                <Button type="button" size="sm" variant="ghost" className="h-8 rounded-md px-2 text-xs"
-                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                  disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>✕ Clear</Button>
-              </div>
-              <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(145px,0.8fr)_minmax(145px,0.8fr)_auto_auto_auto_auto]">
-                <Select label="Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-9 rounded-md px-2 py-1 text-xs">
-                  <option value="">পরিবর্তন নয়</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
-                </Select>
-                <Select label="Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-9 rounded-md px-2 py-1 text-xs">
-                  <option value="">পরিবর্তন নয়</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                </Select>
-                <Button type="button" size="sm" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit()}
-                  disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>{bulkSaving ? "Processing..." : "Apply Changes"}</Button>
-                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit("PUBLISHED")}
-                  disabled={bulkSaving || bulkSelectionCount === 0}>Publish Selected</Button>
-                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit("DRAFT")}
-                  disabled={bulkSaving || bulkSelectionCount === 0}>Save as Draft</Button>
-                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-red-300 px-3 text-xs font-bold text-red-700 hover:bg-red-50"
-                  onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>Move to Trash</Button>
-              </div>
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
-                <div className="min-w-0 text-xs text-slate-600">
-                  {bulkSelectionCount > 0
-                    ? <><strong className="text-slate-800">Preview:</strong> {bulkSelectionCount.toLocaleString("bn-BD")}টি প্রশ্ন · {bulkChangeSummary || "পরিবর্তন নির্বাচন করা হয়নি"}</>
-                    : "প্রশ্ন Select করুন অথবা সব Filtered Select করুন।"}
-                </div>
-                <Button type="button" size="sm" variant="outline" className="h-8 rounded-md border-amber-300 px-2.5 text-xs font-bold text-amber-800 hover:bg-amber-50"
-                  onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
-                  Publish All Drafts ({draftCount.toLocaleString("bn-BD")})
-                </Button>
-              </div>
-              {bulkError && <p role="alert" className="rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-700">{bulkError}</p>}
-              {bulkSuccess && <p role="status" className="rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-800">{bulkSuccess}</p>}
-            </div>
-          </section>
-        )}
-
-        {(viewMode === "single" || selectedExamGroup) && (
+          <aside className="min-w-0 border-t border-slate-100 p-3 sm:p-4 xl:border-l xl:border-t-0">
+            {(viewMode === "single" || selectedExamGroup) && (
         <Card className="border-slate-200 shadow-sm">
           <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3">
             <div>
