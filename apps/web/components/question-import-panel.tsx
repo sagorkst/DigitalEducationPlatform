@@ -1217,7 +1217,7 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
-                                  {raw.htmlImportMetadata &&
+                                  {Boolean(raw.htmlImportMetadata) &&
                                     typeof raw.htmlImportMetadata === "object" &&
                                     typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
                                       <p className="mb-1 text-[10px] font-semibold text-blue-700">
