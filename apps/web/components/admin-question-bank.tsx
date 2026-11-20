@@ -2008,7 +2008,6 @@ export default function QuestionBankPage() {
             </CardContent>
           </Card>
         )}
-        </div>
 
         {(viewMode === "single" || selectedExamGroup) && (
         <Card className="border-slate-200 shadow-sm">
