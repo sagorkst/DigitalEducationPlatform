@@ -1516,147 +1516,108 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 gap-x-4 gap-y-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm xl:grid-cols-[minmax(0,1fr)_minmax(0,1.12fr)]">
+        <div className="grid min-w-0 grid-cols-1 gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-sm xl:grid-cols-[minmax(0,5fr)_minmax(180px,1fr)]">
           <section className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <button
                 type="button"
                 onClick={() => setManagementWorkspaceOpen((open) => !open)}
                 aria-expanded={managementWorkspaceOpen}
-                className="inline-flex shrink-0 items-center justify-start gap-1 rounded-lg px-1.5 py-1.5 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+                className="inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-1 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
               >
-                <span className="flex items-center gap-1 whitespace-nowrap text-base font-black leading-tight text-slate-900 sm:text-lg">
-                  <span className="text-xl text-slate-700">▦</span>
-                  <span>Management Workspace</span>
-                </span>
-                <span className="flex h-6 w-6 items-center justify-center rounded-md text-slate-500" aria-hidden="true">
-                  {managementWorkspaceOpen ? "⌃" : "⌄"}
-                </span>
+                <span className="whitespace-nowrap text-base font-black leading-tight text-slate-900"><span className="text-lg text-slate-700">▦</span> Management Workspace</span>
+                <span className="text-sm font-bold text-slate-500" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
               </button>
-              <div className="relative min-w-0 flex-1 [&_input]:h-10 [&_input]:min-w-0 [&_input]:rounded-md [&_input]:pl-9 [&_input]:text-sm [&_input]:leading-normal">
-                <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-lg text-slate-400" aria-hidden="true">⌕</span>
-                <Input
-                  placeholder="প্রশ্ন / Keyword / Exam Search..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                />
+              <div className="relative min-w-0 flex-1">
+                <span className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-base text-slate-400" aria-hidden="true">⌕</span>
+                <Input placeholder="প্রশ্ন / Keyword / Exam Search..." value={search} onChange={(e) => setSearch(e.target.value)}
+                  className="h-9 min-w-0 rounded-md pl-8 text-sm" />
               </div>
             </div>
 
             {managementWorkspaceOpen && (
-              <div className="mt-2 grid w-full grid-cols-2 justify-start gap-x-3 gap-y-1.5 border-t border-slate-100 pt-2">
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
-                  <span className="shrink-0 text-2xl leading-none">▰</span>
-                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">সকল প্রশ্ন</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalQuestions.toLocaleString("bn-BD")} )</strong></span>
+              <div className="mt-2 grid w-full grid-cols-2 gap-1.5 border-t border-slate-100 pt-2 sm:grid-cols-3 2xl:grid-cols-4">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }}
+                  className={`flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border px-2 text-left transition hover:border-blue-300 hover:bg-blue-50 ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-blue-50/40"}`}>
+                  <span className="text-xl leading-none">▰</span><span className="truncate text-sm font-extrabold text-slate-900">সকল প্রশ্ন</span>
+                  <strong className="text-sm font-black text-slate-900">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
                 </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
-                  <span className="shrink-0 text-2xl leading-none">🏛️</span>
-                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">প্রতিষ্ঠান</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalInstitutions.toLocaleString("bn-BD")} )</strong></span>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
+                  className={`flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border px-2 text-left transition hover:border-emerald-300 hover:bg-emerald-50 ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-emerald-50/40"}`}>
+                  <span className="text-xl leading-none">🏛️</span><span className="truncate text-sm font-extrabold text-slate-900">প্রতিষ্ঠান</span>
+                  <strong className="text-sm font-black text-slate-900">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong>
                 </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
-                  <span className="shrink-0 text-2xl leading-none">📋</span>
-                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">Exam</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalExams.toLocaleString("bn-BD")} )</strong></span>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
+                  className={`flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border px-2 text-left transition hover:border-orange-300 hover:bg-orange-50 ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-orange-50/40"}`}>
+                  <span className="text-xl leading-none">📋</span><span className="truncate text-sm font-extrabold text-slate-900">Exam</span>
+                  <strong className="text-sm font-black text-slate-900">{globalStats.totalExams.toLocaleString("bn-BD")}</strong>
                 </button>
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
-                  <span className="shrink-0 text-2xl leading-none">📖</span>
-                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">বিষয়</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalSubjects.toLocaleString("bn-BD")} )</strong></span>
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
+                  className="flex h-10 min-w-0 items-center justify-center gap-2 rounded-md border border-slate-200 bg-violet-50/40 px-2 text-left transition hover:border-violet-300 hover:bg-violet-50">
+                  <span className="text-xl leading-none">📖</span><span className="truncate text-sm font-extrabold text-slate-900">বিষয়</span>
+                  <strong className="text-sm font-black text-slate-900">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
                 </button>
+
+                <div className="flex h-10 min-w-0 items-center justify-center">
+                  <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-9 w-full rounded-md px-2 text-xs font-bold">↻ Reset Filter</Button>
+                </div>
+                <div className="flex h-10 min-w-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50/70 p-1">
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">Year</span>
+                  <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                  </Select>
+                  <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                  </Select>
+                </div>
+
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.institution ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">প্রতিষ্ঠান</span>
+                  <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.exam ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">পরীক্ষা</span>
+                  <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.post ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">পদ</span>
+                  <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.subject ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">বিষয়</span>
+                  <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.topic ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">টপিক</span>
+                  <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`flex h-10 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.status ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                  <span className="shrink-0 text-[11px] font-bold text-slate-700">Status</span>
+                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-8 min-w-0 flex-1 rounded px-1 text-xs">
+                    <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                  </Select>
+                </div>
               </div>
             )}
 
-            <div className="mt-2 flex min-h-7 flex-wrap items-center justify-start gap-1.5 border-t border-slate-100 pt-1.5 text-sm font-semibold text-slate-700">
-              <span>পাওয়া গেছে:</span>
-              <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong>
-              <span>টি প্রশ্ন</span>
+            <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-slate-100 pt-1.5 text-xs font-semibold text-slate-700">
+              <span>পাওয়া গেছে:</span><strong className="text-sm font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong><span>টি প্রশ্ন</span>
             </div>
           </section>
 
-          {managementWorkspaceOpen && (
-            <section className="flex min-w-0 items-center border-t border-slate-200 pt-3 xl:border-l xl:border-t-0 xl:py-1 xl:pl-4">
-              <div className="grid w-full grid-cols-3 items-center justify-items-stretch gap-2 [&>div]:min-w-0">
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year From:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">Start Year</option>
-                      {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.to ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year To:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">End Year</option>
-                      {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className="flex h-12 min-w-0 items-center justify-center">
-                  <Button variant="outline" size="sm" onClick={resetFilters} className="h-12 w-full min-w-0 rounded-md px-2 text-xs font-extrabold leading-normal whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700">
-                    ↻ Reset Filter
-                  </Button>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.institution ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">প্রতিষ্ঠান:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      {filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.exam ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পরীক্ষা:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      {filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.post ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পদ:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      {filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.subject ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">বিষয়:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      {filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.topic ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">টপিক:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      {filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                </div>
-                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Status:</span>
-                  <div className="min-w-0 flex-1">
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
-                      <option value="">All</option>
-                      <option value="DRAFT">Draft</option>
-                      <option value="PUBLISHED">Published</option>
-                      <option value="HIDDEN">Hidden</option>
-                      <option value="ARCHIVED">Archived</option>
-                    </Select>
-                  </div>
-                </div>
-              </div>
-            </section>
-          )}
+          <aside className="flex min-h-0 items-start justify-start border-t border-slate-200 pt-2 xl:items-center xl:justify-center xl:border-l xl:border-t-0 xl:pt-0 xl:pl-2">
+            <h2 className="whitespace-nowrap text-lg font-black text-emerald-800">⚡ Bulk Action Center</h2>
+          </aside>
         </div>
 
         {viewMode !== "single" && (
@@ -1850,10 +1811,6 @@ export default function QuestionBankPage() {
 
         {!showTrash && viewMode === "single" && (
           <section className="w-full rounded-lg border border-emerald-200 bg-white shadow-sm">
-            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2">
-              <h2 className="text-base font-extrabold leading-tight text-slate-900">⚡ Bulk Action Center</h2>
-              <span className="text-xs font-semibold text-slate-600">একসঙ্গে প্রশ্ন নির্বাচন, সম্পাদনা ও Trash</span>
-            </div>
             <div className="space-y-2 p-2.5">
               <div className="flex flex-wrap items-center gap-1.5">
                 <Button type="button" size="sm" variant="outline" className="h-8 rounded-md px-2.5 text-xs"
