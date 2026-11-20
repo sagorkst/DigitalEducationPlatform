@@ -40,9 +40,9 @@ export default function QuestionImportTemplates() {
             <path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
         </span>
-        <span className="min-w-0 flex-1">
-          <span className="block truncate text-[11px] font-bold text-slate-900">Import Templates</span>
-          <span className="block truncate text-[9px] text-slate-500">Excel ও CSV টেমপ্লেট</span>
+        <span className="flex min-w-0 flex-col text-base font-extrabold leading-tight text-slate-900">
+          <span>Template</span>
+          <span>Download</span>
         </span>
         <svg viewBox="0 0 24 24" fill="none" className="hidden h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180">
           <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
