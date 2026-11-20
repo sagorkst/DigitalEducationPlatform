@@ -328,14 +328,14 @@ export default function QuestionImportHistory() {
       <button
         type="button"
         onClick={openHistory}
-        className="flex min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-slate-900 transition hover:bg-blue-50/50"
+        className="flex h-10 w-full min-w-0 items-center justify-start gap-2 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-blue-50"
       >
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M12 8v5l3 2M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4"><path d="M12 8v5l3 2M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-bold">Import History</span>
-          <span className="mt-0.5 block text-xs font-normal text-slate-500">পূর্ববর্তী Import দেখুন</span>
+          <span className="block truncate text-[11px] font-bold">Import History</span>
+          <span className="mt-0.5 block truncate text-[9px] font-normal text-slate-500">পূর্ববর্তী Import দেখুন</span>
         </span>
       </button>
 
