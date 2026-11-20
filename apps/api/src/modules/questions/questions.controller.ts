@@ -65,6 +65,22 @@ export class QuestionsController {
     return this.questionsBulkService.bulkSoftDeleteFiltered(dto);
   }
 
+  // PERMANENTLY DELETE SELECTED QUESTIONS WITHOUT TRASH.
+  @Post('bulk/permanent-delete')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkPermanentDelete(@Body() dto: BulkDeleteQuestionsDto) {
+    return this.questionsBulkService.bulkPermanentDelete(dto.ids);
+  }
+
+  // PERMANENTLY DELETE ALL FILTERED QUESTIONS WITHOUT TRASH.
+  @Post('bulk/permanent-delete-filtered')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.OK)
+  async bulkPermanentDeleteFiltered(@Body() dto: BulkFilteredQuestionsDto) {
+    return this.questionsBulkService.bulkPermanentDeleteFiltered(dto);
+  }
+
   // PUBLISH ALL ACTIVE DRAFT QUESTIONS
   @Post('bulk/publish-drafts')
   @RequirePermissions('content.manage')
