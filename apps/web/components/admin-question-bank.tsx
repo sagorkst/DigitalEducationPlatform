@@ -1152,7 +1152,7 @@ export default function QuestionBankPage() {
               <div className="min-w-0">
                 <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
                 <h1 className="mt-0.5 whitespace-nowrap text-lg font-black leading-tight tracking-tight text-slate-950 xl:text-xl">Question Bank Control Center</h1>
-                <p className="mt-1 text-sm font-medium text-slate-600">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
+                <p className="mt-1 text-base font-semibold text-slate-600">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
               </div>
             </div>
             <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-4">
