@@ -1763,7 +1763,7 @@ export default function QuestionBankPage() {
                     {bulkSuccess && <p role="status" className="text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
                   </div>
                 )}
-              </section>              </section>
+              </section>
             )}
           </aside>
         </div>
