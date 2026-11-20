@@ -1202,7 +1202,7 @@ export default function QuestionBankPage() {
             },
           ].map((item) => (
             <Card key={item.label} className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm">
-              <CardContent className="flex items-center gap-3 py-4">
+              <CardContent className="flex min-h-[120px] items-center justify-center gap-3 py-4">
                 <div className="rounded-2xl bg-blue-100/80 p-3 text-2xl shadow-inner">
                   {item.icon}
                 </div>
