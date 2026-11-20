@@ -214,6 +214,7 @@ export default function QuestionBankPage() {
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [allMatchingSelected, setAllMatchingSelected] = useState(false);
+  const [excludedQuestionIds, setExcludedQuestionIds] = useState<string[]>([]);
   const [tableDensity, setTableDensity] = useState<"compact" | "ultra">("compact");
   const [bulkDifficulty, setBulkDifficulty] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
@@ -486,6 +487,7 @@ export default function QuestionBankPage() {
   useEffect(() => {
     setSelectedQuestionIds([]);
     setAllMatchingSelected(false);
+    setExcludedQuestionIds([]);
   }, [search, filters]);
 
   const currentFilterPayload = () => ({
@@ -499,6 +501,14 @@ export default function QuestionBankPage() {
     topic: filters.topic || undefined,
     status: filters.status ? filters.status.toUpperCase() : undefined,
   });
+
+  const bulkSelectionCount = allMatchingSelected
+    ? Math.max(0, totalQuestions - excludedQuestionIds.length)
+    : selectedQuestionIds.length;
+  const bulkChangeSummary = [
+    bulkDifficulty ? `Difficulty: ${bulkDifficulty}` : "",
+    bulkStatus ? `Status: ${bulkStatus}` : "",
+  ].filter(Boolean).join(" · ");
 
   const toggleCurrentPageSelection = () => {
     setAllMatchingSelected(false);
@@ -529,7 +539,7 @@ export default function QuestionBankPage() {
     setBulkSuccess("");
   };
 
-  const applyBulkEdit = async () => {
+  const applyBulkEdit = async (statusOverride?: string) => {
     if (!allMatchingSelected && selectedQuestionIds.length === 0) {
       setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
       return;
@@ -543,7 +553,7 @@ export default function QuestionBankPage() {
     const updates: Record<string, string> = {};
 
     if (bulkDifficulty) updates.difficulty = bulkDifficulty;
-    if (bulkStatus) updates.status = bulkStatus;
+    if (bulkStatus || statusOverride) updates.status = statusOverride || bulkStatus;
 
     if (Object.keys(updates).length === 0) {
       setBulkError("পরিবর্তনের জন্য Difficulty অথবা Status নির্বাচন করুন।");
@@ -551,7 +561,7 @@ export default function QuestionBankPage() {
     }
 
     if (!window.confirm(
-      `${allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
+      `${allMatchingSelected ? totalQuestions - excludedQuestionIds.length : selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
     )) {
       return;
     }
@@ -565,7 +575,7 @@ export default function QuestionBankPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(allMatchingSelected
-          ? { filters: currentFilterPayload(), updates: { ...updates, changeNote: "Bulk update across all filtered questions." } }
+          ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds, updates: { ...updates, changeNote: "Bulk update across all filtered questions." } }
           : { ids: selectedQuestionIds, updates: { ...updates, changeNote: "Bulk update from Question Bank management." } }),
       });
 
@@ -580,6 +590,7 @@ export default function QuestionBankPage() {
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে পরিবর্তন হয়েছে।`);
       setSelectedQuestionIds([]);
       setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
       setBulkDifficulty("");
       setBulkStatus("");
 
@@ -604,7 +615,7 @@ export default function QuestionBankPage() {
     }
 
     if (!window.confirm(
-      `আপনি কি ${allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি matching প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
+      `আপনি কি ${allMatchingSelected ? totalQuestions - excludedQuestionIds.length : selectedQuestionIds.length}টি matching প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
     )) {
       return;
     }
@@ -619,7 +630,7 @@ export default function QuestionBankPage() {
       const response = await fetch(allMatchingSelected ? "/api/questions/bulk/delete-filtered" : "/api/questions/bulk/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(allMatchingSelected ? { filters: currentFilterPayload() } : { ids: idsToDelete }),
+        body: JSON.stringify(allMatchingSelected ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds } : { ids: idsToDelete }),
       });
 
       const result = await response.json();
@@ -633,6 +644,7 @@ export default function QuestionBankPage() {
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে Trash-এ পাঠানো হয়েছে।`);
       setSelectedQuestionIds([]);
       setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
 
       if (allMatchingSelected || (selected && idsToDelete.includes(selected))) {
         setSelected(null);
@@ -1532,27 +1544,27 @@ export default function QuestionBankPage() {
             </div>
 
             {managementWorkspaceOpen && (
-              <div className="mt-3 grid w-full grid-cols-2 justify-start gap-x-5 gap-y-2 border-t border-slate-100 pt-3">
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-14 w-full max-w-none min-w-0 items-center justify-start gap-4 rounded-lg border px-4 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
-                  <span className="shrink-0 text-3xl leading-none">▰</span>
-                  <span className="flex min-w-0 items-center gap-4 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">সকল প্রশ্ন</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalQuestions.toLocaleString("bn-BD")} )</strong></span>
+              <div className="mt-2 grid w-full grid-cols-2 justify-start gap-x-3 gap-y-1.5 border-t border-slate-100 pt-2">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
+                  <span className="shrink-0 text-2xl leading-none">▰</span>
+                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">সকল প্রশ্ন</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalQuestions.toLocaleString("bn-BD")} )</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-14 w-full max-w-none min-w-0 items-center justify-start gap-4 rounded-lg border px-4 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
-                  <span className="shrink-0 text-3xl leading-none">🏛️</span>
-                  <span className="flex min-w-0 items-center gap-4 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">প্রতিষ্ঠান</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalInstitutions.toLocaleString("bn-BD")} )</strong></span>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
+                  <span className="shrink-0 text-2xl leading-none">🏛️</span>
+                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">প্রতিষ্ঠান</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalInstitutions.toLocaleString("bn-BD")} )</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-14 w-full max-w-none min-w-0 items-center justify-start gap-4 rounded-lg border px-4 py-2 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
-                  <span className="shrink-0 text-3xl leading-none">📋</span>
-                  <span className="flex min-w-0 items-center gap-4 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">Exam</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalExams.toLocaleString("bn-BD")} )</strong></span>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
+                  <span className="shrink-0 text-2xl leading-none">📋</span>
+                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">Exam</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalExams.toLocaleString("bn-BD")} )</strong></span>
                 </button>
                 <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-14 w-full max-w-none min-w-0 items-center justify-start gap-4 rounded-lg border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-4 py-2 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
-                  <span className="shrink-0 text-3xl leading-none">📖</span>
-                  <span className="flex min-w-0 items-center gap-4 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">বিষয়</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalSubjects.toLocaleString("bn-BD")} )</strong></span>
+                  <span className="shrink-0 text-2xl leading-none">📖</span>
+                  <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">বিষয়</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalSubjects.toLocaleString("bn-BD")} )</strong></span>
                 </button>
               </div>
             )}
 
-            <div className="mt-3 flex min-h-8 flex-wrap items-center justify-start gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
+            <div className="mt-2 flex min-h-7 flex-wrap items-center justify-start gap-1.5 border-t border-slate-100 pt-1.5 text-sm font-semibold text-slate-700">
               <span>পাওয়া গেছে:</span>
               <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong>
               <span>টি প্রশ্ন</span>
@@ -1562,78 +1574,78 @@ export default function QuestionBankPage() {
           {managementWorkspaceOpen && (
             <section className="flex min-w-0 items-center border-t border-slate-200 pt-3 xl:border-l xl:border-t-0 xl:py-1 xl:pl-4">
               <div className="grid w-full grid-cols-3 items-center justify-items-stretch gap-3 [&>div]:min-w-0">
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year From:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">Start Year</option>
                       {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.to ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.to ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year To:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">End Year</option>
                       {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className="flex h-16 min-w-0 items-center justify-center">
-                  <Button variant="outline" size="sm" onClick={resetFilters} className="h-16 w-full min-w-0 rounded-lg px-3 text-sm font-extrabold leading-normal whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700">
+                <div className="flex h-12 min-w-0 items-center justify-center">
+                  <Button variant="outline" size="sm" onClick={resetFilters} className="h-12 w-full min-w-0 rounded-md px-2 text-xs font-extrabold leading-normal whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700">
                     ↻ Reset Filter
                   </Button>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.institution ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.institution ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">প্রতিষ্ঠান:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       {filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.exam ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.exam ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পরীক্ষা:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       {filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.post ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.post ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পদ:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       {filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.subject ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.subject ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">বিষয়:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       {filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.topic ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.topic ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">টপিক:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       {filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
+                <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Status:</span>
                   <div className="min-w-0 flex-1">
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
+                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs font-bold leading-normal">
                       <option value="">All</option>
                       <option value="DRAFT">Draft</option>
                       <option value="PUBLISHED">Published</option>
@@ -1835,135 +1847,67 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        {true && (
-          <Card className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 to-white shadow-sm">
-            <CardHeader className="pb-2">
-              <CardTitle>⚡ Bulk Action Center</CardTitle>
-              <p className="text-sm text-slate-500">
-                একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-3 pt-0">
-              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/90 p-3">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
+
+        {!showTrash && viewMode === "single" && (
+          <section className="w-full rounded-lg border border-emerald-200 bg-white shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-emerald-100 bg-emerald-50/70 px-3 py-2">
+              <h2 className="text-base font-extrabold leading-tight text-slate-900">⚡ Bulk Action Center</h2>
+              <span className="text-xs font-semibold text-slate-600">একসঙ্গে প্রশ্ন নির্বাচন, সম্পাদনা ও Trash</span>
+            </div>
+            <div className="space-y-2 p-2.5">
+              <div className="flex flex-wrap items-center gap-1.5">
+                <Button type="button" size="sm" variant="outline" className="h-8 rounded-md px-2.5 text-xs"
                   onClick={toggleCurrentPageSelection}
-                  disabled={loading || filteredQuestions.length === 0 || bulkSaving}
-                >
-                  {filteredQuestions.length > 0 &&
-                  filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))
-                    ? "বর্তমান তালিকার নির্বাচন বাতিল"
-                    : "বর্তমান তালিকার সব নির্বাচন"}
+                  disabled={loading || filteredQuestions.length === 0 || bulkSaving || allMatchingSelected}>
+                  {filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))
+                    ? "বর্তমান পৃষ্ঠা Clear" : "বর্তমান পৃষ্ঠা Select"}
                 </Button>
-
-                <span className="text-sm text-slate-600">
-                  নির্বাচিত: {allMatchingSelected ? totalQuestions : selectedQuestionIds.length}টি {allMatchingSelected ? "(সব Filtered)" : ""}
+                <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-8 rounded-md px-2.5 text-xs"
+                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                  disabled={loading || totalQuestions === 0 || bulkSaving}>
+                  {allMatchingSelected ? "সব Filtered নির্বাচিত" : `সব Filtered Select (${totalQuestions.toLocaleString("bn-BD")})`}
+                </Button>
+                <span className="rounded-md bg-blue-50 px-2.5 py-1.5 text-xs font-bold text-blue-800">
+                  নির্বাচিত: {bulkSelectionCount.toLocaleString("bn-BD")}{allMatchingSelected ? ` / ${totalQuestions.toLocaleString("bn-BD")}` : ""}
                 </span>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setBulkError(""); setBulkSuccess(""); }}
-                  disabled={loading || totalQuestions === 0 || bulkSaving || viewMode !== "single"}
-                >
-                  সব Filtered প্রশ্ন নির্বাচন ({totalQuestions.toLocaleString("bn-BD")})
-                </Button>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedQuestionIds([]);
-                    setAllMatchingSelected(false);
-                    setBulkError("");
-                    setBulkSuccess("");
-                  }}
-                  disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}
-                >
-                  Selection Clear
-                </Button>
+                {allMatchingSelected && excludedQuestionIds.length > 0 && (
+                  <span className="text-xs font-semibold text-amber-700">বাদ: {excludedQuestionIds.length.toLocaleString("bn-BD")}টি</span>
+                )}
+                <Button type="button" size="sm" variant="ghost" className="h-8 rounded-md px-2 text-xs"
+                  onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                  disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>✕ Clear</Button>
               </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Select
-                  label="Bulk Difficulty"
-                  value={bulkDifficulty}
-                  onChange={(e) => setBulkDifficulty(e.target.value)}
-                  disabled={bulkSaving}
-                >
-                  <option value="">পরিবর্তন করবেন না</option>
-                  <option value="EASY">Easy</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HARD">Hard</option>
+              <div className="grid grid-cols-1 items-end gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(145px,0.8fr)_minmax(145px,0.8fr)_auto_auto_auto_auto]">
+                <Select label="Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-9 rounded-md px-2 py-1 text-xs">
+                  <option value="">পরিবর্তন নয়</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
                 </Select>
-
-                <Select
-                  label="Bulk Status"
-                  value={bulkStatus}
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                  disabled={bulkSaving}
-                >
-                  <option value="">পরিবর্তন করবেন না</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="HIDDEN">Hidden</option>
-                  <option value="ARCHIVED">Archived</option>
+                <Select label="Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-9 rounded-md px-2 py-1 text-xs">
+                  <option value="">পরিবর্তন নয়</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                 </Select>
+                <Button type="button" size="sm" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit()}
+                  disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>{bulkSaving ? "Processing..." : "Apply Changes"}</Button>
+                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit("PUBLISHED")}
+                  disabled={bulkSaving || bulkSelectionCount === 0}>Publish Selected</Button>
+                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md px-3 text-xs font-bold" onClick={() => void applyBulkEdit("DRAFT")}
+                  disabled={bulkSaving || bulkSelectionCount === 0}>Save as Draft</Button>
+                <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-red-300 px-3 text-xs font-bold text-red-700 hover:bg-red-50"
+                  onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>Move to Trash</Button>
               </div>
-
-              <div className="flex flex-wrap items-center gap-2 border-t border-emerald-100 pt-3">
-                <Button
-                  type="button"
-                  onClick={() => void applyBulkEdit()}
-                  disabled={bulkSaving || (selectedQuestionIds.length === 0 && !allMatchingSelected)}
-                >
-                  {bulkSaving ? "Processing..." : "Apply Bulk Edit"}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void bulkDeleteQuestions()}
-                  disabled={bulkSaving || (selectedQuestionIds.length === 0 && !allMatchingSelected)}
-                  className="border-red-300 text-red-700 hover:bg-red-50"
-                >
-                  {bulkSaving ? "Processing..." : "নির্বাচিত প্রশ্ন Trash-এ পাঠান"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void publishAllDrafts()}
-                  disabled={bulkSaving || draftCount === 0}
-                >
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                <div className="min-w-0 text-xs text-slate-600">
+                  {bulkSelectionCount > 0
+                    ? <><strong className="text-slate-800">Preview:</strong> {bulkSelectionCount.toLocaleString("bn-BD")}টি প্রশ্ন · {bulkChangeSummary || "পরিবর্তন নির্বাচন করা হয়নি"}</>
+                    : "প্রশ্ন Select করুন অথবা সব Filtered Select করুন।"}
+                </div>
+                <Button type="button" size="sm" variant="outline" className="h-8 rounded-md border-amber-300 px-2.5 text-xs font-bold text-amber-800 hover:bg-amber-50"
+                  onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
                   Publish All Drafts ({draftCount.toLocaleString("bn-BD")})
                 </Button>
               </div>
-
-              {bulkError && (
-                <p role="alert" className="text-sm text-red-600">
-                  {bulkError}
-                </p>
-              )}
-
-              {bulkSuccess && (
-                <p role="status" className="text-sm text-green-700">
-                  {bulkSuccess}
-                </p>
-              )}
-
-              <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-xs text-slate-700">
-                <strong className="block text-sm text-blue-900">প্রতিষ্ঠান বা Exam ধরে একসঙ্গে Delete করার নিয়ম</strong>
-                Advanced Search-এ প্রতিষ্ঠান এবং পরীক্ষার নাম নির্বাচন করুন → “সব Filtered প্রশ্ন নির্বাচন” চাপুন → “নির্বাচিত প্রশ্ন Trash-এ পাঠান” চাপুন। শুধু ওই Filter-এর সঙ্গে মেলা সব প্রশ্ন Trash-এ যাবে। সব প্রশ্নের জন্য Reset Filters করে Search খালি রেখে একই কাজ করুন।
-              </div>
-              <p className="text-xs text-slate-500">
-                “সব Filtered প্রশ্ন নির্বাচন” বর্তমান পৃষ্ঠা নয়, সক্রিয় Filter/Search-এর সব matching প্রশ্ন server-side-এ নির্বাচন করে। নির্দিষ্ট প্রশ্নগুলো Trash-এ যায়; পরে Recover করা যায়। Publish All Drafts শুধু সব active Draft প্রশ্নে কাজ করে।
-              </p>
-            </CardContent>
-          </Card>
+              {bulkError && <p role="alert" className="rounded-md bg-red-50 px-2.5 py-1.5 text-xs text-red-700">{bulkError}</p>}
+              {bulkSuccess && <p role="status" className="rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs text-emerald-800">{bulkSuccess}</p>}
+            </div>
+          </section>
         )}
 
         {(viewMode === "single" || selectedExamGroup) && (
@@ -1998,7 +1942,7 @@ export default function QuestionBankPage() {
                   <tbody className="divide-y divide-slate-100">
                     {filteredQuestions.map((q, index) => (
                       <tr key={q.id} className={`transition hover:bg-blue-50/50 ${allMatchingSelected || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
-                        <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected || selectedQuestionIds.includes(q.id)} disabled={bulkSaving || allMatchingSelected} onChange={() => { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
+                        <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected ? !excludedQuestionIds.includes(q.id) : selectedQuestionIds.includes(q.id)} disabled={bulkSaving} onChange={() => { if (allMatchingSelected) { setExcludedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : [...previous, q.id]); } else { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); } setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
                         <td className="px-3 py-2 font-semibold text-slate-500">{((currentPage - 1) * 25 + index + 1).toLocaleString("bn-BD")}</td>
                         <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question}</button><p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
                         <td className="px-3 py-2 text-slate-700">{q.institution || "—"}</td><td className="px-3 py-2 text-slate-700">{q.exam || "—"}{q.year ? <span className="block text-[11px] text-slate-400">{q.year}</span> : null}</td><td className="px-3 py-2 text-slate-700">{q.subject || "—"}</td><td className="px-3 py-2 text-slate-700">{q.post || "—"}</td>
@@ -2016,7 +1960,7 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="mt-2 flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5">
             {hasMore && (
               <Button
                 type="button"
