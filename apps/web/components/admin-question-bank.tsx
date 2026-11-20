@@ -1170,7 +1170,7 @@ export default function QuestionBankPage() {
                 </div>
                 <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">QUICK TOOLS</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 2xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
                 {!showTrash && (
                   <>
                     <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-emerald-200 bg-emerald-50/40 px-2 py-1.5 transition hover:bg-emerald-50">
