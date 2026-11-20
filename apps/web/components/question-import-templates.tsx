@@ -33,7 +33,7 @@ export default function QuestionImportTemplates() {
 
   return (
     <details ref={menuRef} className="group relative h-full w-full overflow-visible">
-      <summary className="flex h-full w-full cursor-pointer list-none flex-col items-center justify-start gap-2 rounded-md bg-transparent px-1 pt-3 text-center text-slate-800 outline-none transition-colors hover:bg-violet-100/80 focus:outline-none focus-visible:outline-none focus-visible:ring-0 [&::-webkit-details-marker]:hidden">
+      <summary className="flex h-full w-full cursor-pointer list-none flex-col items-center justify-center gap-2 rounded-md bg-transparent px-1 text-center text-slate-800 outline-none transition-colors hover:bg-violet-100/80 focus:outline-none focus-visible:outline-none focus-visible:ring-0 [&::-webkit-details-marker]:hidden">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center text-violet-700">
           <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7">
             <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
