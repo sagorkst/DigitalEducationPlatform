@@ -597,8 +597,7 @@ export default function QuestionBankPage() {
 
   const bulkDeleteQuestions = async () => {
     if (!allMatchingSelected && selectedQuestionIds.length === 0) {
-      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
-      return;
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");      return;
     }
 
     if (!allMatchingSelected && selectedQuestionIds.length > 500) {
@@ -1197,8 +1196,7 @@ export default function QuestionBankPage() {
                 <p className="mt-1 text-base font-semibold text-slate-600">Manage all questions</p>
               </div>
             </div>
-            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">
-              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
+            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
                 <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>
               </div>
               <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
@@ -1551,7 +1549,7 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm md:p-3 xl:grid-cols-[1.1fr_0.9fr]">
+        <div className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm md:p-3 xl:grid-cols-[0.9fr_1.1fr]">
           <section className="min-w-0">
             <button
               type="button"
@@ -1568,7 +1566,7 @@ export default function QuestionBankPage() {
               </span>
             </button>
             {managementWorkspaceOpen && (
-              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-2">
                 <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">▰</span>
                   <span className="text-base font-black leading-tight text-slate-900">সকল প্রশ্ন</span>
@@ -1589,6 +1587,7 @@ export default function QuestionBankPage() {
             )}
           </section>
 
+          {managementWorkspaceOpen && (
           <section className="min-w-0">
             <div className="flex min-w-0 items-center gap-2">
               <div className="relative min-w-0 flex-1 [&_input]:h-10 [&_input]:rounded-md [&_input]:pl-10 [&_input]:text-sm [&_input]:leading-normal">
@@ -1605,14 +1604,14 @@ export default function QuestionBankPage() {
                 variant="outline"
                 size="sm"
                 onClick={resetFilters}
-                className="inline-flex h-10 min-h-10 shrink-0 items-center justify-center rounded-md px-3 py-0 text-xs font-bold leading-none whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                className="inline-flex h-10 min-h-10 min-w-[112px] shrink-0 items-center justify-center rounded-md px-3 py-0 text-sm font-bold leading-normal whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
               >
-                ↻ Reset
+                ↻ Reset Filters
               </Button>
             </div>
 
             <div className="mt-2 space-y-2">
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-xs [&_label]:font-bold [&_select]:h-9 [&_select]:min-w-0 [&_select]:rounded-md [&_select]:px-2 [&_select]:text-xs [&_select]:font-semibold [&_select]:leading-normal">
+              <div className="grid grid-cols-2 gap-2 lg:grid-cols-3 2xl:grid-cols-4 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-xs [&_label]:font-bold [&_select]:h-9 [&_select]:w-full [&_select]:min-w-0 [&_select]:rounded-md [&_select]:px-2 [&_select]:text-sm [&_select]:font-semibold [&_select]:leading-normal">
                     <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
                       <Select
                         label="Year From"
@@ -1690,6 +1689,7 @@ export default function QuestionBankPage() {
                   </div>
             </div>
           </section>
+          )}
         </div>
 
         {viewMode !== "single" && (
@@ -1797,8 +1797,7 @@ export default function QuestionBankPage() {
                         <p className="font-bold text-slate-900">{group.examName}</p>
                         <p className="mt-1 text-sm text-slate-500">
                           {group.institutionName} · {group.examYear}
-                          {group.postName ? ` · ${group.postName}` : ""}
-                          {group.department ? ` · ${group.department}` : ""}
+                          {group.postName ? ` · ${group.postName}` : ""}                          {group.department ? ` · ${group.department}` : ""}
                         </p>
                       </button>
                       <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
