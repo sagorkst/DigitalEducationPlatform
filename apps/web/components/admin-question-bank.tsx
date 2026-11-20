@@ -1557,17 +1557,17 @@ export default function QuestionBankPage() {
                       <Input aria-label="Search questions" placeholder="Search questions..." value={search} onChange={(e) => setSearch(e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 pl-8 pr-2 text-center text-xs leading-normal text-slate-800 shadow-none placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${search.trim() ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`} />
                     </div>
                   </div>
-                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.from ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
-                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.from ? "text-blue-800" : "text-slate-600"}`}>Year From</label>
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.from ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.to ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
-                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.to ? "text-blue-800" : "text-slate-600"}`}>Year To</label>
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.to ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                    </Select>
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.from || filters.to ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.from || filters.to ? "text-blue-800" : "text-slate-600"}`}>Year</label>
+                    <div className="flex min-w-0 items-center gap-1">
+                      <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full flex-1 rounded-md border px-1.5 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.from ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                        <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                      </Select>
+                      <span className="shrink-0 text-xs text-slate-400">–</span>
+                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full flex-1 rounded-md border px-1.5 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.to ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                        <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                      </Select>
+                    </div>
                   </div>
                   <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.institution ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
                     <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.institution ? "text-blue-800" : "text-slate-600"}`}>Institution</label>
