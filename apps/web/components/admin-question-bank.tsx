@@ -1178,7 +1178,7 @@ export default function QuestionBankPage() {
           </div>
         </section>
 
-        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-2 gap-6 lg:grid-cols-4">
+        <div className="grid w-full grid-cols-2 gap-6 lg:grid-cols-4">
           {[
             {
               label: "মোট প্রশ্ন",
