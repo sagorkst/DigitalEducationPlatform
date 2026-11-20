@@ -1691,8 +1691,8 @@ export default function QuestionBankPage() {
             {!showTrash && viewMode === "single" && (
               <section className="flex h-full min-w-0 flex-col justify-between gap-3" aria-label="Question Control Center">
                 <div className="flex items-center justify-between gap-2">
-                  <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
-                    <span className="text-xl text-emerald-700" aria-hidden="true">⚡</span>
+                  <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-900">
+                    <span className="text-lg text-emerald-700" aria-hidden="true">⚡</span>
                     Question Control Center
                   </h2>
                   <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-extrabold tabular-nums text-blue-800">
@@ -1701,29 +1701,29 @@ export default function QuestionBankPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs font-extrabold text-slate-700">☑ Selection</p>
+                  <p className="text-base font-extrabold leading-tight text-slate-800">☑ Selection</p>
                   <div className="grid grid-cols-4 gap-1.5">
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={toggleCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
+                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={toggleCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
                       <span aria-hidden="true">☑</span><span className="ml-1">Select</span>
                     </Button>
-                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={loading || totalQuestions === 0 || bulkSaving}>
+                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={loading || totalQuestions === 0 || bulkSaving}>
                       <span aria-hidden="true">▣</span><span className="ml-1">Select All</span>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={invertCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
+                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={invertCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
                       ⇄ Invert
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
+                    <Button type="button" size="sm" variant="ghost" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
                       ✕ Clear
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs font-extrabold text-slate-700">⚙ Bulk Edit &amp; Action</p>
-                  <div className="grid min-w-0 grid-cols-4 items-end gap-1.5">
-                    <label className="min-w-0 text-[10px] font-bold text-slate-600">
+                  <p className="text-base font-extrabold leading-tight text-slate-800">⚙ Bulk Edit &amp; Action</p>
+                  <div className="grid min-w-0 grid-cols-4 items-end gap-2">
+                    <label className="min-w-0 text-xs font-extrabold text-slate-700">
                       Difficulty
-                      <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="mt-1 h-9 min-w-0 w-full rounded-md px-1 py-1 text-[11px]">
+                      <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="mt-1 h-11 min-w-0 w-full rounded-lg px-1.5 py-1 text-xs font-semibold">
                         <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
                       </Select>
                     </label>
@@ -1733,25 +1733,22 @@ export default function QuestionBankPage() {
                         <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                       </Select>
                     </label>
-                    <div className="flex min-w-0 flex-col items-center justify-end">
-                      <Button type="button" size="sm" variant="outline" className="h-9 w-full min-w-0 rounded-md border-emerald-300 px-1 text-[10px] font-extrabold text-emerald-800 hover:bg-emerald-50" onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
-                        <span aria-hidden="true">📢</span><span className="ml-1">Publish All</span>
-                      </Button>
-                      <span className="mt-0.5 text-[10px] font-extrabold leading-none text-emerald-700">({draftCount.toLocaleString("bn-BD")})</span>
-                    </div>
-                    <Button type="button" size="sm" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-extrabold" onClick={() => void applyBulkEdit()} disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
+                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 whitespace-nowrap rounded-lg border-emerald-300 px-1.5 text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-50" onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
+                      Publish All ({draftCount.toLocaleString("bn-BD")})
+                    </Button>
+                    <Button type="button" size="sm" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => void applyBulkEdit() disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
                       <span aria-hidden="true">✓</span><span className="ml-1">{bulkSaving ? "..." : "Apply"}</span>
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-1.5">
-                  <p className="text-xs font-extrabold text-slate-700">🗑 Delete Actions</p>
+                  <p className="text-base font-extrabold leading-tight text-slate-800">🗑 Delete Actions</p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-amber-300 px-2 text-xs font-extrabold text-amber-800 hover:bg-amber-50" onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
+                    <Button type="button" size="sm" variant="outline" className="h-11 rounded-lg border-amber-300 px-2 text-sm font-extrabold" onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
                       🗑 Delete
                     </Button>
-                    <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-red-400 px-2 text-xs font-extrabold text-red-700 hover:bg-red-50" onClick={() => void bulkPermanentDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
+                    <Button type="button" size="sm" variant="outline" className="h-11 rounded-lg border-red-400 px-2 text-sm font-extrabold text-red-700 hover:bg-red-50" onClick={() => void bulkPermanentDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
                       ⚠ Permanent Delete
                     </Button>
                   </div>
