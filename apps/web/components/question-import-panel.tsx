@@ -572,7 +572,7 @@ export default function QuestionImportPanel() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-full min-h-0 w-full min-w-0 flex-col items-center justify-start gap-2 rounded-md bg-transparent px-1 pt-3 text-center text-base font-black leading-tight text-slate-800 transition-colors hover:bg-emerald-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
+        className="flex h-full min-h-0 w-full min-w-0 flex-col items-center justify-center gap-2 rounded-md bg-transparent px-1 text-center text-base font-black leading-tight text-slate-800 transition-colors hover:bg-emerald-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
       >
         <svg viewBox="0 0 24 24" fill="none" className="hidden h-4 w-4">
           <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
