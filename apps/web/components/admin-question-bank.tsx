@@ -224,6 +224,7 @@ export default function QuestionBankPage() {
 
   const [viewMode, setViewMode] = useState<QuestionViewMode>("single");
   const [managementWorkspaceOpen, setManagementWorkspaceOpen] = useState(true);
+  const [searchFilterOpen, setSearchFilterOpen] = useState(true);
   const [groupOptions, setGroupOptions] = useState<{
     institutions: InstitutionGroup[];
     exams: ExamGroup[];
@@ -1591,102 +1592,122 @@ export default function QuestionBankPage() {
         </div>
 
         {true && (
-          <Card className="rounded-xl border border-slate-200 bg-white shadow-sm">
-            <CardContent className="space-y-2.5 p-3">
-              <div className="grid grid-cols-1 items-center gap-2 lg:grid-cols-[190px_minmax(0,1fr)_auto]">
-                <CardTitle className="whitespace-nowrap text-base font-extrabold text-slate-800">
-                  ⌕ Search &amp; Filter
-                </CardTitle>
+          <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-blue-300">
+            <CardContent className="p-3">
+              <button
+                type="button"
+                aria-expanded={searchFilterOpen}
+                onClick={() => setSearchFilterOpen((open) => !open)}
+                className="group flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2 text-center text-lg font-extrabold text-slate-800 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-xl"
+              >
+                <span>⌕ Search &amp; Filter</span>
+                <span className="text-sm text-slate-400 transition-colors group-hover:text-blue-600" aria-hidden="true">
+                  {searchFilterOpen ? "▲" : "▼"}
+                </span>
+              </button>
 
-                <div className="relative min-w-0 [&_input]:h-9 [&_input]:pl-9 [&_input]:text-sm">
-                  <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-slate-400" aria-hidden="true">
-                    ⌕
-                  </span>
-                  <Input
-                    placeholder="প্রশ্ন, Keyword, Exam অথবা Question ID দিয়ে খুঁজুন..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
+              {searchFilterOpen && (
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
+                    <div className="relative min-w-0 [&_input]:h-10 [&_input]:pl-10 [&_input]:text-base [&_input]:leading-normal">
+                      <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-lg text-slate-400" aria-hidden="true">
+                        ⌕
+                      </span>
+                      <Input
+                        placeholder="প্রশ্ন, Keyword, Exam অথবা Question ID দিয়ে খুঁজুন..."
+                        value={search}
+                        onChange={(e) => setSearch(e.target.value)}
+                      />
+                    </div>
+
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={resetFilters}
+                      className="h-10 min-w-[132px] whitespace-nowrap px-4 text-sm font-bold leading-normal transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                    >
+                      ↻ Reset Filters
+                    </Button>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-sm [&_label]:font-bold [&_select]:h-10 [&_select]:min-w-0 [&_select]:px-2 [&_select]:text-sm [&_select]:font-semibold">
+                    <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
+                      <Select
+                        label="Year From"
+                        value={filters.from}
+                        onChange={(e) => updateFilter("from", e.target.value)}
+                      >
+                        <option value="">শুরু বছর</option>
+                        {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </Select>
+                    </div>
+
+                    <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.to ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
+                      <Select
+                        label="Year To"
+                        value={filters.to}
+                        onChange={(e) => updateFilter("to", e.target.value)}
+                      >
+                        <option value="">শেষ বছর</option>
+                        {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
+                          <option key={y} value={y}>{y}</option>
+                        ))}
+                      </Select>
+                    </div>
+
+                    <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
+                      <Select
+                        label="Status"
+                        value={filters.status}
+                        onChange={(e) => updateFilter("status", e.target.value)}
+                      >
+                        <option value="">সকল</option>
+                        <option value="DRAFT">Draft</option>
+                        <option value="PUBLISHED">Published</option>
+                        <option value="HIDDEN">Hidden</option>
+                        <option value="ARCHIVED">Archived</option>
+                      </Select>
+                    </div>
+
+                    {filterOptions.map((filter) => {
+                      const value = filters[filter.key as keyof typeof initialFilters];
+                      const isActive = Boolean(value);
+                      return (
+                        <div
+                          key={filter.key}
+                          className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${isActive ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}
+                        >
+                          <Select
+                            label={filter.label}
+                            value={value}
+                            onChange={(e) =>
+                              updateFilter(
+                                filter.key as keyof typeof initialFilters,
+                                e.target.value,
+                              )
+                            }
+                          >
+                            <option value="">সকল</option>
+                            {filter.options.map((option) => (
+                              <option key={option} value={option}>{option}</option>
+                            ))}
+                          </Select>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
+                    <span>পাওয়া গেছে:</span>
+                    <strong className="text-base font-extrabold text-blue-700">
+                      {totalQuestions.toLocaleString("bn-BD")}
+                    </strong>
+                    <span>টি প্রশ্ন</span>
+                  </div>
                 </div>
-
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={resetFilters}
-                  className="h-9 whitespace-nowrap px-3 text-xs font-semibold"
-                >
-                  ↻ Reset Filters
-                </Button>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-[11px] [&_select]:h-9 [&_select]:min-w-0 [&_select]:px-2 [&_select]:text-xs">
-                <Select
-                  label="Year From"
-                  value={filters.from}
-                  onChange={(e) => updateFilter("from", e.target.value)}
-                >
-                  <option value="">শুরু বছর</option>
-                  {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </Select>
-
-                <Select
-                  label="Year To"
-                  value={filters.to}
-                  onChange={(e) => updateFilter("to", e.target.value)}
-                >
-                  <option value="">শেষ বছর</option>
-                  {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
-                    <option key={y} value={y}>
-                      {y}
-                    </option>
-                  ))}
-                </Select>
-
-                <Select
-                  label="Status"
-                  value={filters.status}
-                  onChange={(e) => updateFilter("status", e.target.value)}
-                >
-                  <option value="">সকল</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="HIDDEN">Hidden</option>
-                  <option value="ARCHIVED">Archived</option>
-                </Select>
-
-                {filterOptions.map((filter) => (
-                  <Select
-                    key={filter.key}
-                    label={filter.label}
-                    value={filters[filter.key as keyof typeof initialFilters]}
-                    onChange={(e) =>
-                      updateFilter(
-                        filter.key as keyof typeof initialFilters,
-                        e.target.value,
-                      )
-                    }
-                  >
-                    <option value="">সকল</option>
-                    {filter.options.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </Select>
-                ))}
-              </div>
-
-              <div className="border-t border-slate-100 pt-2 text-xs text-slate-600">
-                পাওয়া গেছে:{" "}
-                <strong className="font-extrabold text-blue-700">
-                  {totalQuestions.toLocaleString("bn-BD")}
-                </strong>{" "}
-                টি প্রশ্ন
-              </div>
+              )}
             </CardContent>
           </Card>
         )}
