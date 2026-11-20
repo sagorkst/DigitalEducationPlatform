@@ -552,7 +552,7 @@ export default function QuestionBankPage() {
 
     const updates: Record<string, string> = {};
 
-    if (bulkDifficulty) updates.difficulty = bulkDifficulty;
+    if (bulkDifficulty && !statusOverride) updates.difficulty = bulkDifficulty;
     if (bulkStatus || statusOverride) updates.status = statusOverride || bulkStatus;
 
     if (Object.keys(updates).length === 0) {
@@ -1941,7 +1941,7 @@ export default function QuestionBankPage() {
                   </thead>
                   <tbody className="divide-y divide-slate-100">
                     {filteredQuestions.map((q, index) => (
-                      <tr key={q.id} className={`transition hover:bg-blue-50/50 ${allMatchingSelected || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
+                      <tr key={q.id} className={`transition hover:bg-blue-50/50 ${(allMatchingSelected && !excludedQuestionIds.includes(q.id)) || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
                         <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected ? !excludedQuestionIds.includes(q.id) : selectedQuestionIds.includes(q.id)} disabled={bulkSaving} onChange={() => { if (allMatchingSelected) { setExcludedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : [...previous, q.id]); } else { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); } setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
                         <td className="px-3 py-2 font-semibold text-slate-500">{((currentPage - 1) * 25 + index + 1).toLocaleString("bn-BD")}</td>
                         <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question}</button><p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
