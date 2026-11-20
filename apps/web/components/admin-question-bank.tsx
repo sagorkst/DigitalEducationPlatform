@@ -1155,7 +1155,7 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto w-full max-w-none space-y-4">
-        <section className="min-h-[144px] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-5">
+        <section className="min-h-[100px] rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
@@ -1165,7 +1165,7 @@ export default function QuestionBankPage() {
                 <p className="mt-1 text-base font-semibold text-slate-600">Manage all questions</p>
               </div>
             </div>
-            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
+            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">              <div className="flex min-h-[80px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
                 <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>              </div>
               <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">                {!showTrash && (
                   <>
