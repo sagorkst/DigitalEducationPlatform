@@ -1550,25 +1550,25 @@ export default function QuestionBankPage() {
                 </div>
 
                 <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-4">
-                  <div className={`flex min-w-0 items-center rounded-md border p-2 transition-colors ${search.trim() ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
+                  <div className={`flex min-w-0 items-center rounded-md border p-2 transition-colors ${search.trim() ? "border-blue-200 bg-blue-50/60" : "border-slate-100 bg-slate-50/70"}`}>
                     <div className="relative min-w-0 w-full">
                       <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base leading-none text-slate-400" aria-hidden="true">⌕</span>
-                      <Input aria-label="Search questions" placeholder="প্রশ্ন / Keyword / Exam খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 pl-9 pr-3 text-left text-sm leading-normal text-slate-800 shadow-none placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${search.trim() ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`} />
+                      <Input aria-label="Search questions" placeholder="প্রশ্ন / Keyword / Exam খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 pl-9 pr-3 text-left text-sm leading-normal text-slate-800 shadow-none placeholder:text-slate-400 focus:outline-none focus:ring-0 focus-visible:ring-0 ${search.trim() ? "border-blue-300 bg-white" : "border-slate-200 bg-white"}`} />
                     </div>
                   </div>
                   <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.from || filters.to ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
                     <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.from || filters.to ? "text-blue-800" : "text-slate-600"}`}>Year</label>
                     <div className="flex min-w-0 items-center gap-1.5">
                       <div className="min-w-0 flex-1">
-                        <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`h-11 min-h-11 w-full rounded-md border py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.from ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                        <select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`block h-11 min-h-11 min-w-0 w-full appearance-auto rounded-md border bg-white py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none outline-none focus:border-blue-300 focus:ring-0 ${filters.from ? "border-blue-300" : "border-slate-200"}`}>
                           <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                        </Select>
+                        </select>
                       </div>
                       <span className="shrink-0 text-xs text-slate-400">–</span>
                       <div className="min-w-0 flex-1">
-                        <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`h-11 min-h-11 w-full rounded-md border py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.to ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                        <select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`block h-11 min-h-11 min-w-0 w-full appearance-auto rounded-md border bg-white py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none outline-none focus:border-blue-300 focus:ring-0 ${filters.to ? "border-blue-300" : "border-slate-200"}`}>
                           <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                        </Select>
+                        </select>
                       </div>
                     </div>
                   </div>
