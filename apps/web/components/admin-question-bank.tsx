@@ -1516,108 +1516,107 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 gap-2 rounded-lg border border-slate-300 bg-white p-2 shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+        <div className="grid min-w-0 grid-cols-1 gap-3 rounded-lg border border-slate-300 bg-white p-3 shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="min-w-0">
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <div className="grid min-w-0 grid-cols-1 items-center gap-2 2xl:grid-cols-[190px_minmax(0,1fr)]">
               <button
                 type="button"
                 onClick={() => setManagementWorkspaceOpen((open) => !open)}
                 aria-expanded={managementWorkspaceOpen}
-                className="inline-flex shrink-0 items-center gap-1 rounded-md px-1 py-1 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400"
+                className="inline-flex w-fit items-center gap-1 rounded-md px-1 py-1 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-slate-400"
               >
                 <span className="whitespace-nowrap text-base font-black leading-tight text-slate-900"><span className="text-lg text-slate-700">▦</span> Management Workspace</span>
                 <span className="text-sm font-bold text-slate-600" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
               </button>
-              <div className="ml-auto flex min-w-[180px] flex-1 items-center gap-1.5 sm:max-w-[330px]">
-                <div className="relative min-w-0 flex-1">
-                  <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-slate-500" aria-hidden="true">⌕</span>
-                  <Input placeholder="প্রশ্ন / Keyword / Exam Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 min-w-0 rounded-md border border-slate-500 px-2 pl-7 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0" />
-                </div>
-                <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-8 shrink-0 rounded-md border border-slate-500 px-2 text-xs font-bold focus:ring-0">↻ Reset</Button>
+              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-4">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }}
+                  className={`flex h-12 min-w-0 items-center justify-center gap-1 rounded-md border border-blue-500 bg-blue-50/40 px-1 text-center transition hover:border-blue-700 hover:bg-blue-50 ${viewMode === "single" ? "border-blue-700 bg-blue-50/80" : ""}`}>
+                  <span className="text-base leading-none">▰</span><span className="truncate text-[11px] font-extrabold text-slate-900">All Questions</span><strong className="text-xs font-black text-slate-900">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
+                </button>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
+                  className={`flex h-12 min-w-0 items-center justify-center gap-1 rounded-md border border-emerald-500 bg-emerald-50/40 px-1 text-center transition hover:border-emerald-700 hover:bg-emerald-50 ${viewMode === "institution" ? "border-emerald-700 bg-emerald-50/80" : ""}`}>
+                  <span className="text-base leading-none">🏛️</span><span className="truncate text-[11px] font-extrabold text-slate-900">Institutions</span><strong className="text-xs font-black text-slate-900">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong>
+                </button>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
+                  className={`flex h-12 min-w-0 items-center justify-center gap-1 rounded-md border border-orange-500 bg-orange-50/40 px-1 text-center transition hover:border-orange-700 hover:bg-orange-50 ${viewMode === "exam" ? "border-orange-700 bg-orange-50/80" : ""}`}>
+                  <span className="text-base leading-none">📋</span><span className="truncate text-[11px] font-extrabold text-slate-900">Exams</span><strong className="text-xs font-black text-slate-900">{globalStats.totalExams.toLocaleString("bn-BD")}</strong>
+                </button>
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
+                  className="flex h-12 min-w-0 items-center justify-center gap-1 rounded-md border border-violet-500 bg-violet-50/40 px-1 text-center transition hover:border-violet-700 hover:bg-violet-50">
+                  <span className="text-base leading-none">📖</span><span className="truncate text-[11px] font-extrabold text-slate-900">Subjects</span><strong className="text-xs font-black text-slate-900">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
+                </button>
               </div>
             </div>
 
             {managementWorkspaceOpen && (
-              <div className="mt-2 grid w-full grid-cols-2 gap-1.5 border-t border-slate-200 pt-2 xl:grid-cols-4">
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }}
-                  className={`flex h-10 min-w-0 items-center justify-center gap-1 rounded-md border px-1.5 text-left transition hover:border-blue-600 hover:bg-blue-50 ${viewMode === "single" ? "border-blue-600 bg-blue-50/70" : "border-blue-500 bg-blue-50/40"}`}>
-                  <span className="text-lg leading-none">▰</span><span className="truncate text-xs font-extrabold text-slate-900">সকল প্রশ্ন</span>
-                  <strong className="text-xs font-black text-slate-900">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
-                </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
-                  className={`flex h-10 min-w-0 items-center justify-center gap-1 rounded-md border px-1.5 text-left transition hover:border-emerald-600 hover:bg-emerald-50 ${viewMode === "institution" ? "border-emerald-600 bg-emerald-50/70" : "border-emerald-500 bg-emerald-50/40"}`}>
-                  <span className="text-lg leading-none">🏛️</span><span className="truncate text-xs font-extrabold text-slate-900">প্রতিষ্ঠান</span>
-                  <strong className="text-xs font-black text-slate-900">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong>
-                </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }}
-                  className={`flex h-10 min-w-0 items-center justify-center gap-1 rounded-md border px-1.5 text-left transition hover:border-orange-600 hover:bg-orange-50 ${viewMode === "exam" ? "border-orange-600 bg-orange-50/70" : "border-orange-500 bg-orange-50/40"}`}>
-                  <span className="text-lg leading-none">📋</span><span className="truncate text-xs font-extrabold text-slate-900">Exam</span>
-                  <strong className="text-xs font-black text-slate-900">{globalStats.totalExams.toLocaleString("bn-BD")}</strong>
-                </button>
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
-                  className="flex h-10 min-w-0 items-center justify-center gap-1 rounded-md border border-violet-500 bg-violet-50/40 px-1.5 text-left transition hover:border-violet-600 hover:bg-violet-50">
-                  <span className="text-lg leading-none">📖</span><span className="truncate text-xs font-extrabold text-slate-900">বিষয়</span>
-                  <strong className="text-xs font-black text-slate-900">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
-                </button>
-
-                <div className="flex h-11 min-w-0 items-center gap-1 rounded-md border border-slate-500 bg-slate-50/70 p-1">
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">Year From</span>
-                  <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">Any</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                  </Select>
+              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2">
+                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className="flex h-14 min-w-0 items-center gap-2 rounded-md border border-slate-600 bg-slate-50/70 p-2">
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Search</span>
+                    <div className="relative min-w-0 flex-1">
+                      <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-slate-500" aria-hidden="true">⌕</span>
+                      <Input aria-label="Search questions" placeholder="Question / Keyword / Exam..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-500 px-2 pl-7 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0" />
+                    </div>
+                  </div>
+                  <div className="flex h-14 min-w-0 items-center gap-2 rounded-md border border-slate-600 bg-slate-50/70 p-2">
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Year</span>
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                    </Select>
+                    <span className="shrink-0 text-xs text-slate-600">-</span>
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.institution ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Institution</span>
+                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.exam ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Exam</span>
+                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
                 </div>
-                <div className="flex h-11 min-w-0 items-center gap-1 rounded-md border border-slate-500 bg-slate-50/70 p-1">
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">Year To</span>
-                  <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">Any</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                  </Select>
-                </div>
-
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.institution ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">প্রতিষ্ঠান</span>
-                  <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.exam ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">পরীক্ষা</span>
-                  <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.post ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">পদ</span>
-                  <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.subject ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">বিষয়</span>
-                  <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.topic ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">টপিক</span>
-                  <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className={`flex h-11 min-w-0 items-center gap-1 rounded-md border p-1 ${filters.status ? "border-blue-600 bg-blue-50" : "border-slate-500 bg-slate-50/70"}`}>
-                  <span className="shrink-0 text-[11px] font-bold text-slate-800">Status</span>
-                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-xs focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
-                    <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                  </Select>
+                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.post ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Post</span>
+                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.subject ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Subject</span>
+                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.topic ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Topic</span>
+                    <Select aria-label="Topic" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.status ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
+                    <span className="shrink-0 text-xs font-bold text-slate-800">Status</span>
+                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
+                      <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                    </Select>
+                  </div>
                 </div>
               </div>
             )}
 
-            <div className="mt-1.5 flex flex-wrap items-center gap-1 border-t border-slate-200 pt-1.5 text-xs font-semibold text-slate-700">
-              <span>পাওয়া গেছে:</span><strong className="text-sm font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong><span>টি প্রশ্ন</span>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-2 text-sm font-semibold text-slate-700">
+              <p><span>Found:</span> <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> <span>Questions</span></p>
+              <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-9 rounded-md border border-slate-600 px-4 text-xs font-bold text-slate-800 hover:bg-slate-100">↻ Reset Filters</Button>
             </div>
           </section>
 
-          <aside className="flex min-h-0 items-start justify-start border-t border-slate-200 pt-2 xl:items-center xl:justify-center xl:border-l xl:border-t-0 xl:pt-0 xl:pl-2">
+          <aside className="flex min-h-0 items-start justify-start border-t border-slate-200 pt-2 xl:items-center xl:justify-center xl:border-l xl:border-t-0 xl:pt-0 xl:pl-3">
             <h2 className="whitespace-nowrap text-lg font-black text-emerald-800">⚡ Bulk Action Center</h2>
           </aside>
         </div>
