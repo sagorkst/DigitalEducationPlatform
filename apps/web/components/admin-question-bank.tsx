@@ -1157,7 +1157,7 @@ export default function QuestionBankPage() {
             </div>
             <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-4">
               <div className="mb-1 flex items-center justify-between gap-2">
-                <h2 className="text-base font-extrabold text-slate-900">Import &amp; Data Tools</h2>
+                <h2 className="relative -top-1 text-base font-extrabold text-slate-900">Import &amp; Data Tools</h2>
                 
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
