@@ -1062,7 +1062,7 @@ export default function QuestionBankPage() {
     {
       key: "exam",
       label: "পরীক্ষার নাম",
-      options: [...new Set(questions.map((q) => q.exam).filter(Boolean))],
+      options: [...new Set(groupOptions.exams.map((item) => item.examName).filter(Boolean))],
     },
     {
       key: "post",
@@ -1907,8 +1907,12 @@ export default function QuestionBankPage() {
                 </p>
               )}
 
+              <div className="rounded-lg border border-blue-100 bg-blue-50/60 p-3 text-xs text-slate-700">
+                <strong className="block text-sm text-blue-900">প্রতিষ্ঠান বা Exam ধরে একসঙ্গে Delete করার নিয়ম</strong>
+                Advanced Search-এ প্রতিষ্ঠান এবং পরীক্ষার নাম নির্বাচন করুন → “সব Filtered প্রশ্ন নির্বাচন” চাপুন → “নির্বাচিত প্রশ্ন Trash-এ পাঠান” চাপুন। শুধু ওই Filter-এর সঙ্গে মেলা সব প্রশ্ন Trash-এ যাবে। সব প্রশ্নের জন্য Reset Filters করে Search খালি রেখে একই কাজ করুন।
+              </div>
               <p className="text-xs text-slate-500">
-                বর্তমান পেজের নির্বাচন আলাদা। “সব Filtered প্রশ্ন নির্বাচন” সক্রিয় Filter/Search অনুযায়ী সব matching প্রশ্ন server-side-এ নির্বাচন করে; এটি ৫০০টির সীমায় আবদ্ধ নয়। Publish All Drafts database-এর সব active Draft প্রশ্নে কাজ করে; Trash-এর প্রশ্ন এতে অন্তর্ভুক্ত নয়।
+                “সব Filtered প্রশ্ন নির্বাচন” বর্তমান পৃষ্ঠা নয়, সক্রিয় Filter/Search-এর সব matching প্রশ্ন server-side-এ নির্বাচন করে। নির্দিষ্ট প্রশ্নগুলো Trash-এ যায়; পরে Recover করা যায়। Publish All Drafts শুধু সব active Draft প্রশ্নে কাজ করে।
               </p>
             </CardContent>
           </Card>
