@@ -1594,22 +1594,22 @@ export default function QuestionBankPage() {
         {true && (
           <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-blue-300">
             <CardContent className="p-3">
-              <button
-                type="button"
-                aria-expanded={searchFilterOpen}
-                onClick={() => setSearchFilterOpen((open) => !open)}
-                className="group flex w-full items-center justify-start gap-3 rounded-lg px-3 py-2 text-left text-xl font-black text-slate-900 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-2xl"
-              >
-                <span>⌕ Search &amp; Filter</span>
-                <span className="text-sm text-slate-400 transition-colors group-hover:text-blue-600" aria-hidden="true">
-                  {searchFilterOpen ? "▲" : "▼"}
-                </span>
-              </button>
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+                <button
+                  type="button"
+                  aria-expanded={searchFilterOpen}
+                  onClick={() => setSearchFilterOpen((open) => !open)}
+                  className="group inline-flex min-h-11 shrink-0 items-center justify-start gap-2 rounded-md px-2 py-1 text-left text-xl font-black leading-none text-slate-900 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-2xl"
+                >
+                  <span>⌕ Search &amp; Filter</span>
+                  <span className="text-sm text-slate-400 transition-colors group-hover:text-blue-600" aria-hidden="true">
+                    {searchFilterOpen ? "▲" : "▼"}
+                  </span>
+                </button>
 
-              {searchFilterOpen && (
-                <div className="mt-3 space-y-3">
-                  <div className="grid grid-cols-1 items-center gap-2 md:grid-cols-[minmax(0,1fr)_auto]">
-                    <div className="relative min-w-0 [&_input]:h-10 [&_input]:pl-10 [&_input]:text-base [&_input]:leading-normal">
+                {searchFilterOpen && (
+                  <>
+                    <div className="relative min-w-0 flex-1 [&_input]:h-11 [&_input]:rounded-md [&_input]:pl-10 [&_input]:text-base [&_input]:leading-normal">
                       <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-lg text-slate-400" aria-hidden="true">
                         ⌕
                       </span>
@@ -1624,13 +1624,17 @@ export default function QuestionBankPage() {
                       variant="outline"
                       size="sm"
                       onClick={resetFilters}
-                      className="h-10 min-w-[132px] whitespace-nowrap px-4 text-sm font-bold leading-normal transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+                      className="inline-flex h-11 min-h-11 shrink-0 items-center justify-center rounded-md px-4 py-0 text-sm font-bold leading-none whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
                     >
                       ↻ Reset Filters
                     </Button>
-                  </div>
+                  </>
+                )}
+              </div>
 
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-sm [&_label]:font-bold [&_select]:h-10 [&_select]:min-w-0 [&_select]:px-2 [&_select]:text-sm [&_select]:font-semibold">
+              {searchFilterOpen && (
+                <div className="mt-3 space-y-3">
+                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-sm [&_label]:font-bold [&_select]:h-11 [&_select]:min-w-0 [&_select]:rounded-md [&_select]:px-2 [&_select]:text-sm [&_select]:font-semibold [&_select]:leading-normal">
                     <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
                       <Select
                         label="Year From"
