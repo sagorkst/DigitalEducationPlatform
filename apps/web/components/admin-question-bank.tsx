@@ -1145,7 +1145,7 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto w-full max-w-none space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
+        <section className="min-h-[144px] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-5">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
