@@ -697,6 +697,47 @@ export default function QuestionBankPage() {
       setBulkSaving(false);
     }
   };
+  const bulkPermanentDeleteQuestions = async () => {
+    if (bulkSelectionCount === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন।");
+      return;
+    }
+
+    const count = bulkSelectionCount;
+    if (!window.confirm(`সতর্কতা: ${count.toLocaleString("bn-BD")}টি নির্বাচিত প্রশ্ন সরাসরি Database থেকে স্থায়ীভাবে মুছে যাবে। Trash-এ যাবে না এবং আর Recover করা যাবে না। আপনি কি নিশ্চিত?`)) return;
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+
+    try {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/permanent-delete-filtered" : "/api/questions/bulk/permanent-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(allMatchingSelected
+          ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds }
+          : { ids: selectedQuestionIds }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "নির্বাচিত প্রশ্ন স্থায়ীভাবে মুছে ফেলা যায়নি।");
+
+      const deletedCount = Number(result.deletedCount ?? count);
+      setBulkSuccess(`${deletedCount.toLocaleString("bn-BD")}টি প্রশ্ন Trash-এ না পাঠিয়ে স্থায়ীভাবে মুছে ফেলা হয়েছে।`);
+      setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
+      setSelected(null);
+      await loadQuestions(1, false);
+      await refreshDraftCount();
+      await loadGroupOptions();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Permanent Delete ব্যর্থ হয়েছে।");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const publishAllDrafts = async () => {
     if (draftCount <= 0) {
       setBulkError("Publish করার মতো কোনো Draft প্রশ্ন পাওয়া যায়নি।");
@@ -1544,8 +1585,8 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 rounded-xl border border-slate-200 bg-white shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <section className="min-w-0 p-3 sm:p-4">
+        <div className="grid min-w-0 grid-cols-1 items-stretch rounded-xl border border-slate-200 bg-white shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
+          <section className="h-full min-w-0 p-3 sm:p-4">
             <button
               type="button"
               onClick={() => setManagementWorkspaceOpen((open) => !open)}
@@ -1646,86 +1687,83 @@ export default function QuestionBankPage() {
             </div>
           </section>
 
-          <aside className="min-w-0 border-t border-slate-100 p-3 sm:p-4 xl:border-l xl:border-t-0">
+          <aside className="h-full min-w-0 border-t border-slate-100 p-3 sm:p-4 xl:border-l xl:border-t-0">
             {!showTrash && viewMode === "single" && (
-              <section className="flex min-w-0 flex-col gap-3" aria-label="Question Control Center">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <div className="min-w-0">
-                    <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
-                      <span className="text-xl text-emerald-700" aria-hidden="true">⚡</span>
-                      Question Control Center
-                    </h2>
-                    <p className="mt-0.5 text-xs font-medium text-slate-500">Selected questions পরিচালনা করুন</p>
-                  </div>
-                  <span className="shrink-0 rounded-lg bg-blue-50 px-2.5 py-1.5 text-xs font-extrabold tabular-nums text-blue-800">
-                    Selected: {bulkSelectionCount.toLocaleString("bn-BD")}
-                    {allMatchingSelected ? ` / ${totalQuestions.toLocaleString("bn-BD")}` : ""}
+              <section className="flex h-full min-w-0 flex-col justify-between gap-3" aria-label="Question Control Center">
+                <div className="flex items-center justify-between gap-2">
+                  <h2 className="flex items-center gap-2 text-base font-black text-slate-900">
+                    <span className="text-xl text-emerald-700" aria-hidden="true">⚡</span>
+                    Question Control Center
+                  </h2>
+                  <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-extrabold tabular-nums text-blue-800">
+                    {bulkSelectionCount.toLocaleString("bn-BD")} Selected
                   </span>
                 </div>
 
-                <div className="grid grid-cols-3 gap-1.5">
-                  <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
-                    onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                    disabled={loading || totalQuestions === 0 || bulkSaving}>
-                    {allMatchingSelected ? "Selected All" : "Select All"}
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
-                    onClick={invertCurrentPageSelection}
-                    disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
-                    ⇄ Invert
-                  </Button>
-                  <Button type="button" size="sm" variant="ghost" className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
-                    onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                    disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
-                    ✕ Clear
-                  </Button>
-                </div>
-
-                <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
-                  <span className="shrink-0 text-xs font-extrabold text-slate-700">Set Difficulty:</span>
-                  <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-w-0 flex-1 rounded-md px-2 py-1 text-xs">
-                    <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
-                  </Select>
-                  <span className="shrink-0 text-xs font-extrabold text-slate-700">Status:</span>
-                  <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-8 min-w-0 flex-1 rounded-md px-2 py-1 text-xs">
-                    <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                  </Select>
-                  <Button type="button" size="sm" className="h-8 shrink-0 rounded-md px-3 text-xs font-extrabold"
-                    onClick={() => void applyBulkEdit()}
-                    disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
-                    {bulkSaving ? "..." : "Apply"}
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" className="h-8 shrink-0 rounded-md border-red-300 px-3 text-xs font-extrabold text-red-700 hover:bg-red-50"
-                    onClick={() => void bulkDeleteQuestions()}
-                    disabled={bulkSaving || bulkSelectionCount === 0}>
-                    ✕ Delete
-                  </Button>
-                </div>
-
-                <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="text-sm font-extrabold text-amber-900">④ Global Action</h3>
-                      <p className="mt-0.5 text-[11px] leading-4 text-amber-800">সব Active Draft প্রশ্ন Published করবে</p>
-                    </div>
-                    <Button type="button" size="sm" variant="outline" className="h-9 shrink-0 rounded-md border-amber-300 px-2.5 text-xs font-extrabold text-amber-900 hover:bg-amber-100"
-                      onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
-                      Publish All ({draftCount.toLocaleString("bn-BD")})
+                <div className="space-y-1.5">
+                  <p className="text-xs font-extrabold text-slate-700">☑ Selection</p>
+                  <div className="grid grid-cols-4 gap-1.5">
+                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={toggleCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
+                      <span aria-hidden="true">☑</span><span className="ml-1">Select</span>
+                    </Button>
+                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={loading || totalQuestions === 0 || bulkSaving}>
+                      <span aria-hidden="true">▣</span><span className="ml-1">Select All</span>
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={invertCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
+                      ⇄ Invert
+                    </Button>
+                    <Button type="button" size="sm" variant="ghost" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-bold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
+                      ✕ Clear
                     </Button>
                   </div>
                 </div>
 
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
-                  <p className="text-xs leading-5 text-slate-600">
-                    <strong className="text-slate-800">Preview:</strong>{" "}
-                    {bulkSelectionCount > 0
-                      ? <>{bulkSelectionCount.toLocaleString("bn-BD")}টি প্রশ্ন · {bulkChangeSummary || "কোনো Bulk Edit পরিবর্তন নির্বাচন করা হয়নি"}</>
-                      : "প্রশ্ন নির্বাচন করলে এখানে কাজের সারাংশ দেখাবে।"}
-                  </p>
-                  {bulkError && <p role="alert" className="mt-2 rounded-md bg-red-50 px-2.5 py-1.5 text-xs font-medium text-red-700">{bulkError}</p>}
-                  {bulkSuccess && <p role="status" className="mt-2 rounded-md bg-emerald-50 px-2.5 py-1.5 text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
+                <div className="space-y-1.5">
+                  <p className="text-xs font-extrabold text-slate-700">⚙ Bulk Edit &amp; Action</p>
+                  <div className="grid min-w-0 grid-cols-4 items-end gap-1.5">
+                    <label className="min-w-0 text-[10px] font-bold text-slate-600">
+                      Difficulty
+                      <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="mt-1 h-9 min-w-0 w-full rounded-md px-1 py-1 text-[11px]">
+                        <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                      </Select>
+                    </label>
+                    <label className="min-w-0 text-[10px] font-bold text-slate-600">
+                      Status
+                      <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="mt-1 h-9 min-w-0 w-full rounded-md px-1 py-1 text-[11px]">
+                        <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                      </Select>
+                    </label>
+                    <div className="flex min-w-0 flex-col items-center justify-end">
+                      <Button type="button" size="sm" variant="outline" className="h-9 w-full min-w-0 rounded-md border-emerald-300 px-1 text-[10px] font-extrabold text-emerald-800 hover:bg-emerald-50" onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
+                        <span aria-hidden="true">📢</span><span className="ml-1">Publish All</span>
+                      </Button>
+                      <span className="mt-0.5 text-[10px] font-extrabold leading-none text-emerald-700">({draftCount.toLocaleString("bn-BD")})</span>
+                    </div>
+                    <Button type="button" size="sm" className="h-9 min-w-0 rounded-md px-1 text-[11px] font-extrabold" onClick={() => void applyBulkEdit()} disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
+                      <span aria-hidden="true">✓</span><span className="ml-1">{bulkSaving ? "..." : "Apply"}</span>
+                    </Button>
+                  </div>
                 </div>
-              </section>
+
+                <div className="space-y-1.5">
+                  <p className="text-xs font-extrabold text-slate-700">🗑 Delete Actions</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-amber-300 px-2 text-xs font-extrabold text-amber-800 hover:bg-amber-50" onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
+                      🗑 Delete
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" className="h-9 rounded-md border-red-400 px-2 text-xs font-extrabold text-red-700 hover:bg-red-50" onClick={() => void bulkPermanentDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
+                      ⚠ Permanent Delete
+                    </Button>
+                  </div>
+                </div>
+
+                {(bulkError || bulkSuccess) && (
+                  <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
+                    {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
+                    {bulkSuccess && <p role="status" className="text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
+                  </div>
+                )}
+              </section>              </section>
             )}
           </aside>
         </div>
