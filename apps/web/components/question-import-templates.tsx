@@ -32,10 +32,10 @@ export default function QuestionImportTemplates() {
   };
 
   return (
-    <details ref={menuRef} className="group relative w-full">
-      <summary className="flex h-10 w-full cursor-pointer list-none items-center gap-2 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-violet-50 [&::-webkit-details-marker]:hidden">
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-violet-100 text-violet-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+    <details ref={menuRef} className="group relative h-full w-full">
+      <summary className="flex h-20 w-full cursor-pointer list-none flex-col items-center justify-center gap-2 rounded-md bg-transparent px-1 text-center text-slate-800 transition hover:bg-violet-50 [&::-webkit-details-marker]:hidden">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
             <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
             <path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
@@ -44,7 +44,7 @@ export default function QuestionImportTemplates() {
           <span className="block truncate text-[11px] font-bold text-slate-900">Import Templates</span>
           <span className="block truncate text-[9px] text-slate-500">Excel ও CSV টেমপ্লেট</span>
         </span>
-        <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180">
+        <svg viewBox="0 0 24 24" fill="none" className="hidden h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180">
           <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </summary>
