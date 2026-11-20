@@ -1528,11 +1528,7 @@ export default function QuestionBankPage() {
                 <span className="whitespace-nowrap text-base font-black leading-tight text-slate-900"><span className="text-lg text-slate-700">▦</span> Management Workspace</span>
                 <span className="text-sm font-bold text-slate-500" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
               </button>
-              <div className="relative min-w-0 flex-1">
-                <span className="pointer-events-none absolute left-2.5 top-1/2 z-10 -translate-y-1/2 text-base text-slate-400" aria-hidden="true">⌕</span>
-                <Input placeholder="প্রশ্ন / Keyword / Exam Search..." value={search} onChange={(e) => setSearch(e.target.value)}
-                  className="h-9 min-w-0 rounded-md pl-8 text-sm" />
-              </div>
+
             </div>
 
             {managementWorkspaceOpen && (
@@ -1558,8 +1554,12 @@ export default function QuestionBankPage() {
                   <strong className="text-sm font-black text-slate-900">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
                 </button>
 
-                <div className="flex h-10 min-w-0 items-center justify-center">
-                  <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-9 w-full rounded-md px-2 text-xs font-bold">↻ Reset Filter</Button>
+                <div className="flex h-10 min-w-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50/70 p-1">
+                  <div className="relative min-w-0 flex-1">
+                    <span className="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-sm text-slate-400" aria-hidden="true">⌕</span>
+                    <Input placeholder="প্রশ্ন / Keyword / Exam Search..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 min-w-0 rounded pl-7 pr-1 text-xs" />
+                  </div>
+                  <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-8 shrink-0 rounded px-2 text-xs font-bold">↻ Reset</Button>
                 </div>
                 <div className="flex h-10 min-w-0 items-center gap-1 rounded-md border border-slate-200 bg-slate-50/70 p-1">
                   <span className="shrink-0 text-[11px] font-bold text-slate-700">Year</span>
