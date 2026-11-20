@@ -1144,9 +1144,9 @@ export default function QuestionBankPage() {
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
-      <div className="mx-auto max-w-[1720px] space-y-4">
+      <div className="mx-auto max-w-[1920px] space-y-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
-          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(280px,0.85fr)_minmax(0,1.8fr)] lg:items-center lg:gap-5">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,2.28fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
               <div className="min-w-0">
@@ -1163,10 +1163,10 @@ export default function QuestionBankPage() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 {!showTrash && (
                   <>
+                    <Button onClick={openAddForm} className="h-12 w-full min-w-0 whitespace-nowrap rounded-lg bg-blue-700 px-3 text-xs font-semibold text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>
                     <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50/40 px-2 py-1.5"><QuestionImportPanel /></div>
                     <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-violet-200 bg-violet-50/40 px-2 py-1.5"><QuestionImportTemplates /></div>
                     <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-blue-200 bg-blue-50/40 px-2 py-1.5"><QuestionImportHistory /></div>
-                    <Button onClick={openAddForm} className="h-12 w-full min-w-0 whitespace-nowrap rounded-lg bg-blue-700 px-3 text-xs font-semibold text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>
                     <a href="/api/imports/export?format=xlsx" className="inline-flex h-12 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
                   </>
                 )}
