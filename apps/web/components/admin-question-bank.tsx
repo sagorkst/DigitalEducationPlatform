@@ -1576,7 +1576,7 @@ export default function QuestionBankPage() {
                   </div>
                   <div className="flex min-w-0 flex-col justify-end gap-1">
                     <label className="px-1 text-xs font-bold leading-4 text-slate-600">Exam</label>
-                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => setFilters((previous) => ({ ...previous, exam: e.target.value }))} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
                       <option value="">All Exams</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
