@@ -1201,9 +1201,9 @@ export default function QuestionBankPage() {
               icon: "📖",
             },
           ].map((item) => (
-            <Card key={item.label} className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm">
-              <CardContent className="flex min-h-[160px] items-center justify-center gap-8 p-5">
-                <div className="shrink-0 rounded-2xl bg-blue-100/80 p-4 text-4xl shadow-inner">
+            <Card key={item.label} className="group overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm transition-all duration-200 hover:border-blue-300 hover:from-blue-50 hover:to-blue-100/80 hover:shadow-md">
+              <CardContent className="flex min-h-[150px] items-center justify-center gap-8 p-5">
+                <div className="shrink-0 rounded-2xl bg-blue-100/80 p-4 text-4xl shadow-inner transition-colors duration-200 group-hover:bg-blue-200">
                   {item.icon}
                 </div>
                 <div className="min-w-0 text-center">
