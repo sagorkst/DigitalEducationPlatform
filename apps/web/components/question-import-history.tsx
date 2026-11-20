@@ -333,9 +333,9 @@ export default function QuestionImportHistory() {
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
           <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M12 8v5l3 2M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </span>
-        <span className="min-w-0">
-          <span className="block truncate text-[11px] font-bold">Import History</span>
-          <span className="mt-0.5 block truncate text-[9px] font-normal text-slate-500">পূর্ববর্তী Import দেখুন</span>
+        <span className="flex min-w-0 flex-col text-base font-extrabold leading-tight">
+          <span>Import</span>
+          <span>History</span>
         </span>
       </button>
 
