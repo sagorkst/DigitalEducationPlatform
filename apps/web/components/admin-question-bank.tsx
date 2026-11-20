@@ -1550,10 +1550,10 @@ export default function QuestionBankPage() {
                 </div>
 
                 <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-4">
-                  <div className={`flex min-w-0 items-center rounded-md border p-2 transition-all duration-150 ${search.trim() ? "border-blue-300 bg-blue-100/80" : "border-slate-200 bg-slate-100"} hover:border-blue-300 hover:bg-blue-50/80 focus-within:border-blue-400 focus-within:bg-blue-50/90`}>
-                    <div className="flex min-h-11 min-w-0 w-full items-center justify-center gap-2 rounded-md px-2">
-                      <span className="shrink-0 text-xl leading-none text-slate-500" aria-hidden="true">⌕</span>
-                      <Input aria-label="Search questions" placeholder="প্রশ্ন / Keyword / Exam খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-none border-0 bg-transparent px-1 py-0 text-center text-sm font-semibold leading-normal text-slate-800 shadow-none outline-none placeholder:text-center placeholder:text-slate-500 focus:border-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:ring-0" />
+                  <div className={`flex h-full min-h-[88px] min-w-0 flex-col items-center justify-center rounded-md border p-2 transition-all duration-150 ${search.trim() ? "border-blue-300 bg-blue-100/80" : "border-slate-200 bg-slate-100"} hover:border-blue-300 hover:bg-blue-50/80 focus-within:border-blue-400 focus-within:bg-blue-50/90`}>
+                    <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1">
+                      <span className="text-2xl leading-none text-slate-600" aria-hidden="true">⌕</span>
+                      <Input aria-label="Search questions" placeholder="search/খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 min-h-8 w-full rounded-none border-0 bg-transparent px-1 py-0 text-center text-sm font-semibold leading-normal text-slate-800 shadow-none outline-none placeholder:text-center placeholder:text-slate-600 focus:border-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:ring-0" />
                     </div>
                   </div>
                   <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.from || filters.to ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
