@@ -1202,15 +1202,15 @@ export default function QuestionBankPage() {
             },
           ].map((item) => (
             <Card key={item.label} className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm">
-              <CardContent className="flex min-h-[140px] items-center justify-center gap-6 p-4">
-                <div className="rounded-2xl bg-blue-100/80 p-4 text-3xl shadow-inner">
+              <CardContent className="flex min-h-[160px] items-center justify-center gap-8 p-5">
+                <div className="shrink-0 rounded-2xl bg-blue-100/80 p-4 text-4xl shadow-inner">
                   {item.icon}
                 </div>
-                <div>
-                  <p className="text-xl font-extrabold text-slate-600">
+                <div className="min-w-0 text-center">
+                  <p className="text-3xl font-extrabold leading-tight text-slate-700">
                     {item.label}
                   </p>
-                  <p className="mt-1 text-3xl font-black text-slate-900">
+                  <p className="mt-1 text-2xl font-black leading-tight text-slate-900">
                     {item.value}
                   </p>
                 </div>
