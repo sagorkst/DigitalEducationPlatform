@@ -224,7 +224,6 @@ export default function QuestionBankPage() {
 
   const [viewMode, setViewMode] = useState<QuestionViewMode>("single");
   const [managementWorkspaceOpen, setManagementWorkspaceOpen] = useState(true);
-  const [searchFilterOpen, setSearchFilterOpen] = useState(true);
   const [groupOptions, setGroupOptions] = useState<{
     institutions: InstitutionGroup[];
     exams: ExamGroup[];
@@ -1552,8 +1551,8 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm md:p-3">
-          <section>
+        <div className="grid min-w-0 grid-cols-1 gap-3 rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm md:p-3 xl:grid-cols-[1.1fr_0.9fr]">
+          <section className="min-w-0">
             <button
               type="button"
               onClick={() => setManagementWorkspaceOpen((open) => !open)}
@@ -1589,27 +1588,10 @@ export default function QuestionBankPage() {
               </div>
             )}
           </section>
-        </div>
 
-        {true && (
-          <Card className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition-colors hover:border-blue-300">
-            <CardContent className="p-3">
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-                <button
-                  type="button"
-                  aria-expanded={searchFilterOpen}
-                  onClick={() => setSearchFilterOpen((open) => !open)}
-                  className="group inline-flex min-h-11 shrink-0 items-center justify-start gap-2 rounded-md px-2 py-1 text-left text-xl font-black leading-none text-slate-900 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-2xl"
-                >
-                  <span>⌕ Search &amp; Filter</span>
-                  <span className="text-sm text-slate-400 transition-colors group-hover:text-blue-600" aria-hidden="true">
-                    {searchFilterOpen ? "▲" : "▼"}
-                  </span>
-                </button>
-
-                {searchFilterOpen && (
-                  <>
-                    <div className="relative min-w-0 flex-1 [&_input]:h-11 [&_input]:rounded-md [&_input]:pl-10 [&_input]:text-base [&_input]:leading-normal">
+          <section className="min-w-0">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="relative min-w-0 flex-1 [&_input]:h-10 [&_input]:rounded-md [&_input]:pl-10 [&_input]:text-sm [&_input]:leading-normal">
                       <span className="pointer-events-none absolute left-3 top-1/2 z-10 -translate-y-1/2 text-lg text-slate-400" aria-hidden="true">
                         ⌕
                       </span>
@@ -1618,23 +1600,19 @@ export default function QuestionBankPage() {
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                       />
-                    </div>
-
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={resetFilters}
-                      className="inline-flex h-11 min-h-11 shrink-0 items-center justify-center rounded-md px-4 py-0 text-sm font-bold leading-none whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
-                    >
-                      ↻ Reset Filters
-                    </Button>
-                  </>
-                )}
               </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={resetFilters}
+                className="inline-flex h-10 min-h-10 shrink-0 items-center justify-center rounded-md px-3 py-0 text-xs font-bold leading-none whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700"
+              >
+                ↻ Reset
+              </Button>
+            </div>
 
-              {searchFilterOpen && (
-                <div className="mt-3 space-y-3">
-                  <div className="grid grid-cols-2 gap-2 md:grid-cols-4 xl:grid-cols-8 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-sm [&_label]:font-bold [&_select]:h-11 [&_select]:min-w-0 [&_select]:rounded-md [&_select]:px-2 [&_select]:text-sm [&_select]:font-semibold [&_select]:leading-normal">
+            <div className="mt-2 space-y-2">
+              <div className="grid grid-cols-2 gap-2 md:grid-cols-4 [&>div]:min-w-0 [&_label]:mb-1 [&_label]:text-xs [&_label]:font-bold [&_select]:h-9 [&_select]:min-w-0 [&_select]:rounded-md [&_select]:px-2 [&_select]:text-xs [&_select]:font-semibold [&_select]:leading-normal">
                     <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
                       <Select
                         label="Year From"
@@ -1703,18 +1681,16 @@ export default function QuestionBankPage() {
                     })}
                   </div>
 
-                  <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
+              <div className="flex flex-wrap items-center justify-center gap-2 border-t border-slate-100 pt-2 text-xs font-semibold text-slate-700">
                     <span>পাওয়া গেছে:</span>
                     <strong className="text-base font-extrabold text-blue-700">
                       {totalQuestions.toLocaleString("bn-BD")}
                     </strong>
                     <span>টি প্রশ্ন</span>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
+            </div>
+          </section>
+        </div>
 
         {viewMode !== "single" && (
           <Card>
