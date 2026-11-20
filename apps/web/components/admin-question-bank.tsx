@@ -1549,8 +1549,8 @@ export default function QuestionBankPage() {
             </div>
 
             {managementWorkspaceOpen && (
-              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2">
-                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2 2xl:grid-cols-4">
+
                   <div className="flex h-14 min-w-0 items-center gap-2 rounded-md border border-slate-600 bg-slate-50/70 p-2">
                     <span className="shrink-0 text-xs font-bold text-slate-800">Search</span>
                     <div className="relative min-w-0 flex-1">
@@ -1580,8 +1580,7 @@ export default function QuestionBankPage() {
                       <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                </div>
-                <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2">
+
                   <div className={`flex h-14 min-w-0 items-center gap-2 rounded-md border p-2 ${filters.post ? "border-blue-700 bg-blue-50" : "border-slate-600 bg-slate-50/70"}`}>
                     <span className="shrink-0 text-xs font-bold text-slate-800">Post</span>
                     <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-10 min-w-0 flex-1 rounded-md border border-slate-500 px-1 text-sm focus:border-slate-700 focus:outline-none focus:ring-0 focus-visible:ring-0">
@@ -1606,7 +1605,6 @@ export default function QuestionBankPage() {
                       <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                     </Select>
                   </div>
-                </div>
               </div>
             )}
 
