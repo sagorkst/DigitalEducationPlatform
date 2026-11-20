@@ -1,97 +1,86 @@
 "use client";
 
-export default function QuestionImportTemplates() {
-  return (
-    <details className="group relative">
-      <summary className="flex min-h-[68px] w-full cursor-pointer list-none items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-slate-900 transition hover:bg-violet-50/50 [&::-webkit-details-marker]:hidden">
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-5 w-5 text-emerald-600"
-        >
-          <path
-            d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M14 3v5h5M8 13h8M8 17h8"
-            stroke="currentColor"
-            strokeWidth="1.7"
-            strokeLinecap="round"
-          />
-        </svg>
+import { useEffect, useRef } from "react";
 
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round"/><path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round"/></svg>
+export default function QuestionImportTemplates() {
+  const menuRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    const closeOnOutsideClick = (event: PointerEvent) => {
+      const target = event.target;
+      if (target instanceof Node && !menuRef.current?.contains(target)) {
+        if (menuRef.current) menuRef.current.open = false;
+      }
+    };
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && menuRef.current?.open) {
+        menuRef.current.open = false;
+      }
+    };
+
+    document.addEventListener("pointerdown", closeOnOutsideClick);
+    document.addEventListener("keydown", closeOnEscape);
+    return () => {
+      document.removeEventListener("pointerdown", closeOnOutsideClick);
+      document.removeEventListener("keydown", closeOnEscape);
+    };
+  }, []);
+
+  const closeMenu = () => {
+    if (menuRef.current) menuRef.current.open = false;
+  };
+
+  return (
+    <details ref={menuRef} className="group relative w-full">
+      <summary className="flex h-10 w-full cursor-pointer list-none items-center gap-2 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-violet-50 [&::-webkit-details-marker]:hidden">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-violet-100 text-violet-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+            <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
+            <path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+          </svg>
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block text-sm font-bold text-slate-900">Import Templates</span>
-          <span className="mt-0.5 block text-xs font-normal text-slate-500">Excel ও CSV টেমপ্লেট ডাউনলোড</span>
+          <span className="block truncate text-[11px] font-bold text-slate-900">Import Templates</span>
+          <span className="block truncate text-[9px] text-slate-500">Excel ও CSV টেমপ্লেট</span>
         </span>
-
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          className="h-4 w-4 shrink-0 text-slate-400 transition group-open:rotate-180"
-        >
-          <path
-            d="m7 10 5 5 5-5"
-            stroke="currentColor"
-            strokeWidth="1.8"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
+        <svg viewBox="0 0 24 24" fill="none" className="h-3.5 w-3.5 shrink-0 text-slate-400 transition group-open:rotate-180">
+          <path d="m7 10 5 5 5-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
       </summary>
 
-      <div className="absolute right-0 z-50 mt-2 w-72 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
-        <div className="px-3 py-2">
-          <p className="text-sm font-bold text-slate-900">
-            Download Import Template
-          </p>
-          <p className="mt-1 text-xs text-slate-500">
-            Choose a format to download the question template.
-          </p>
+      <div className="absolute right-0 top-full z-[80] mt-2 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white p-2 shadow-xl">
+        <div className="px-2 py-1.5">
+          <p className="text-xs font-bold text-slate-900">Download Import Template</p>
+          <p className="mt-0.5 text-[10px] text-slate-500">আপনার প্রয়োজনীয় ফরম্যাট বেছে নিন।</p>
         </div>
 
         <a
           href="/api/imports/template?format=xlsx"
-          className="flex items-center gap-3 rounded-lg p-3 transition hover:bg-emerald-50"
+          onClick={closeMenu}
+          className="flex items-center gap-2.5 rounded-lg p-2 transition hover:bg-emerald-50"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 text-xs font-black text-emerald-700">
-            XLSX
-          </span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-emerald-100 text-[10px] font-black text-emerald-700">XLSX</span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-slate-800">
-              Excel Template
-            </span>
-            <span className="block text-xs text-slate-500">
-              Download Excel file
-            </span>
+            <span className="block text-xs font-semibold text-slate-800">Excel Template</span>
+            <span className="block text-[10px] text-slate-500">Download Excel file</span>
           </span>
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-emerald-600">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-emerald-600">
             <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v3h14v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>
 
         <a
           href="/api/imports/template?format=csv"
-          className="flex items-center gap-3 rounded-lg p-3 transition hover:bg-blue-50"
+          onClick={closeMenu}
+          className="flex items-center gap-2.5 rounded-lg p-2 transition hover:bg-blue-50"
         >
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-100 text-xs font-black text-blue-700">
-            CSV
-          </span>
+          <span className="flex h-8 w-8 items-center justify-center rounded-md bg-blue-100 text-[10px] font-black text-blue-700">CSV</span>
           <span className="min-w-0 flex-1">
-            <span className="block text-sm font-semibold text-slate-800">
-              CSV Template
-            </span>
-            <span className="block text-xs text-slate-500">
-              Download CSV file
-            </span>
+            <span className="block text-xs font-semibold text-slate-800">CSV Template</span>
+            <span className="block text-[10px] text-slate-500">Download CSV file</span>
           </span>
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 text-blue-600">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-blue-600">
             <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v3h14v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </a>
