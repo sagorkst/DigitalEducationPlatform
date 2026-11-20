@@ -1155,9 +1155,9 @@ export default function QuestionBankPage() {
                 <p className="mt-1 text-base font-semibold text-slate-600">Manage all questions</p>
               </div>
             </div>
-            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[104px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">
+            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">
               <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
-                <h2 className="flex flex-col gap-1 text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>
+                <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>
               </div>
               <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
                 {!showTrash && (
