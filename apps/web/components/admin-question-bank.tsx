@@ -1178,7 +1178,7 @@ export default function QuestionBankPage() {
           </div>
         </section>
 
-        <div className="mx-auto grid w-full max-w-[1500px] grid-cols-2 gap-6 lg:grid-cols-4">
+        <div className="mx-auto grid w-full max-w-[1200px] grid-cols-2 gap-6 lg:grid-cols-4">
           {[
             {
               label: "মোট প্রশ্ন",
@@ -1202,7 +1202,7 @@ export default function QuestionBankPage() {
             },
           ].map((item) => (
             <Card key={item.label} className="group overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm transition-all duration-200 hover:border-blue-300 hover:from-blue-50 hover:to-blue-100/80 hover:shadow-md">
-              <CardContent className="flex min-h-[150px] items-center justify-center gap-8 p-5">
+              <CardContent className="flex min-h-[150px] items-center justify-center gap-6 p-5">
                 <div className="shrink-0 text-5xl">
                   {item.icon}
                 </div>
