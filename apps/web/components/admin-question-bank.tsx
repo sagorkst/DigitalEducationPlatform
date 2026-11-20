@@ -1053,6 +1053,53 @@ export default function QuestionBankPage() {
     }
   };
 
+  const trashQuestionsByScope = async (
+    label: string,
+    scopeFilters: Record<string, string | undefined>,
+  ) => {
+    const scope = Object.fromEntries(
+      Object.entries(scopeFilters).filter(([, value]) => Boolean(value)),
+    );
+    if (Object.keys(scope).length === 0) {
+      setBulkError("প্রশ্নের Scope নির্ধারণ করা যায়নি।");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `“${label}” এর সঙ্গে মেলা সব প্রশ্ন Trash-এ পাঠাবেন? প্রশ্নগুলো পরে Trash থেকে Recover করা যাবে।`,
+    );
+    if (!confirmed) return;
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+    try {
+      const response = await fetch("/api/questions/bulk/delete-filtered", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filters: scope }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "প্রশ্নগুলো Trash-এ পাঠানো যায়নি।");
+      }
+
+      const count = Number(result.deletedCount ?? 0);
+      setBulkSuccess(`${label} থেকে ${count.toLocaleString("bn-BD")}টি প্রশ্ন Trash-এ পাঠানো হয়েছে।`);
+      setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setSelected(null);
+      await loadQuestions(1, false);
+      await loadGroupOptions();
+      await refreshDraftCount();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Bulk Trash ব্যর্থ হয়েছে।");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const filterOptions = [
     {
       key: "institution",
@@ -1706,21 +1753,54 @@ export default function QuestionBankPage() {
               {!selectedExamGroup && viewMode === "institution" && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {groupOptions.institutions.map((institution) => (
-                    <button
+                    <div
                       key={institution.groupKey}
-                      type="button"
-                      onClick={() => setSelectedInstitutionKey(institution.groupKey)}
-                      className={`rounded-xl border p-4 text-left transition ${
+                      className={`rounded-xl border p-4 transition ${
                         selectedInstitutionKey === institution.groupKey
                           ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 hover:border-blue-300"
+                          : "border-slate-200 bg-white hover:border-blue-300"
                       }`}
                     >
-                      <p className="font-bold text-slate-900">{institution.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {institution.exams.length.toLocaleString("bn-BD")} টি Exam
-                      </p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInstitutionKey(institution.groupKey)}
+                        className="w-full text-left"
+                      >
+                        <p className="font-bold text-slate-900">{institution.name}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {institution.exams.length.toLocaleString("bn-BD")} টি Exam
+                        </p>
+                      </button>
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={bulkSaving}
+                          onClick={() => void trashQuestionsByScope(
+                            institution.name,
+                            { institution: institution.name },
+                          )}
+                          className="border-red-200 text-red-700 hover:bg-red-50"
+                        >
+                          প্রতিষ্ঠানের সব প্রশ্ন Trash
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setFilters({ ...initialFilters, institution: institution.name });
+                            setSearch("");
+                            setViewMode("single");
+                            setSelectedInstitutionKey(null);
+                            setSelectedExamGroup(null);
+                          }}
+                        >
+                          প্রশ্নগুলো দেখুন
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1734,19 +1814,64 @@ export default function QuestionBankPage() {
                           (item) => item.groupKey === selectedInstitutionKey,
                         )?.exams ?? []
                   ).map((group) => (
-                    <button
+                    <div
                       key={group.groupKey}
-                      type="button"
-                      onClick={() => void loadGroupQuestions(group)}
-                      className="w-full rounded-xl border border-slate-200 p-4 text-left transition hover:border-blue-400 hover:bg-blue-50"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-300"
                     >
-                      <p className="font-bold text-slate-900">{group.examName}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {group.institutionName} · {group.examYear}
-                        {group.postName ? ` · ${group.postName}` : ""}
-                        {group.department ? ` · ${group.department}` : ""}
-                      </p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => void loadGroupQuestions(group)}
+                        className="w-full text-left"
+                      >
+                        <p className="font-bold text-slate-900">{group.examName}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {group.institutionName} · {group.examYear}
+                          {group.postName ? ` · ${group.postName}` : ""}
+                          {group.department ? ` · ${group.department}` : ""}
+                        </p>
+                      </button>
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={bulkSaving}
+                          onClick={() => void trashQuestionsByScope(
+                            `${group.institutionName} / ${group.examName} / ${group.examYear}`,
+                            {
+                              institution: group.institutionName,
+                              exam: group.examName,
+                              yearFrom: String(group.examYear),
+                              yearTo: String(group.examYear),
+                              ...(group.postName ? { post: group.postName } : {}),
+                            },
+                          )}
+                          className="border-red-200 text-red-700 hover:bg-red-50"
+                        >
+                          এই Exam-এর সব প্রশ্ন Trash
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setFilters({
+                              ...initialFilters,
+                              institution: group.institutionName,
+                              exam: group.examName,
+                              from: String(group.examYear),
+                              to: String(group.examYear),
+                              ...(group.postName ? { post: group.postName } : {}),
+                            });
+                            setSearch("");
+                            setViewMode("single");
+                            setSelectedExamGroup(null);
+                          }}
+                        >
+                          প্রশ্নগুলো দেখুন
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
