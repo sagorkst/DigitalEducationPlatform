@@ -283,6 +283,73 @@ export class QuestionsBulkService {
     );
   }
 
+  // PERMANENTLY DELETE SELECTED QUESTIONS WITHOUT MOVING THEM TO TRASH.
+  async bulkPermanentDelete(ids: string[]) {
+    if (!ids.length) throw new BadRequestException('Select at least one question.');
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const questions = await tx.question.findMany({
+          where: { id: { in: ids } },
+          select: { id: true },
+        });
+
+        if (questions.length !== ids.length) {
+          throw new NotFoundException(
+            'One or more selected questions no longer exist. No questions were permanently deleted.',
+          );
+        }
+
+        const detachedImportRows = await tx.importRow.updateMany({
+          where: { questionId: { in: ids } },
+          data: { questionId: null },
+        });
+
+        const deletion = await tx.question.deleteMany({
+          where: { id: { in: ids } },
+        });
+
+        if (deletion.count !== ids.length) {
+          throw new BadRequestException(
+            'Permanent deletion could not safely complete. No selected questions were deleted.',
+          );
+        }
+
+        return {
+          success: true,
+          message: `${deletion.count} question(s) permanently deleted.`,
+          deletedCount: deletion.count,
+          detachedImportRows: detachedImportRows.count,
+        };
+      },
+      { maxWait: 10000, timeout: 120000 },
+    );
+  }
+
+  // PERMANENTLY DELETE ALL QUESTIONS MATCHING FILTERS, INCLUDING ACTIVE RECORDS.
+  async bulkPermanentDeleteFiltered(dto: BulkFilteredQuestionsDto) {
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
+    let deletedCount = 0;
+    let detachedImportRows = 0;
+    let batches = 0;
+
+    for (let index = 0; index < ids.length; index += 500) {
+      const result = await this.bulkPermanentDelete(ids.slice(index, index + 500));
+      deletedCount += result.deletedCount;
+      detachedImportRows += result.detachedImportRows;
+      batches += 1;
+    }
+
+    return {
+      success: true,
+      message: `${deletedCount} matching question(s) permanently deleted.`,
+      deletedCount,
+      matchedCount: ids.length,
+      detachedImportRows,
+      batches,
+    };
+  }
+
   async publishAllDrafts() {
     return this.prisma.$transaction(
       async (tx) => {
