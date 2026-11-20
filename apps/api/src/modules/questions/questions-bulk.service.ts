@@ -54,7 +54,7 @@ export class QuestionsBulkService {
   }
 
   async bulkSoftDeleteFiltered(dto: BulkFilteredQuestionsDto) {
-    const ids = await this.collectFilteredIds(dto.filters);
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
     let deletedCount = 0;
     let batches = 0;
     for (let index = 0; index < ids.length; index += 500) {
