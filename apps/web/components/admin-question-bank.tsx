@@ -223,6 +223,7 @@ export default function QuestionBankPage() {
   const [draftCount, setDraftCount] = useState(0);
 
   const [viewMode, setViewMode] = useState<QuestionViewMode>("single");
+  const [managementWorkspaceOpen, setManagementWorkspaceOpen] = useState(true);
   const [groupOptions, setGroupOptions] = useState<{
     institutions: InstitutionGroup[];
     exams: ExamGroup[];
@@ -1550,54 +1551,46 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
-          <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
-            <div className="grid min-w-0 items-stretch gap-3 xl:grid-cols-[150px_minmax(0,1fr)]">
-              <div className="flex min-h-[112px] flex-col items-center justify-center gap-2 border-b border-slate-200 pb-3 text-center xl:border-b-0 xl:border-r xl:pb-0 xl:pr-3">
-                <span className="flex h-11 w-11 items-center justify-center text-4xl text-slate-700">▦</span>
-                <h2 className="flex flex-col text-lg font-black leading-tight text-slate-900">
-                  <span>Management</span>
-                  <span>Workspace</span>
-                </h2>
-              </div>
-              <div className="grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 2xl:grid-cols-4">
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex min-h-[112px] min-w-0 items-center justify-center gap-3 rounded-xl border px-3 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center text-3xl">▰</span>
-                  <span className="min-w-0 text-center">
-                    <span className="block text-base font-black leading-snug text-slate-900">সকল প্রশ্ন</span>
-                    <span className="mt-1 block text-sm font-medium leading-snug text-slate-600">সব প্রশ্ন নির্বাচন ও পরিচালনা</span>
-                    <span className="mt-2 block text-sm font-extrabold text-blue-800">পরিচালনা করুন →</span>
-                  </span>
+        <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm md:p-3">
+          <section>
+            <button
+              type="button"
+              onClick={() => setManagementWorkspaceOpen((open) => !open)}
+              aria-expanded={managementWorkspaceOpen}
+              className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300"
+            >
+              <span className="flex items-center gap-2 text-lg font-black leading-tight text-slate-900 md:text-xl">
+                <span className="text-2xl text-slate-700">▦</span>
+                <span>Management Workspace</span>
+              </span>
+              <span className="flex h-8 w-8 items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-slate-100" aria-hidden="true">
+                {managementWorkspaceOpen ? "⌃" : "⌄"}
+              </span>
+            </button>
+            {managementWorkspaceOpen && (
+              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
+                  <span className="shrink-0 text-3xl leading-none">▰</span>
+                  <span className="text-base font-black leading-tight text-slate-900">সকল প্রশ্ন</span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex min-h-[112px] min-w-0 items-center justify-center gap-3 rounded-xl border px-3 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center text-3xl">🏛️</span>
-                  <span className="min-w-0 text-center">
-                    <span className="block text-base font-black leading-snug text-slate-900">প্রতিষ্ঠানভিত্তিক</span>
-                    <span className="mt-1 block text-sm font-medium leading-snug text-slate-600">প্রতিষ্ঠান নির্বাচন করে পরিচালনা</span>
-                    <span className="mt-2 block text-sm font-extrabold text-emerald-800">প্রতিষ্ঠান নির্বাচন করুন →</span>
-                  </span>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
+                  <span className="shrink-0 text-3xl leading-none">🏛️</span>
+                  <span className="text-base font-black leading-tight text-slate-900">প্রতিষ্ঠান</span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex min-h-[112px] min-w-0 items-center justify-center gap-3 rounded-xl border px-3 py-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center text-3xl">📋</span>
-                  <span className="min-w-0 text-center">
-                    <span className="block text-base font-black leading-snug text-slate-900">Exam ভিত্তিক</span>
-                    <span className="mt-1 block text-sm font-medium leading-snug text-slate-600">একটি Exam-এর সব প্রশ্ন পরিচালনা</span>
-                    <span className="mt-2 block text-sm font-extrabold text-orange-800">Exam নির্বাচন করুন →</span>
-                  </span>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
+                  <span className="shrink-0 text-3xl leading-none">📋</span>
+                  <span className="text-base font-black leading-tight text-slate-900">Exam</span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex min-h-[112px] min-w-0 items-center justify-center gap-3 rounded-xl border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-3 py-3 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center text-3xl">📖</span>
-                  <span className="min-w-0 text-center">
-                    <span className="block text-base font-black leading-snug text-slate-900">বিষয়ভিত্তিক</span>
-                    <span className="mt-1 block text-sm font-medium leading-snug text-slate-600">Subject ও Topic অনুযায়ী পরিচালনা</span>
-                    <span className="mt-2 block text-sm font-extrabold text-violet-800">বিষয় Filter করুন →</span>
-                  </span>
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-3 text-center transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
+                  <span className="shrink-0 text-3xl leading-none">📖</span>
+                  <span className="text-base font-black leading-tight text-slate-900">বিষয়</span>
                 </button>
               </div>
-            </div>
+            )}
           </section>
+        </div>
 
-        {true && (
+        {true && (        {true && (
         <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
