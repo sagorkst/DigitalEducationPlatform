@@ -38,10 +38,12 @@ export default function AdminLayout({
 }>) {
   const pathname = usePathname();
 
+  const isQuestionBank = pathname === "/admin/questions";
+
   return (
     <div className="min-h-[80vh] bg-slate-100">
-      <div className="mx-auto flex w-full max-w-[1800px] flex-col gap-5 px-3 py-4 sm:px-5 lg:flex-row lg:gap-6 lg:px-6 lg:py-6">
-        <aside className="w-full shrink-0 lg:sticky lg:top-5 lg:w-[270px] lg:self-start">
+      <div className={`mx-auto flex w-full flex-col lg:flex-row lg:self-stretch ${isQuestionBank ? "max-w-none gap-3 px-2 py-3 sm:px-3 lg:gap-3 lg:px-3 lg:py-4" : "max-w-[1800px] gap-5 px-3 py-4 sm:px-5 lg:gap-6 lg:px-6 lg:py-6"}`}>
+        <aside className={`w-full shrink-0 lg:sticky lg:top-5 lg:self-start ${isQuestionBank ? "lg:w-[220px]" : "lg:w-[270px]"}`}>
           <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 text-white shadow-xl shadow-slate-900/10">
             <div className="border-b border-white/10 bg-gradient-to-br from-slate-900 via-slate-950 to-emerald-950/70 p-5">
               <div className="flex items-center gap-3">
