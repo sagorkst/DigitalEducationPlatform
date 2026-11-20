@@ -1207,7 +1207,7 @@ export default function QuestionBankPage() {
                   {item.icon}
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-slate-500">
+                  <p className="text-base font-semibold text-slate-600">
                     {item.label}
                   </p>
                   <p className="mt-1 text-xl font-black text-slate-900">
