@@ -415,8 +415,22 @@ export class QuestionsService {
       }
     }
 
+    const [totalQuestions, totalInstitutions, totalExams, totalSubjects] =
+      await Promise.all([
+        this.prisma.question.count({ where: { deletedAt: null } }),
+        this.prisma.institution.count(),
+        this.prisma.exam.count(),
+        this.prisma.subject.count(),
+      ]);
+
     return {
       success: true,
+      stats: {
+        totalQuestions,
+        totalInstitutions,
+        totalExams,
+        totalSubjects,
+      },
       data: {
         institutions: Array.from(institutions.values()).map(
           (institution) => ({
