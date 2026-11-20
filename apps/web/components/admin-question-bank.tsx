@@ -1143,31 +1143,26 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 p-3 md:p-6">
-      <div className="mx-auto max-w-[1600px] space-y-4">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
-              SHIKHASETU / QUESTION BANK
-            </p>
-            <h1 className="mt-2 text-3xl font-black text-slate-900">
-              প্রশ্নব্যাংক
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              সকল প্রতিষ্ঠানের বিগত পরীক্ষার প্রশ্ন এক জায়গায় পরিচালনা করুন।
-            </p>
+    <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
+      <div className="mx-auto max-w-[1720px] space-y-4">
+        <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center">
+          <div className="flex items-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-3xl">📖</div>
+            <div>
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+              <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">Question Bank Control Center</h1>
+              <p className="mt-1 text-sm text-slate-500">এখান থেকে সব ধরনের প্রশ্ন কার্যকরভাবে পরিচালনা করুন</p>
+            </div>
           </div>
-
-          <div className="flex flex-wrap items-center justify-end gap-2">
-  {!showTrash && (
-    <Button onClick={openAddForm} className="h-10 min-w-[140px] justify-center">
-      + নতুন প্রশ্ন
-    </Button>
-  )}
-</div>
+          <div className="flex flex-wrap items-center gap-2">
+            {!showTrash && <Button onClick={openAddForm} className="h-10 bg-blue-700 px-4 text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>}
+            <a href="/api/imports/export?format=xlsx" className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
+            {!showTrash && <span className="inline-flex h-10 items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800">Import &amp; OCR নিচে</span>}
+            <Button type="button" variant={showTrash ? "primary" : "outline"} onClick={toggleTrash} className={showTrash ? "h-10 bg-violet-700 text-white" : "h-10 border-violet-200 text-violet-700 hover:bg-violet-50"}>▣ {showTrash ? "Question Bank" : "View Trash"}</Button>
+          </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
             {
               label: "মোট প্রশ্ন",
@@ -1190,9 +1185,9 @@ export default function QuestionBankPage() {
               icon: "📖",
             },
           ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className="flex items-center gap-3 pt-6">
-                <div className="rounded-xl bg-blue-50 p-3 text-2xl">
+            <Card key={item.label} className="overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm">
+              <CardContent className="flex items-center gap-3 py-4">
+                <div className="rounded-2xl bg-blue-100/80 p-3 text-2xl shadow-inner">
                   {item.icon}
                 </div>
                 <div>
@@ -1578,58 +1573,44 @@ export default function QuestionBankPage() {
         )}
 
         <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
-        <Card className="border-0 shadow-none">
-          <CardHeader className="pb-2">
-            <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
-            <p className="text-sm text-slate-500">
-              সব প্রশ্ন একসঙ্গে, Exam অনুযায়ী অথবা Institution অনুযায়ী দেখুন।
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2 pt-0">
-            <Button
-              variant={viewMode === "single" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("single");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-              }}
-            >
-              Single List
-            </Button>
-            <Button
-              variant={viewMode === "exam" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("exam");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-                void loadGroupOptions();
-              }}
-            >
-              Exam Wise
-            </Button>
-            <Button
-              variant={viewMode === "institution" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("institution");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-                void loadGroupOptions();
-              }}
-            >
-              Institution Wise
-            </Button>
-          </CardContent>
-        </Card>
+        <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm md:p-5">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-extrabold text-slate-900">▦ Management Workspace</h2>
+              <p className="text-sm text-slate-500">আপনার প্রয়োজন অনুযায়ী সঠিক অপশন নির্বাচন করুন</p>
+            </div>
+            <Badge>Question Management</Badge>
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
+              <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-2xl">▰</span>
+              <span className="block font-extrabold text-slate-900">সকল প্রশ্ন</span><span className="mt-1 block text-xs text-slate-500">সব প্রশ্ন নির্বাচন ও পরিচালনা</span>
+              <span className="mt-3 inline-flex rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-800">পরিচালনা করুন →</span>
+            </button>
+            <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
+              <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-2xl">🏛️</span>
+              <span className="block font-extrabold text-slate-900">প্রতিষ্ঠানভিত্তিক</span><span className="mt-1 block text-xs text-slate-500">প্রতিষ্ঠান নির্বাচন করে পরিচালনা</span>
+              <span className="mt-3 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-xs font-bold text-emerald-800">প্রতিষ্ঠান নির্বাচন করুন →</span>
+            </button>
+            <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group rounded-2xl border p-4 text-left transition hover:-translate-y-0.5 hover:shadow-md ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
+              <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 text-2xl">📋</span>
+              <span className="block font-extrabold text-slate-900">Exam ভিত্তিক</span><span className="mt-1 block text-xs text-slate-500">একটি Exam-এর সব প্রশ্ন পরিচালনা</span>
+              <span className="mt-3 inline-flex rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-800">Exam নির্বাচন করুন →</span>
+            </button>
+            <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group rounded-2xl border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white p-4 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-md">
+              <span className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-violet-100 text-2xl">📖</span>
+              <span className="block font-extrabold text-slate-900">বিষয়ভিত্তিক</span><span className="mt-1 block text-xs text-slate-500">Subject ও Topic অনুযায়ী পরিচালনা</span>
+              <span className="mt-3 inline-flex rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-800">বিষয় Filter করুন →</span>
+            </button>
+          </div>
+        </section>
 
         {true && (
-        <Card className="border-0 shadow-none">
+        <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
-                <CardTitle>Advanced Question Search</CardTitle>
+                <CardTitle>⌕ Search &amp; Filter</CardTitle>
                 <p className="mt-1 text-sm text-slate-500">
                   একাধিক Filter একসঙ্গে ব্যবহার করে প্রশ্ন খুঁজুন।
                 </p>
@@ -1913,15 +1894,15 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <Card className="border-0 shadow-none">
-            <CardHeader className="pb-3">
-              <CardTitle>Bulk Question Management</CardTitle>
+          <Card className="overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50/80 to-white shadow-sm">
+            <CardHeader className="pb-2">
+              <CardTitle>⚡ Bulk Action Center</CardTitle>
               <p className="text-sm text-slate-500">
                 একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
               </p>
             </CardHeader>
             <CardContent className="space-y-3 pt-0">
-              <div className="flex flex-wrap items-center gap-2 rounded-lg bg-slate-50 p-3">
+              <div className="flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white/90 p-3">
                 <Button
                   type="button"
                   size="sm"
@@ -1992,7 +1973,7 @@ export default function QuestionBankPage() {
                 </Select>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-3">
+              <div className="flex flex-wrap items-center gap-2 border-t border-emerald-100 pt-3">
                 <Button
                   type="button"
                   onClick={() => void applyBulkEdit()}
@@ -2065,109 +2046,29 @@ export default function QuestionBankPage() {
                 Database থেকে প্রশ্ন লোড হচ্ছে...
               </div>
             ) : (
-              <div className={tableDensity === "ultra" ? "space-y-1.5" : "space-y-2.5"}>
-                {filteredQuestions.map((q) => (
-                  <div
-                    key={q.id}
-                    className={`relative rounded-lg border pl-11 transition hover:border-blue-300 hover:shadow-sm ${allMatchingSelected ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-white"} ${tableDensity === "ultra" ? "px-2.5 py-1.5" : "px-3 py-2.5"}`}
-                  >
-                    {true && (
-                      <>
-                        <input
-                          type="checkbox"
-                          aria-label="প্রশ্ন নির্বাচন করুন"
-                          checked={allMatchingSelected || selectedQuestionIds.includes(q.id)}
-                          disabled={bulkSaving || allMatchingSelected}
-                          onChange={() => {
-                            setSelectedQuestionIds((previous) =>
-                              previous.includes(q.id)
-                                ? previous.filter((id) => id !== q.id)
-                                : previous.length < 500
-                                  ? [...previous, q.id]
-                                  : previous,
-                            );
-                            setBulkError("");
-                            setBulkSuccess("");
-                          }}
-                          className="absolute left-4 top-5 z-10 h-5 w-5 cursor-pointer opacity-0 disabled:cursor-not-allowed"
-                        />
-                        <span
-                          aria-hidden="true"
-                          className={`pointer-events-none absolute left-4 top-5 z-20 flex h-5 w-5 items-center justify-center rounded border-2 transition-colors ${
-                            allMatchingSelected || selectedQuestionIds.includes(q.id)
-                              ? "border-blue-600 bg-blue-600 text-white"
-                              : "border-slate-400 bg-white"
-                          }`}
-                        >
-                          {(allMatchingSelected || selectedQuestionIds.includes(q.id)) && (
-                            <svg viewBox="0 0 16 16" className="h-4 w-4" fill="none">
-                              <path d="m3 8 3.2 3.2L13 4.5" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                          )}
-                        </span>
-                      </>
-                    )}
-                    <button
-                      onClick={() =>
-                        setSelected(selected === q.id ? null : q.id)
-                      }
-                      className="w-full text-left"
-                    >
-                      {allMatchingSelected && (
-                        <span className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-blue-600 px-2.5 py-1 text-xs font-bold text-white">
-                          <span aria-hidden="true">✓</span> Selected — All filtered rows
-                        </span>
-                      )}
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-blue-700">
-                          {q.id}
-                        </span>
-                        <Badge>{q.year}</Badge>
-                      </div>
-
-                      <p className="mt-3 font-bold text-slate-900">
-                        {q.question}
-                      </p>
-
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                        <span>{q.institution}</span>
-                        <span>•</span>
-                        <span>{q.exam}</span>
-                        <span>•</span>
-                        <span>{q.subject}</span>
-                      </div>
-                    </button>
-
-                    <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditForm(q)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void deleteQuestion(q.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {filteredQuestions.length === 0 && (
-                  <div className="rounded-xl bg-slate-50 p-10 text-center">
-                    <p className="font-bold text-slate-700">
-                      কোনো প্রশ্ন পাওয়া যায়নি
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Search অথবা Filter পরিবর্তন করে আবার চেষ্টা করুন।
-                    </p>
-                  </div>
-                )}
-              </div>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+                  <thead className="bg-slate-100/90 text-xs font-bold uppercase text-slate-600">
+                    <tr>
+                      <th className="w-12 px-3 py-3"><input type="checkbox" aria-label="বর্তমান পৃষ্ঠার সব প্রশ্ন নির্বাচন" checked={filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))} onChange={toggleCurrentPageSelection} disabled={loading || bulkSaving || allMatchingSelected} className="h-4 w-4 accent-blue-600" /></th>
+                      <th className="px-3 py-3">#</th><th className="px-3 py-3">প্রশ্ন</th><th className="px-3 py-3">প্রতিষ্ঠান</th><th className="px-3 py-3">পরীক্ষা</th><th className="px-3 py-3">বিষয়</th><th className="px-3 py-3">পদ</th><th className="px-3 py-3">স্থিতি</th><th className="px-3 py-3 text-right">কার্যক্রম</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredQuestions.map((q, index) => (
+                      <tr key={q.id} className={`transition hover:bg-blue-50/50 ${allMatchingSelected || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
+                        <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected || selectedQuestionIds.includes(q.id)} disabled={bulkSaving || allMatchingSelected} onChange={() => { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
+                        <td className="px-3 py-2 font-semibold text-slate-500">{((currentPage - 1) * 25 + index + 1).toLocaleString("bn-BD")}</td>
+                        <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question}</button><p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
+                        <td className="px-3 py-2 text-slate-700">{q.institution || "—"}</td><td className="px-3 py-2 text-slate-700">{q.exam || "—"}{q.year ? <span className="block text-[11px] text-slate-400">{q.year}</span> : null}</td><td className="px-3 py-2 text-slate-700">{q.subject || "—"}</td><td className="px-3 py-2 text-slate-700">{q.post || "—"}</td>
+                        <td className="px-3 py-2"><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${q.status === "Published" ? "bg-emerald-100 text-emerald-800" : q.status === "Draft" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>{q.status === "Published" ? "প্রকাশিত" : q.status === "Draft" ? "খসড়া" : q.status}</span></td>
+                        <td className="px-3 py-2"><div className="flex justify-end gap-1.5"><Button size="sm" variant="outline" onClick={() => setSelected(selected === q.id ? null : q.id)}>দেখুন</Button><Button size="sm" variant="outline" onClick={() => openEditForm(q)}>সম্পাদনা</Button><Button size="sm" variant="outline" onClick={() => void deleteQuestion(q.id)} className="border-red-200 text-red-700 hover:bg-red-50">Trash</Button></div></td>
+                      </tr>
+                    ))}
+                    {filteredQuestions.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-500">কোনো প্রশ্ন পাওয়া যায়নি। Search অথবা Filter পরিবর্তন করে আবার চেষ্টা করুন।</td></tr>}
+                  </tbody>
+                </table>
+              </div>              </div>
             )}
           </CardContent>
         </Card>
