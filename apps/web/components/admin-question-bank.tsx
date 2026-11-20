@@ -1563,7 +1563,7 @@ export default function QuestionBankPage() {
             <section className="flex min-w-0 items-center border-t border-slate-200 pt-3 xl:border-l xl:border-t-0 xl:py-1 xl:pl-4">
               <div className="grid w-full grid-cols-3 items-center justify-items-stretch gap-3 [&>div]:min-w-0">
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year From:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year From:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">Start Year</option>
@@ -1572,7 +1572,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.to ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year To:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year To:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">End Year</option>
@@ -1580,13 +1580,13 @@ export default function QuestionBankPage() {
                     </Select>
                   </div>
                 </div>
-                <div className="flex h-14 min-w-0 items-center">
+                <div className="flex h-16 min-w-0 items-center justify-center">
                   <Button variant="outline" size="sm" onClick={resetFilters} className="h-16 w-full min-w-0 rounded-lg px-3 text-sm font-extrabold leading-normal whitespace-nowrap transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700">
                     ↻ Reset Filter
                   </Button>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.institution ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">প্রতিষ্ঠান:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">প্রতিষ্ঠান:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="প্রতিষ্ঠান" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
@@ -1595,7 +1595,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.exam ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পরীক্ষা:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পরীক্ষা:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="পরীক্ষার নাম" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
@@ -1604,7 +1604,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.post ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পদ:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">পদ:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="পদ" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
@@ -1613,7 +1613,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.subject ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">বিষয়:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">বিষয়:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="বিষয়" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
@@ -1622,7 +1622,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.topic ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">টপিক:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">টপিক:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="টপিক" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
@@ -1631,7 +1631,7 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
                 <div className={`flex h-16 min-w-0 items-center justify-center gap-3 rounded-lg border p-3 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
-                  <span className="shrink-0 shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Status:</span>
+                  <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Status:</span>
                   <div className="min-w-0 flex-1">
                     <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-11 min-w-0 rounded-md px-3 py-1 text-sm font-bold leading-normal">
                       <option value="">All</option>
