@@ -1145,50 +1145,34 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto max-w-[1720px] space-y-4">
-        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
-          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
-            <div className="flex min-w-0 flex-col justify-between gap-3 xl:w-[34%]">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-2xl">📖</div>
-                <div className="min-w-0">
-                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
-                  <h1 className="mt-0.5 text-xl font-black leading-tight tracking-tight text-slate-950 md:text-2xl">Question Bank Control Center</h1>
-                  <p className="mt-1 text-xs text-slate-500">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
-                </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {!showTrash && <Button onClick={openAddForm} className="h-8 bg-blue-700 px-3 text-xs text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>}
-                <a href="/api/imports/export?format=xlsx" className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
-                <Button type="button" variant={showTrash ? "primary" : "outline"} onClick={toggleTrash} className={showTrash ? "h-8 bg-violet-700 px-3 text-xs text-white" : "h-8 border-violet-200 px-3 text-xs text-violet-700 hover:bg-violet-50"}>▣ {showTrash ? "Question Bank" : "Trash"}</Button>
+        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+            <div className="flex min-w-0 items-center gap-2.5 lg:w-[34%]">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
+              <div className="min-w-0">
+                <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+                <h1 className="mt-0.5 text-lg font-black leading-tight tracking-tight text-slate-950 md:text-xl">Question Bank Control Center</h1>
+                <p className="mt-0.5 text-[11px] text-slate-500">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
               </div>
             </div>
-            <div className="min-w-0 flex-1 border-t border-slate-100 pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
-              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <div>
-                  <h2 className="text-sm font-extrabold text-slate-900">Import &amp; Data Tools</h2>
-                  <p className="text-[11px] text-slate-500">প্রশ্ন প্রস্তুত, OCR এবং ডেটা পরিচালনা করুন</p>
-                </div>
-                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">QUICK TOOLS</span>
+            <div className="min-w-0 flex-1 lg:border-l lg:border-slate-100 lg:pl-3">
+              <div className="mb-1.5 flex items-center justify-between gap-2">
+                <h2 className="text-xs font-extrabold text-slate-800">Import &amp; Data Tools</h2>
+                <span className="text-[9px] font-semibold tracking-wide text-emerald-700">QUICK TOOLS</span>
               </div>
-              <div className="grid grid-cols-2 gap-2 xl:grid-cols-4">
+              <div className="grid grid-cols-2 gap-1.5 sm:grid-cols-3 xl:grid-cols-5">
                 {!showTrash && (
                   <>
-                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-emerald-200 bg-emerald-50/40 px-2 py-1.5 transition hover:bg-emerald-50">
-                      <QuestionImportPanel />
-                    </div>
-                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-violet-200 bg-violet-50/40 px-2 py-1.5 transition hover:bg-violet-50">
-                      <QuestionImportTemplates />
-                    </div>
-                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-blue-200 bg-blue-50/40 px-2 py-1.5 transition hover:bg-blue-50">
-                      <QuestionImportHistory />
-                    </div>
+                    <div className="flex min-h-[48px] min-w-0 items-center rounded-md border border-emerald-200 bg-emerald-50/40 px-1.5 py-1"><QuestionImportPanel /></div>
+                    <div className="flex min-h-[48px] min-w-0 items-center rounded-md border border-violet-200 bg-violet-50/40 px-1.5 py-1"><QuestionImportTemplates /></div>
+                    <div className="flex min-h-[48px] min-w-0 items-center rounded-md border border-blue-200 bg-blue-50/40 px-1.5 py-1"><QuestionImportHistory /></div>
+                    <Button onClick={openAddForm} className="h-10 min-w-0 bg-blue-700 px-2 text-[11px] text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>
+                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-10 min-w-0 items-center justify-center rounded-md border border-slate-300 bg-white px-2 text-[11px] font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
                   </>
                 )}
-                <button type="button" onClick={toggleTrash} className="flex min-h-[64px] min-w-0 items-center gap-2 rounded-lg border border-red-200 bg-red-50/50 px-2.5 py-2 text-left text-red-700 transition hover:bg-red-50">
-                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100">
-                    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </span>
-                  <span className="min-w-0"><span className="block text-xs font-bold">{showTrash ? "Trash বন্ধ করুন" : "Trash"}</span><span className="mt-0.5 block text-[10px] leading-tight text-slate-500">{deletedQuestions.length > 0 ? `${deletedQuestions.length.toLocaleString("bn-BD")}টি মুছে ফেলা প্রশ্ন` : "প্রশ্ন পুনরুদ্ধার করুন"}</span></span>
+                <button type="button" onClick={toggleTrash} className={`flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-[11px] font-semibold transition ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
+                  <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  {showTrash ? "Question Bank" : "Trash"}{!showTrash && deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}
                 </button>
               </div>
             </div>
