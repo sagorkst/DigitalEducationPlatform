@@ -33,9 +33,9 @@ export default function QuestionImportTemplates() {
 
   return (
     <details ref={menuRef} className="group relative h-full w-full">
-      <summary className="flex h-20 w-full cursor-pointer list-none flex-col items-center justify-center gap-2 rounded-md bg-transparent px-1 text-center text-slate-800 transition hover:bg-violet-50 [&::-webkit-details-marker]:hidden">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5">
+      <summary className="flex h-20 w-full cursor-pointer list-none items-center justify-center gap-3 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-violet-50 [&::-webkit-details-marker]:hidden">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-violet-100 text-violet-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
             <path d="M7 3h7l5 5v13H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z" stroke="currentColor" strokeWidth="1.7" strokeLinejoin="round" />
             <path d="M14 3v5h5M8 13h8M8 17h8" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
           </svg>
