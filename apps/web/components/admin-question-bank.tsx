@@ -1549,58 +1549,59 @@ export default function QuestionBankPage() {
                   </button>
                 </div>
 
-                <div className="mt-3 grid min-w-0 grid-cols-2 gap-x-3 gap-y-3 border-t border-slate-100 pt-3 sm:grid-cols-3">
-                  <div className="flex min-w-0 items-end">
+                <div className="mt-3 grid min-w-0 grid-cols-2 gap-x-2 gap-y-2 border-t border-slate-100 pt-3 sm:grid-cols-4">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${search.trim() ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${search.trim() ? "text-blue-800" : "text-slate-600"}`}>Search</label>
                     <div className="relative min-w-0 w-full">
-                      <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-base text-slate-400" aria-hidden="true">⌕</span>
-                      <Input aria-label="Search questions" placeholder="Search questions..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 pl-9 pr-3 text-sm leading-normal text-slate-800 shadow-none placeholder:text-slate-400 focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2" />
+                      <span className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-base text-slate-400" aria-hidden="true">⌕</span>
+                      <Input aria-label="Search questions" placeholder="Search questions..." value={search} onChange={(e) => setSearch(e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 pl-8 pr-2 text-center text-xs leading-normal text-slate-800 shadow-none placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-100 ${search.trim() ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`} />
                     </div>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Year</label>
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-11 min-h-11 min-w-0 w-full flex-1 rounded-lg border border-slate-200 bg-slate-50/70 px-2 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
-                        <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                      </Select>
-                      <span className="shrink-0 text-xs text-slate-400">–</span>
-                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-11 min-h-11 min-w-0 w-full flex-1 rounded-lg border border-slate-200 bg-slate-50/70 px-2 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
-                        <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                      </Select>
-                    </div>
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.from ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.from ? "text-blue-800" : "text-slate-600"}`}>Year From</label>
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.from ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                      <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                    </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Institution</label>
-                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.to ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.to ? "text-blue-800" : "text-slate-600"}`}>Year To</label>
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.to ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
+                      <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
+                    </Select>
+                  </div>
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.institution ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.institution ? "text-blue-800" : "text-slate-600"}`}>Institution</label>
+                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.institution ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Institutions</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Exam</label>
-                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.exam ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.exam ? "text-blue-800" : "text-slate-600"}`}>Exam</label>
+                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.exam ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Exams</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Post</label>
-                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.post ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.post ? "text-blue-800" : "text-slate-600"}`}>Post</label>
+                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.post ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Posts</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Subject</label>
-                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.subject ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.subject ? "text-blue-800" : "text-slate-600"}`}>Subject</label>
+                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.subject ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Subjects</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Topic</label>
-                    <Select aria-label="Topic" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.topic ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.topic ? "text-blue-800" : "text-slate-600"}`}>Topic</label>
+                    <Select aria-label="Topic" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.topic ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="flex min-w-0 flex-col justify-end gap-1">
-                    <label className="px-1 text-xs font-bold leading-4 text-slate-600">Status</label>
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-11 min-h-11 min-w-0 w-full rounded-lg border border-slate-200 bg-slate-50/70 px-3 text-sm leading-normal text-slate-800 shadow-none focus:border-blue-300 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus-visible:ring-2">
+                  <div className={`min-w-0 rounded-lg px-1.5 py-1.5 transition-colors ${filters.status ? "bg-blue-50/80 ring-1 ring-blue-200" : "bg-transparent"}`}>
+                    <label className={`mb-1 block text-center text-xs font-bold leading-4 ${filters.status ? "text-blue-800" : "text-slate-600"}`}>Status</label>
+                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className={`h-10 min-h-10 min-w-0 w-full rounded-md border px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.status ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
                       <option value="">All Statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                     </Select>
                   </div>
