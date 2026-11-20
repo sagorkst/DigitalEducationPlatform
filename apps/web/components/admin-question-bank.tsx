@@ -1598,7 +1598,7 @@ export default function QuestionBankPage() {
                 type="button"
                 aria-expanded={searchFilterOpen}
                 onClick={() => setSearchFilterOpen((open) => !open)}
-                className="group flex w-full items-center justify-center gap-3 rounded-lg px-3 py-2 text-center text-lg font-extrabold text-slate-800 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-xl"
+                className="group flex w-full items-center justify-start gap-3 rounded-lg px-3 py-2 text-left text-xl font-black text-slate-900 transition-colors hover:bg-blue-50 hover:text-blue-700 sm:text-2xl"
               >
                 <span>⌕ Search &amp; Filter</span>
                 <span className="text-sm text-slate-400 transition-colors group-hover:text-blue-600" aria-hidden="true">
