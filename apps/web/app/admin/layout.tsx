@@ -116,20 +116,6 @@ export default function AdminLayout({
         </aside>
 
         <main className="min-w-0 flex-1">
-          <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-5 py-3.5 shadow-sm">
-            <div>
-              <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">
-                SHIKHASETU / ADMIN
-              </p>
-              <p className="mt-1 text-sm font-semibold text-slate-800">
-                Platform management workspace
-              </p>
-            </div>
-            <div className="flex items-center gap-2 rounded-full border border-emerald-100 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800">
-              <span className="h-2 w-2 rounded-full bg-emerald-500" />
-              Admin area
-            </div>
-          </div>
           {children}
         </main>
       </div>
