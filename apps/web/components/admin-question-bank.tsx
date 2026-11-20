@@ -1145,39 +1145,6 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto w-full max-w-none space-y-4">
-        <section className="min-h-[144px] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-5">
-          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
-            <div className="flex min-w-0 items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
-              <div className="min-w-0">
-                <p className="text-sm font-extrabold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
-                <h1 className="mt-0.5 whitespace-nowrap text-lg font-black leading-tight tracking-tight text-slate-950 xl:text-xl">Question Bank Control Center</h1>
-                <p className="mt-1 text-base font-semibold text-slate-600">Manage all questions</p>
-              </div>
-            </div>
-            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">
-              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
-                <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>
-              </div>
-              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
-                {!showTrash && (
-                  <>
-                    <Button onClick={openAddForm} className="flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md bg-blue-700 px-1 text-base font-black leading-tight text-white hover:bg-blue-800"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span className="text-center text-base font-black">নতুন প্রশ্ন</span></Button>
-                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80"><QuestionImportPanel /></div>
-                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md border border-slate-300 bg-white px-1 text-base font-black leading-tight text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><span className="text-base font-black">Export</span></a>
-                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-violet-200 bg-violet-50/40 transition-colors hover:border-violet-400 hover:bg-violet-100/80"><QuestionImportTemplates /></div>
-                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50/40 transition-colors hover:border-blue-400 hover:bg-blue-100/80"><QuestionImportHistory /></div>
-                  </>
-                )}
-                <button type="button" onClick={toggleTrash} className={`flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md border px-1 text-base font-black leading-tight transition-colors ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
-                  <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  <span className="text-center text-base font-black">{showTrash ? "Question Bank" : "Trash"}{!showTrash && deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </section>
-
         <div className="grid w-full grid-cols-2 gap-6 lg:grid-cols-4">
           {[
             {
@@ -1218,6 +1185,41 @@ export default function QuestionBankPage() {
             </Card>
           ))}
         </div>
+
+        <section className="min-h-[144px] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-5">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
+              <div className="min-w-0">
+                <p className="text-sm font-extrabold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+                <h1 className="mt-0.5 whitespace-nowrap text-lg font-black leading-tight tracking-tight text-slate-950 xl:text-xl">Question Bank Control Center</h1>
+                <p className="mt-1 text-base font-semibold text-slate-600">Manage all questions</p>
+              </div>
+            </div>
+            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">
+              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
+                <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>
+              </div>
+              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
+                {!showTrash && (
+                  <>
+                    <Button onClick={openAddForm} className="flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md bg-blue-700 px-1 text-base font-black leading-tight text-white hover:bg-blue-800"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span className="text-center text-base font-black">নতুন প্রশ্ন</span></Button>
+                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80"><QuestionImportPanel /></div>
+                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md border border-slate-300 bg-white px-1 text-base font-black leading-tight text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><span className="text-base font-black">Export</span></a>
+                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-violet-200 bg-violet-50/40 transition-colors hover:border-violet-400 hover:bg-violet-100/80"><QuestionImportTemplates /></div>
+                    <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50/40 transition-colors hover:border-blue-400 hover:bg-blue-100/80"><QuestionImportHistory /></div>
+                  </>
+                )}
+                <button type="button" onClick={toggleTrash} className={`flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md border px-1 text-base font-black leading-tight transition-colors ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
+                  <svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="text-center text-base font-black">{showTrash ? "Question Bank" : "Trash"}{!showTrash && deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+
 
         {!showTrash && (
           <>
