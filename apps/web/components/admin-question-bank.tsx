@@ -1518,7 +1518,7 @@ export default function QuestionBankPage() {
 
         <div className="grid min-w-0 grid-cols-1 gap-3 rounded-lg border border-slate-300 bg-white p-3 shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
           <section className="min-w-0">
-            <div className="grid min-w-0 grid-cols-1 items-center gap-2 2xl:grid-cols-[190px_minmax(0,1fr)]">
+            <div className="grid min-w-0 grid-cols-1 items-center gap-2 xl:grid-cols-[170px_minmax(0,1fr)]">
               <button
                 type="button"
                 onClick={() => setManagementWorkspaceOpen((open) => !open)}
@@ -1528,7 +1528,7 @@ export default function QuestionBankPage() {
                 <span className="whitespace-nowrap text-base font-black leading-tight text-slate-900"><span className="text-lg text-slate-700">▦</span> Management Workspace</span>
                 <span className="text-sm font-bold text-slate-600" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
               </button>
-              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-4">
+              <div className="grid min-w-0 grid-cols-2 gap-1.5 grid-cols-4">
                 <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }}
                   className={`flex h-12 min-w-0 items-center justify-center gap-1 rounded-md border border-blue-500 bg-blue-50/40 px-1 text-center transition hover:border-blue-700 hover:bg-blue-50 ${viewMode === "single" ? "border-blue-700 bg-blue-50/80" : ""}`}>
                   <span className="text-base leading-none">▰</span><span className="truncate text-[11px] font-extrabold text-slate-900">All Questions</span><strong className="text-xs font-black text-slate-900">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
@@ -1549,7 +1549,7 @@ export default function QuestionBankPage() {
             </div>
 
             {managementWorkspaceOpen && (
-              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2 2xl:grid-cols-4">
+              <div className="mt-2 grid min-w-0 grid-cols-1 gap-2 border-t border-slate-200 pt-2 sm:grid-cols-2 xl:grid-cols-4">
 
                   <div className="flex h-14 min-w-0 items-center gap-2 rounded-md border border-slate-600 bg-slate-50/70 p-2">
                     <span className="shrink-0 text-xs font-bold text-slate-800">Search</span>
