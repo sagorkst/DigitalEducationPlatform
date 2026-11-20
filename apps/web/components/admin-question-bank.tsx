@@ -1143,47 +1143,6 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto w-full max-w-none space-y-4">
-        <div className="grid w-full grid-cols-2 gap-6 lg:grid-cols-4">
-          {[
-            {
-              label: "মোট প্রশ্ন",
-              value: globalStats.totalQuestions.toLocaleString("bn-BD"),
-              icon: "📚",
-            },
-            {
-              label: "প্রতিষ্ঠান",
-              value: globalStats.totalInstitutions.toLocaleString("bn-BD"),
-              icon: "🏛️",
-            },
-            {
-              label: "পরীক্ষা",
-              value: globalStats.totalExams.toLocaleString("bn-BD"),
-              icon: "📝",
-            },
-            {
-              label: "বিষয়",
-              value: globalStats.totalSubjects.toLocaleString("bn-BD"),
-              icon: "📖",
-            },
-          ].map((item) => (
-            <Card key={item.label} className="group overflow-hidden rounded-2xl border border-slate-200 bg-gradient-to-br from-white to-blue-50/70 shadow-sm transition-all duration-200 hover:border-blue-300 hover:from-blue-50 hover:to-blue-100/80 hover:shadow-md">
-              <CardContent className="flex min-h-[150px] items-center justify-center gap-6 p-5">
-                <div className="shrink-0 text-5xl">
-                  {item.icon}
-                </div>
-                <div className="min-w-0 text-center">
-                  <p className="text-3xl font-extrabold leading-tight text-slate-700">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-2xl font-black leading-tight text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
         <section className="min-h-[144px] rounded-2xl border border-slate-200 bg-white p-5 shadow-sm md:p-5">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -1574,21 +1533,21 @@ export default function QuestionBankPage() {
 
             {managementWorkspaceOpen && (
               <div className="mt-3 grid w-full grid-cols-2 gap-2 border-t border-slate-100 pt-3">
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex h-[60px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); }} className={`group flex min-h-[76px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "single" ? "border-blue-400 bg-blue-50/70 ring-1 ring-blue-200" : "border-slate-200 bg-gradient-to-br from-blue-50/70 to-white hover:border-blue-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">▰</span>
-                  <span className="text-base font-black leading-tight text-slate-900">সকল প্রশ্ন</span>
+                  <span className="flex min-w-0 flex-col items-start text-left leading-tight"><span className="text-sm font-extrabold text-slate-900">সকল প্রশ্ন</span><strong className="mt-1 text-xl font-black text-slate-900">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[60px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex min-h-[76px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">🏛️</span>
-                  <span className="text-base font-black leading-tight text-slate-900">প্রতিষ্ঠান</span>
+                  <span className="flex min-w-0 flex-col items-start text-left leading-tight"><span className="text-sm font-extrabold text-slate-900">প্রতিষ্ঠান</span><strong className="mt-1 text-xl font-black text-slate-900">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[60px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex min-h-[76px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 py-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">📋</span>
-                  <span className="text-base font-black leading-tight text-slate-900">Exam</span>
+                  <span className="flex min-w-0 flex-col items-start text-left leading-tight"><span className="text-sm font-extrabold text-slate-900">Exam</span><strong className="mt-1 text-xl font-black text-slate-900">{globalStats.totalExams.toLocaleString("bn-BD")}</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-[60px] min-w-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-2 text-center transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex min-h-[76px] min-w-0 items-center justify-center gap-2 rounded-lg border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-2 py-2 text-center transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
                   <span className="shrink-0 text-3xl leading-none">📖</span>
-                  <span className="text-base font-black leading-tight text-slate-900">বিষয়</span>
+                  <span className="flex min-w-0 flex-col items-start text-left leading-tight"><span className="text-sm font-extrabold text-slate-900">বিষয়</span><strong className="mt-1 text-xl font-black text-slate-900">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong></span>
                 </button>
               </div>
             )}
