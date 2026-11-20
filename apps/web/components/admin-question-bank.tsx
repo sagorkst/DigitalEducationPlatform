@@ -210,6 +210,7 @@ export default function QuestionBankPage() {
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState("");
   const [totalQuestions, setTotalQuestions] = useState(0);
+  const [globalStats, setGlobalStats] = useState({ totalQuestions: 0, totalInstitutions: 0, totalExams: 0, totalSubjects: 0 });
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
   const [allMatchingSelected, setAllMatchingSelected] = useState(false);
@@ -320,6 +321,14 @@ export default function QuestionBankPage() {
         institutions: result.data?.institutions ?? [],
         exams: result.data?.exams ?? [],
       });
+      if (result.stats) {
+        setGlobalStats({
+          totalQuestions: Number(result.stats.totalQuestions ?? 0),
+          totalInstitutions: Number(result.stats.totalInstitutions ?? 0),
+          totalExams: Number(result.stats.totalExams ?? 0),
+          totalSubjects: Number(result.stats.totalSubjects ?? 0),
+        });
+      }
     } catch (error) {
       setPageError(
         error instanceof Error ? error.message : "Exam group লোড করতে সমস্যা হয়েছে।",
@@ -1111,6 +1120,47 @@ export default function QuestionBankPage() {
 </div>
         </div>
 
+        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
+          {[
+            {
+              label: "মোট প্রশ্ন",
+              value: globalStats.totalQuestions.toLocaleString("bn-BD"),
+              icon: "📚",
+            },
+            {
+              label: "প্রতিষ্ঠান",
+              value: globalStats.totalInstitutions.toLocaleString("bn-BD"),
+              icon: "🏛️",
+            },
+            {
+              label: "পরীক্ষা",
+              value: globalStats.totalExams.toLocaleString("bn-BD"),
+              icon: "📝",
+            },
+            {
+              label: "বিষয়",
+              value: globalStats.totalSubjects.toLocaleString("bn-BD"),
+              icon: "📖",
+            },
+          ].map((item) => (
+            <Card key={item.label}>
+              <CardContent className="flex items-center gap-3 pt-6">
+                <div className="rounded-xl bg-blue-50 p-3 text-2xl">
+                  {item.icon}
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-slate-500">
+                    {item.label}
+                  </p>
+                  <p className="mt-1 text-xl font-black text-slate-900">
+                    {item.value}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
         <Card className="border-slate-200 shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center gap-3">
@@ -1166,53 +1216,6 @@ export default function QuestionBankPage() {
             </Button>
           </div>
         )}
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[
-            {
-              label: "মোট প্রশ্ন",
-              value: totalQuestions.toLocaleString("bn-BD"),
-              icon: "📚",
-            },
-            {
-              label: "প্রতিষ্ঠান",
-              value: new Set(
-                questions.map((q) => q.institution).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "🏛️",
-            },
-            {
-              label: "পরীক্ষা",
-              value: new Set(
-                questions.map((q) => q.exam).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "📝",
-            },
-            {
-              label: "বিষয়",
-              value: new Set(
-                questions.map((q) => q.subject).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "📖",
-            },
-          ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className="flex items-center gap-3 pt-6">
-                <div className="rounded-xl bg-blue-50 p-3 text-2xl">
-                  {item.icon}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-xl font-black text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
           </>
         )}
