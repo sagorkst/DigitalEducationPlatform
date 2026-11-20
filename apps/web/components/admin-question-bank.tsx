@@ -1144,7 +1144,7 @@ export default function QuestionBankPage() {
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
-      <div className="mx-auto max-w-[1920px] space-y-4">
+      <div className="mx-auto max-w-[2040px] space-y-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,2.28fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
@@ -1163,14 +1163,14 @@ export default function QuestionBankPage() {
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
                 {!showTrash && (
                   <>
-                    <Button onClick={openAddForm} className="h-12 w-full min-w-0 whitespace-nowrap rounded-lg bg-blue-700 px-3 text-xs font-semibold text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>
-                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-emerald-200 bg-emerald-50/40 px-2 py-1.5"><QuestionImportPanel /></div>
-                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-violet-200 bg-violet-50/40 px-2 py-1.5"><QuestionImportTemplates /></div>
-                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-lg border border-blue-200 bg-blue-50/40 px-2 py-1.5"><QuestionImportHistory /></div>
-                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-12 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
+                    <Button onClick={openAddForm} className="h-12 w-full min-w-0 whitespace-nowrap rounded-md bg-blue-700 px-3 text-xs font-semibold text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>
+                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 px-2 py-1.5"><QuestionImportPanel /></div>
+                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-md border border-violet-200 bg-violet-50/40 px-2 py-1.5"><QuestionImportTemplates /></div>
+                    <div className="flex h-12 min-w-0 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50/40 px-2 py-1.5"><QuestionImportHistory /></div>
+                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-12 w-full min-w-0 items-center justify-center whitespace-nowrap rounded-md border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
                   </>
                 )}
-                <button type="button" onClick={toggleTrash} className={`flex h-12 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-lg border px-3 text-xs font-semibold transition ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
+                <button type="button" onClick={toggleTrash} className={`flex h-12 w-full min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-md border px-3 text-xs font-semibold transition ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
                   <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
                   {showTrash ? "Question Bank" : "Trash"}{!showTrash && deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}
                 </button>
