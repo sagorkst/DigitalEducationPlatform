@@ -1663,67 +1663,43 @@ export default function QuestionBankPage() {
                   </span>
                 </div>
 
-                <div className="rounded-lg border border-slate-200 bg-slate-50/70 p-2.5">
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <h3 className="text-sm font-extrabold text-slate-800">① Selection</h3>
-                    {allMatchingSelected && excludedQuestionIds.length > 0 && (
-                      <span className="text-[11px] font-bold text-amber-700">বাদ: {excludedQuestionIds.length.toLocaleString("bn-BD")}টি</span>
-                    )}
-                  </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={toggleCurrentPageSelection}
-                      disabled={loading || filteredQuestions.length === 0 || bulkSaving || allMatchingSelected}>
-                      বর্তমান পৃষ্ঠা Select
-                    </Button>
-                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                      disabled={loading || totalQuestions === 0 || bulkSaving}>
-                      {allMatchingSelected ? "সব Filtered নির্বাচিত" : "সব Filtered Select"}
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={invertCurrentPageSelection}
-                      disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
-                      ⇄ Invert Page
-                    </Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
-                      disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
-                      ✕ Clear Selection
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5">
-                  <h3 className="mb-2 text-sm font-extrabold text-slate-800">② Bulk Edit</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select label="Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs">
-                      <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
-                    </Select>
-                    <Select label="Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-9 min-w-0 rounded-md px-2 py-1 text-xs">
-                      <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                    </Select>
-                  </div>
-                  <Button type="button" size="sm" className="mt-2 h-9 w-full rounded-md text-xs font-extrabold"
-                    onClick={() => void applyBulkEdit()}
-                    disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
-                    {bulkSaving ? "Processing..." : "Apply Changes"}
+                <div className="grid grid-cols-3 gap-1.5">
+                  <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
+                    onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                    disabled={loading || totalQuestions === 0 || bulkSaving}>
+                    {allMatchingSelected ? "Selected All" : "Select All"}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
+                    onClick={invertCurrentPageSelection}
+                    disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
+                    ⇄ Invert
+                  </Button>
+                  <Button type="button" size="sm" variant="ghost" className="h-8 min-w-0 rounded-md px-1.5 text-[11px] font-bold"
+                    onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                    disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
+                    ✕ Clear
                   </Button>
                 </div>
 
-                <div className="rounded-lg border border-slate-200 bg-white p-2.5">
-                  <h3 className="mb-2 text-sm font-extrabold text-slate-800">③ Quick Actions</h3>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={() => void applyBulkEdit("PUBLISHED")}
-                      disabled={bulkSaving || bulkSelectionCount === 0}>✓ Publish Selected</Button>
-                    <Button type="button" size="sm" variant="outline" className="h-9 min-w-0 rounded-md px-2 text-xs font-bold"
-                      onClick={() => void applyBulkEdit("DRAFT")}
-                      disabled={bulkSaving || bulkSelectionCount === 0}>▤ Save as Draft</Button>
-                    <Button type="button" size="sm" variant="outline" className="col-span-2 h-9 min-w-0 rounded-md border-red-300 px-2 text-xs font-extrabold text-red-700 hover:bg-red-50"
-                      onClick={() => void bulkDeleteQuestions()}
-                      disabled={bulkSaving || bulkSelectionCount === 0}>⌫ Move Selected to Trash</Button>
-                  </div>
+                <div className="flex min-w-0 flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white p-2">
+                  <span className="shrink-0 text-xs font-extrabold text-slate-700">Set Difficulty:</span>
+                  <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-w-0 flex-1 rounded-md px-2 py-1 text-xs">
+                    <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                  </Select>
+                  <span className="shrink-0 text-xs font-extrabold text-slate-700">Status:</span>
+                  <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-8 min-w-0 flex-1 rounded-md px-2 py-1 text-xs">
+                    <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                  </Select>
+                  <Button type="button" size="sm" className="h-8 shrink-0 rounded-md px-3 text-xs font-extrabold"
+                    onClick={() => void applyBulkEdit()}
+                    disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
+                    {bulkSaving ? "..." : "Apply"}
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" className="h-8 shrink-0 rounded-md border-red-300 px-3 text-xs font-extrabold text-red-700 hover:bg-red-50"
+                    onClick={() => void bulkDeleteQuestions()}
+                    disabled={bulkSaving || bulkSelectionCount === 0}>
+                    ✕ Delete
+                  </Button>
                 </div>
 
                 <div className="rounded-lg border border-amber-200 bg-amber-50/60 p-2.5">
