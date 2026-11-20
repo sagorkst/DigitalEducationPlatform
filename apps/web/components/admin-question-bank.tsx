@@ -598,7 +598,6 @@ export default function QuestionBankPage() {
   const bulkDeleteQuestions = async () => {
     if (!allMatchingSelected && selectedQuestionIds.length === 0) {
       setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");      return;    }
-
     if (!allMatchingSelected && selectedQuestionIds.length > 500) {
       setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন Trash-এ পাঠানো যাবে।");
       return;
@@ -1197,8 +1196,7 @@ export default function QuestionBankPage() {
             </div>
             <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[124px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">              <div className="flex min-h-[104px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
                 <h2 className="flex flex-col gap-1 whitespace-nowrap text-lg font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>              </div>
-              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">
-                {!showTrash && (
+              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-3 lg:grid-cols-6">                {!showTrash && (
                   <>
                     <Button onClick={openAddForm} className="flex h-full min-h-[104px] w-full min-w-0 flex-col items-center justify-center gap-2 whitespace-normal rounded-md bg-blue-700 px-1 text-base font-black leading-tight text-white hover:bg-blue-800"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span className="text-center text-base font-black">নতুন প্রশ্ন</span></Button>
                     <div className="flex h-full min-h-[104px] min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80"><QuestionImportPanel /></div>
@@ -1569,11 +1567,11 @@ export default function QuestionBankPage() {
                   <span className="shrink-0 text-3xl leading-none">▰</span>
                   <span className="text-base font-black leading-tight text-slate-900">সকল প্রশ্ন</span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
+                <button type="button" onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[60px] w-full max-w-[216px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "institution" ? "border-emerald-400 bg-emerald-50/70 ring-1 ring-emerald-200" : "border-slate-200 bg-gradient-to-br from-emerald-50/70 to-white hover:border-emerald-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">🏛️</span>
                   <span className="text-base font-black leading-tight text-slate-900">প্রতিষ্ঠান</span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[64px] min-w-0 items-center justify-center gap-3 rounded-lg border px-3 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
+                <button type="button" onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); void loadGroupOptions(); }} className={`group flex h-[60px] w-full max-w-[216px] min-w-0 items-center justify-center gap-2 rounded-lg border px-2 text-center transition hover:-translate-y-0.5 hover:shadow-sm ${viewMode === "exam" ? "border-orange-400 bg-orange-50/70 ring-1 ring-orange-200" : "border-slate-200 bg-gradient-to-br from-orange-50/70 to-white hover:border-orange-300"}`}>
                   <span className="shrink-0 text-3xl leading-none">📋</span>
                   <span className="text-base font-black leading-tight text-slate-900">Exam</span>
                 </button>
@@ -1636,7 +1634,7 @@ export default function QuestionBankPage() {
                       </Select>
                     </div>
 
-                    <div className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
+                    <div className={`rounded-lg border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.status ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}>
                       <Select
                         label="Status"
                         value={filters.status}
@@ -1656,7 +1654,7 @@ export default function QuestionBankPage() {
                       return (
                         <div
                           key={filter.key}
-                          className={`rounded-lg border p-1.5 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${isActive ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}
+                          className={`rounded-lg border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${isActive ? "border-blue-400 bg-blue-50 [&_label]:text-blue-800 [&_select]:!border-blue-400 [&_select]:!bg-blue-50 [&_select]:!text-blue-900" : "border-transparent bg-slate-50/70"}`}
                         >
                           <Select
                             label={filter.label}
@@ -1797,8 +1795,7 @@ export default function QuestionBankPage() {
                           {group.institutionName} · {group.examYear}
                           {group.postName ? ` · ${group.postName}` : ""}                          {group.department ? ` · ${group.department}` : ""}                        </p>
                       </button>
-                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
-                        <Button
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">                        <Button
                           type="button"
                           size="sm"
                           variant="outline"
