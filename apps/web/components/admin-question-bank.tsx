@@ -1727,16 +1727,16 @@ export default function QuestionBankPage() {
                         <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
                       </Select>
                     </label>
-                    <label className="min-w-0 text-[10px] font-bold text-slate-600">
+                    <label className="min-w-0 text-xs font-extrabold text-slate-700">
                       Status
-                      <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="mt-1 h-9 min-w-0 w-full rounded-md px-1 py-1 text-[11px]">
+                      <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="mt-1 h-11 min-w-0 w-full rounded-lg px-1.5 py-1 text-xs font-semibold">
                         <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                       </Select>
                     </label>
                     <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 whitespace-nowrap rounded-lg border-emerald-300 px-1.5 text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-50" onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
                       Publish All ({draftCount.toLocaleString("bn-BD")})
                     </Button>
-                    <Button type="button" size="sm" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => void applyBulkEdit() disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
+                    <Button type="button" size="sm" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => void applyBulkEdit()} disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
                       <span aria-hidden="true">✓</span><span className="ml-1">{bulkSaving ? "..." : "Apply"}</span>
                     </Button>
                   </div>
