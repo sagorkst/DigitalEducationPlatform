@@ -1590,7 +1590,7 @@ export default function QuestionBankPage() {
           </section>
         </div>
 
-        {true && (        {true && (
+        {true && (
         <Card className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <CardHeader className="pb-3">
             <div className="flex flex-wrap items-center justify-between gap-3">
