@@ -1144,14 +1144,14 @@ export default function QuestionBankPage() {
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
-      <div className="mx-auto max-w-[2040px] space-y-4">
+      <div className="mx-auto w-full max-w-none space-y-4">
         <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-3">
-          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(260px,0.72fr)_minmax(0,2.28fr)] lg:items-center lg:gap-5">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-5">
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
               <div className="min-w-0">
                 <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
-                <h1 className="mt-0.5 text-lg font-black leading-tight tracking-tight text-slate-950 md:text-xl">Question Bank Control Center</h1>
+                <h1 className="mt-0.5 whitespace-nowrap text-base font-black leading-tight tracking-tight text-slate-950 xl:text-lg">Question Bank Control Center</h1>
                 <p className="mt-0.5 text-[11px] text-slate-500">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
               </div>
             </div>
