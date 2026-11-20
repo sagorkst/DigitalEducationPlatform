@@ -1145,22 +1145,55 @@ export default function QuestionBankPage() {
   return (
     <main className="min-h-screen bg-[#f3f6fb] p-3 md:p-5">
       <div className="mx-auto max-w-[1720px] space-y-4">
-        <div className="flex flex-col justify-between gap-4 rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm lg:flex-row lg:items-center">
-          <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-50 text-3xl">📖</div>
-            <div>
-              <p className="text-xs font-bold uppercase tracking-[0.16em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
-              <h1 className="mt-1 text-2xl font-black tracking-tight text-slate-950 md:text-3xl">Question Bank Control Center</h1>
-              <p className="mt-1 text-sm text-slate-500">এখান থেকে সব ধরনের প্রশ্ন কার্যকরভাবে পরিচালনা করুন</p>
+        <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm md:p-4">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-center">
+            <div className="flex min-w-0 flex-col justify-between gap-3 xl:w-[34%]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-2xl">📖</div>
+                <div className="min-w-0">
+                  <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+                  <h1 className="mt-0.5 text-xl font-black leading-tight tracking-tight text-slate-950 md:text-2xl">Question Bank Control Center</h1>
+                  <p className="mt-1 text-xs text-slate-500">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                {!showTrash && <Button onClick={openAddForm} className="h-8 bg-blue-700 px-3 text-xs text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>}
+                <a href="/api/imports/export?format=xlsx" className="inline-flex h-8 items-center rounded-lg border border-slate-300 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
+                <Button type="button" variant={showTrash ? "primary" : "outline"} onClick={toggleTrash} className={showTrash ? "h-8 bg-violet-700 px-3 text-xs text-white" : "h-8 border-violet-200 px-3 text-xs text-violet-700 hover:bg-violet-50"}>▣ {showTrash ? "Question Bank" : "Trash"}</Button>
+              </div>
+            </div>
+            <div className="min-w-0 flex-1 border-t border-slate-100 pt-3 xl:border-l xl:border-t-0 xl:pl-4 xl:pt-0">
+              <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                <div>
+                  <h2 className="text-sm font-extrabold text-slate-900">Import &amp; Data Tools</h2>
+                  <p className="text-[11px] text-slate-500">প্রশ্ন প্রস্তুত, OCR এবং ডেটা পরিচালনা করুন</p>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-semibold text-emerald-700">QUICK TOOLS</span>
+              </div>
+              <div className="grid grid-cols-2 gap-2 2xl:grid-cols-4">
+                {!showTrash && (
+                  <>
+                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-emerald-200 bg-emerald-50/40 px-2 py-1.5 transition hover:bg-emerald-50">
+                      <QuestionImportPanel />
+                    </div>
+                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-violet-200 bg-violet-50/40 px-2 py-1.5 transition hover:bg-violet-50">
+                      <QuestionImportTemplates />
+                    </div>
+                    <div className="flex min-h-[64px] min-w-0 items-center rounded-lg border border-blue-200 bg-blue-50/40 px-2 py-1.5 transition hover:bg-blue-50">
+                      <QuestionImportHistory />
+                    </div>
+                  </>
+                )}
+                <button type="button" onClick={toggleTrash} className="flex min-h-[64px] min-w-0 items-center gap-2 rounded-lg border border-red-200 bg-red-50/50 px-2.5 py-2 text-left text-red-700 transition hover:bg-red-50">
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-100">
+                    <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  </span>
+                  <span className="min-w-0"><span className="block text-xs font-bold">{showTrash ? "Trash বন্ধ করুন" : "Trash"}</span><span className="mt-0.5 block text-[10px] leading-tight text-slate-500">{deletedQuestions.length > 0 ? `${deletedQuestions.length.toLocaleString("bn-BD")}টি মুছে ফেলা প্রশ্ন` : "প্রশ্ন পুনরুদ্ধার করুন"}</span></span>
+                </button>
+              </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            {!showTrash && <Button onClick={openAddForm} className="h-10 bg-blue-700 px-4 text-white hover:bg-blue-800">+ নতুন প্রশ্ন</Button>}
-            <a href="/api/imports/export?format=xlsx" className="inline-flex h-10 items-center rounded-lg border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 hover:bg-slate-50">⇩ Export</a>
-            {!showTrash && <span className="inline-flex h-10 items-center rounded-lg border border-emerald-200 bg-emerald-50 px-3 text-sm font-semibold text-emerald-800">Import &amp; OCR নিচে</span>}
-            <Button type="button" variant={showTrash ? "primary" : "outline"} onClick={toggleTrash} className={showTrash ? "h-10 bg-violet-700 text-white" : "h-10 border-violet-200 text-violet-700 hover:bg-violet-50"}>▣ {showTrash ? "Question Bank" : "View Trash"}</Button>
-          </div>
-        </div>
+        </section>
 
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {[
@@ -1202,46 +1235,6 @@ export default function QuestionBankPage() {
             </Card>
           ))}
         </div>
-
-        <Card className="border-slate-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700">
-                  <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5h14v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
-                </div>
-                <div>
-                  <CardTitle>Import &amp; Data Tools</CardTitle>
-                  <p className="mt-1 text-sm text-slate-500">প্রশ্ন প্রস্তুত, OCR এবং ডেটা পরিচালনা করুন</p>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-              {!showTrash && (
-              <>
-              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-emerald-300 hover:bg-emerald-50/40">
-                <QuestionImportPanel />
-              </div>
-              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-violet-300 hover:bg-violet-50/40">
-                <QuestionImportTemplates />
-              </div>
-              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-amber-300 hover:bg-amber-50/40">
-                <QuestionImportHistory />
-              </div>
-              </>
-              )}
-              <div className="flex min-h-14 items-center justify-center rounded-lg border border-slate-200 bg-white px-3 py-2 hover:border-red-300 hover:bg-red-50/40">
-                <button type="button" onClick={toggleTrash} className="flex min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-red-700 transition hover:bg-red-50/60">
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-red-100 text-red-700">
-                    <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                  </span>
-                  <span className="min-w-0">
-                    <span className="block text-sm font-bold">{showTrash ? "Trash বন্ধ করুন" : "Trash"}</span>
-                    <span className="mt-0.5 block text-xs font-normal text-slate-500">{deletedQuestions.length > 0 ? `${deletedQuestions.length.toLocaleString("bn-BD")}টি মুছে ফেলা প্রশ্ন` : "মুছে ফেলা প্রশ্ন পুনরুদ্ধার করুন"}</span>
-                  </span>
-                </button>
-              </div>
-            </CardContent>
-          </Card>
 
         {!showTrash && (
           <>
