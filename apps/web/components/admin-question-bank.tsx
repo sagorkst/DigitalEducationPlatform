@@ -1150,14 +1150,14 @@ export default function QuestionBankPage() {
             <div className="flex min-w-0 items-center gap-2.5">
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-50 text-xl">📖</div>
               <div className="min-w-0">
-                <p className="text-[9px] font-bold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
-                <h1 className="mt-0.5 whitespace-nowrap text-base font-black leading-tight tracking-tight text-slate-950 xl:text-lg">Question Bank Control Center</h1>
-                <p className="mt-0.5 text-[11px] text-slate-500">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
+                <p className="text-[11px] font-bold uppercase tracking-[0.13em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+                <h1 className="mt-0.5 whitespace-nowrap text-lg font-black leading-tight tracking-tight text-slate-950 xl:text-xl">Question Bank Control Center</h1>
+                <p className="mt-1 text-sm font-medium text-slate-600">সব ধরনের প্রশ্ন এক জায়গা থেকে পরিচালনা করুন</p>
               </div>
             </div>
             <div className="min-w-0 lg:border-l lg:border-slate-100 lg:pl-4">
               <div className="mb-1 flex items-center justify-between gap-2">
-                <h2 className="text-xs font-extrabold text-slate-800">Import &amp; Data Tools</h2>
+                <h2 className="text-base font-extrabold text-slate-900">Import &amp; Data Tools</h2>
                 
               </div>
               <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-6">
