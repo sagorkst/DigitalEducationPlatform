@@ -572,17 +572,17 @@ export default function QuestionImportPanel() {
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="flex h-auto min-h-[68px] w-full items-center justify-start gap-3 rounded-lg bg-white px-3 py-2 text-left text-slate-900 transition hover:bg-emerald-50/50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
+        className="flex h-10 w-full min-w-0 items-center justify-start gap-2 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-200"
       >
         <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
           <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </span>
         <span className="min-w-0">
-          <span className="block text-sm font-bold">প্রশ্ন Import</span>
-          <span className="mt-0.5 block text-xs font-normal text-slate-500">ফাইল থেকে প্রশ্ন যুক্ত করুন</span>
+          <span className="block truncate text-[11px] font-bold">প্রশ্ন Import</span>
+          <span className="mt-0.5 block truncate text-[9px] font-normal text-slate-500">ফাইল থেকে প্রশ্ন যুক্ত করুন</span>
         </span>
       </button>
 
