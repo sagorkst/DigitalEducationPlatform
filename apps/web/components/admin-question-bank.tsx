@@ -1688,7 +1688,7 @@ export default function QuestionBankPage() {
           </section>
 
           <aside className="h-full min-w-0 border-t border-slate-100 p-3 sm:p-4 xl:border-l xl:border-t-0">
-            {!showTrash && viewMode === "single" && (
+            {!showTrash && (
               <section className="flex h-full min-w-0 flex-col justify-between gap-3" aria-label="Question Control Center">
                 <div className="flex items-center justify-between gap-2">
                   <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-900">
