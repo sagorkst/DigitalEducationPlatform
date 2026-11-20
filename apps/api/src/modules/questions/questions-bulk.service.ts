@@ -17,7 +17,10 @@ export class QuestionsBulkService {
     private readonly questionsService: QuestionsService,
   ) {}
 
-  private async collectFilteredIds(filters: BulkFilteredQuestionsDto['filters']) {
+  private async collectFilteredIds(
+    filters: BulkFilteredQuestionsDto['filters'],
+    excludedIds: string[] = [],
+  ) {
     const ids: string[] = [];
     let page = 1;
     let totalPages = 1;
@@ -31,13 +34,15 @@ export class QuestionsBulkService {
       totalPages = result.pagination.totalPages;
       page += 1;
     } while (page <= totalPages);
-    return ids;
+    if (excludedIds.length === 0) return ids;
+    const excluded = new Set(excludedIds);
+    return ids.filter((id) => !excluded.has(id));
   }
 
   async bulkUpdateFiltered(dto: BulkFilteredQuestionsDto) {
     const updates = dto.updates;
     if (!updates) throw new BadRequestException('Bulk updates are required.');
-    const ids = await this.collectFilteredIds(dto.filters);
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
     let updatedCount = 0;
     let batches = 0;
     for (let index = 0; index < ids.length; index += 500) {
