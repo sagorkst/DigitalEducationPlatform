@@ -1557,7 +1557,7 @@ export default function QuestionBankPage() {
                   <span className="shrink-0 text-2xl leading-none">📋</span>
                   <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">Exam</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalExams.toLocaleString("bn-BD")} )</strong></span>
                 </button>
-                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-14 w-full max-w-none min-w-0 items-center justify-start gap-4 rounded-lg border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-4 py-2 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
+                <button type="button" onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }} className="group flex h-12 w-full max-w-none min-w-0 items-center justify-start gap-2 rounded-md border border-slate-200 bg-gradient-to-br from-violet-50/70 to-white px-3 py-1.5 text-left transition hover:-translate-y-0.5 hover:border-violet-300 hover:shadow-sm">
                   <span className="shrink-0 text-2xl leading-none">📖</span>
                   <span className="flex min-w-0 items-center gap-2 whitespace-nowrap"><span className="text-base font-extrabold text-slate-900">বিষয়</span><strong className="text-lg font-black text-slate-900">( {globalStats.totalSubjects.toLocaleString("bn-BD")} )</strong></span>
                 </button>
@@ -1573,7 +1573,7 @@ export default function QuestionBankPage() {
 
           {managementWorkspaceOpen && (
             <section className="flex min-w-0 items-center border-t border-slate-200 pt-3 xl:border-l xl:border-t-0 xl:py-1 xl:pl-4">
-              <div className="grid w-full grid-cols-3 items-center justify-items-stretch gap-3 [&>div]:min-w-0">
+              <div className="grid w-full grid-cols-3 items-center justify-items-stretch gap-2 [&>div]:min-w-0">
                 <div className={`flex h-12 min-w-0 items-center justify-center gap-2 rounded-md border p-2 transition-colors hover:border-blue-300 hover:bg-blue-50/60 ${filters.from ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-slate-50/70"}`}>
                   <span className="shrink-0 whitespace-nowrap text-sm font-extrabold text-slate-800">Year From:</span>
                   <div className="min-w-0 flex-1">
