@@ -328,10 +328,10 @@ export default function QuestionImportHistory() {
       <button
         type="button"
         onClick={openHistory}
-        className="flex h-10 w-full min-w-0 items-center justify-start gap-2 rounded-md bg-transparent px-2 text-left text-slate-800 transition hover:bg-blue-50"
+        className="flex h-full min-h-[72px] w-full min-w-0 flex-col items-center justify-center gap-2 rounded-md bg-transparent px-1 text-center text-slate-800 transition hover:bg-blue-50"
       >
-        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-blue-100 text-blue-700">
-          <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4"><path d="M12 8v5l3 2M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-100 text-blue-700">
+          <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M12 8v5l3 2M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
         </span>
         <span className="min-w-0">
           <span className="block truncate text-[11px] font-bold">Import History</span>
