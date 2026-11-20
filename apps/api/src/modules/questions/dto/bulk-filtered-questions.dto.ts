@@ -1,6 +1,9 @@
 import { Type } from 'class-transformer';
 import {
   IsOptional,
+  IsArray,
+  ArrayUnique,
+  IsUUID,
   IsString,
   MaxLength,
   ValidateNested,
@@ -30,6 +33,12 @@ export class BulkFilteredQuestionsDto {
   @ValidateNested()
   @Type(() => BulkQuestionFilterDto)
   filters!: BulkQuestionFilterDto;
+
+  @IsOptional()
+  @IsArray()
+  @ArrayUnique()
+  @IsUUID('4', { each: true })
+  excludedIds?: string[];
 
   @IsOptional()
   @ValidateNested()
