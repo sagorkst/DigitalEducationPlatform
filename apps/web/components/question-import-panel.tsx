@@ -580,10 +580,7 @@ export default function QuestionImportPanel() {
         <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700">
           <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </span>
-        <span className="min-w-0">
-          <span className="block truncate text-[11px] font-bold">প্রশ্ন Import</span>
-          <span className="mt-0.5 block truncate text-[9px] font-normal text-slate-500">ফাইল থেকে প্রশ্ন যুক্ত করুন</span>
-        </span>
+        <span className="text-base font-extrabold leading-none">Import</span>
       </button>
 
       {open && (
