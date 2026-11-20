@@ -2068,7 +2068,7 @@ export default function QuestionBankPage() {
                     {filteredQuestions.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-500">কোনো প্রশ্ন পাওয়া যায়নি। Search অথবা Filter পরিবর্তন করে আবার চেষ্টা করুন।</td></tr>}
                   </tbody>
                 </table>
-              </div>              </div>
+              </div>
             )}
           </CardContent>
         </Card>
