@@ -1588,17 +1588,23 @@ export default function QuestionBankPage() {
 
         <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-            <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control</h2>
+            <h2 className="relative flex h-[60px] w-[180px] shrink-0 items-center justify-center pl-5 text-center text-base font-black leading-tight tracking-tight text-slate-950 sm:text-lg">
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-xl" aria-hidden="true">▦</span>
+              <span className="flex flex-col items-center justify-center">
+                <span>Management &amp;</span>
+                <span>Control</span>
+              </span>
+            </h2>
 
             <div className="mx-4 min-w-[220px] flex-1">
-              <div className="flex h-10 items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-3 transition-all duration-150 focus-within:border-blue-600 focus-within:shadow-[0_0_0_2px_rgba(37,99,235,0.16),0_0_10px_rgba(59,130,246,0.18)]">
+              <div className="flex h-10 items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-3 transition-all duration-150 focus-within:border-blue-700 focus-within:bg-blue-50/30 focus-within:shadow-[0_0_12px_rgba(37,99,235,0.3)]">
                 <span className="shrink-0 text-lg text-slate-500" aria-hidden="true">⌕</span>
                 <Input
                   aria-label="Search questions"
                   placeholder="Search questions by keyword..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus-visible:ring-0"
+                  className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none !outline-none !ring-0 focus:!outline-none focus:!ring-0 focus-visible:!outline-none focus-visible:!ring-0"
                 />
               </div>
             </div>
@@ -1819,8 +1825,8 @@ export default function QuestionBankPage() {
               )}
 
               <div className="flex min-w-0 flex-wrap items-center justify-start gap-x-[100px] gap-y-2 overflow-visible rounded-md border border-slate-200 bg-white py-2 pl-[100px] pr-4 text-base font-semibold text-slate-700">
-                <p className="whitespace-nowrap text-left">Found: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> Questions</p>
-                <p className="whitespace-nowrap text-left text-sm font-extrabold tabular-nums text-blue-800">Total: {bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
+                <p className="whitespace-nowrap text-left">Found: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("en-US")}</strong> Questions</p>
+                <p className="whitespace-nowrap text-left text-sm font-extrabold tabular-nums text-blue-800">Total: {bulkSelectionCount.toLocaleString("en-US")} Selected</p>
                 <p className="whitespace-nowrap text-left text-base font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
             </div>
