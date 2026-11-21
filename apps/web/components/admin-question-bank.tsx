@@ -1618,7 +1618,6 @@ export default function QuestionBankPage() {
               <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col">
-                  <div className="mb-1 h-5" aria-hidden="true" />
                   <div className="mx-auto grid w-full min-w-0 grid-cols-4 gap-2">
                     <button
                       type="button"
