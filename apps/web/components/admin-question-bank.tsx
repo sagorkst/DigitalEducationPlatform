@@ -1223,6 +1223,7 @@ export default function QuestionBankPage() {
 
   return (
     <main className="min-h-screen bg-[#f3f6fb] px-3 pb-3 pt-[3px] md:px-5 md:pb-5 md:pt-[3px]">
+      <style jsx global>{`@keyframes filter-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } } .filter-marquee-track { animation: filter-marquee 8s linear infinite; } .filter-marquee-track:hover { animation-play-state: paused; }`}</style>
       <div className="mx-auto w-full max-w-none space-y-4">
         <section className="min-h-[76px] rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-4">
@@ -1680,47 +1681,74 @@ export default function QuestionBankPage() {
                 </div>
               </div>
 
-              <div className="rounded-md bg-slate-50/70 p-2">
-                <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 sm:grid-cols-4 xl:grid-cols-8">
-                  <div className="min-w-0">
-                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Institution</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
+              <div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+                  {filterOptions.slice(0, 3).map((item) => {
+                    const value = filters[item.key as keyof typeof initialFilters];
+                    const display = value || item.label === "প্রতিষ্ঠান" ? (value || "Institution") : item.label === "পরীক্ষার নাম" ? (value || "Exam") : (value || "Post");
+                    const long = display.length > 15;
+                    return (
+                      <div key={item.key} className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                        <select aria-label={item.key} value={value} onChange={(e) => updateFilter(item.key as keyof typeof initialFilters, e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                          <option value="">{item.key === "institution" ? "Institution" : item.key === "exam" ? "Exam" : "Post"}</option>
+                          {item.options.map((option) => <option key={option} value={option} className="text-slate-900">{option}</option>)}
+                        </select>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-5">
+                          {long ? (
+                            <span className="filter-marquee-track flex w-max shrink-0 items-center gap-8 whitespace-nowrap text-[13px] font-medium text-slate-700">
+                              <span>{display}</span><span aria-hidden="true">{display}</span>
+                            </span>
+                          ) : (
+                            <span className="max-w-full truncate whitespace-nowrap text-center text-[13px] font-medium text-slate-700">{display}</span>
+                          )}
+                        </div>
+                        <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                      </div>
+                    );
+                  })}
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year} className="text-slate-900">{year}</option>)}
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.from || "Year From"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
                   </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Exam</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year} className="text-slate-900">{year}</option>)}
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.to || "Year To"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
                   </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Post</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
-                    </Select>
-                  </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
-                    </Select>
-                  </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Subject</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className="min-w-0">
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                      <option value="">Status</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                    </Select>
+                  {filterOptions.slice(3).map((item) => {
+                    const value = filters[item.key as keyof typeof initialFilters];
+                    const display = value || (item.key === "subject" ? "Subject" : "Topics");
+                    const long = display.length > 15;
+                    return (
+                      <div key={item.key} className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                        <select aria-label={item.key} value={value} onChange={(e) => updateFilter(item.key as keyof typeof initialFilters, e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                          <option value="">{item.key === "subject" ? "Subject" : "Topics"}</option>
+                          {item.options.map((option) => <option key={option} value={option} className="text-slate-900">{option}</option>)}
+                        </select>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-5">
+                          {long ? (
+                            <span className="filter-marquee-track flex w-max shrink-0 items-center gap-8 whitespace-nowrap text-[13px] font-medium text-slate-700">
+                              <span>{display}</span><span aria-hidden="true">{display}</span>
+                            </span>
+                          ) : (
+                            <span className="max-w-full truncate whitespace-nowrap text-center text-[13px] font-medium text-slate-700">{display}</span>
+                          )}
+                        </div>
+                        <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                      </div>
+                    );
+                  })}
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Status</option><option value="DRAFT" className="text-slate-900">Draft</option><option value="PUBLISHED" className="text-slate-900">Published</option><option value="HIDDEN" className="text-slate-900">Hidden</option><option value="ARCHIVED" className="text-slate-900">Archived</option>
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.status ? ({ DRAFT: "Draft", PUBLISHED: "Published", HIDDEN: "Hidden", ARCHIVED: "Archived" } as Record<string, string>)[filters.status] : "Status"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
                   </div>
                 </div>
               </div>
