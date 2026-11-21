@@ -1697,13 +1697,13 @@ export default function QuestionBankPage() {
                 </div>
                 <div className="min-w-0">
                   <label className="mb-1 block text-center text-xs font-bold text-slate-700">Exam</label>
-                  <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                  <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
                 <div className="min-w-0">
                   <label className="mb-1 block text-center text-xs font-bold text-slate-700">Post</label>
-                  <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                  <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
@@ -1721,19 +1721,19 @@ export default function QuestionBankPage() {
                 </div>
                 <div className="min-w-0">
                   <label className="mb-1 block text-center text-xs font-bold text-slate-700">Subject</label>
-                  <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                  <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
                 <div className="min-w-0">
                   <label className="mb-1 block text-center text-xs font-bold text-slate-700">Topics</label>
-                  <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                  <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
                 <div className="min-w-0">
                   <label className="mb-1 block text-center text-xs font-bold text-slate-700">Status</label>
-                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                   </Select>
                 </div>
