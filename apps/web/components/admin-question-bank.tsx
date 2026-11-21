@@ -1585,7 +1585,7 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <section className="min-w-0 bg-white">
+        <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
             <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control Center</h2>
             <div className="min-w-[180px] flex-1">
@@ -1594,7 +1594,7 @@ export default function QuestionBankPage() {
                 placeholder="প্রশ্ন / Keyword / Exam Search..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full text-sm"
+                className="h-9 w-full rounded-md text-sm"
               />
             </div>
             <Button type="button" size="sm" variant="outline" onClick={resetFilters} className="h-9 shrink-0 px-3">
