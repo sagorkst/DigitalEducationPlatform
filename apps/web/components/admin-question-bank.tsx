@@ -1623,7 +1623,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "single" && !filters.subject}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
-                      className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                      className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">▰</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রশ্ন</span>
@@ -1633,7 +1633,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "institution"}
                       onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                      className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">🏛️</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রতিষ্ঠান</span>
@@ -1643,7 +1643,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "exam"}
                       onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                      className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📋</span>
                       <span className="text-[11px] font-extrabold leading-tight">Exam</span>
@@ -1653,7 +1653,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={Boolean(filters.subject)}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
-                      className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                      className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📖</span>
                       <span className="text-[11px] font-extrabold leading-tight">বিষয়</span>
@@ -1664,18 +1664,18 @@ export default function QuestionBankPage() {
 
                 <div className="flex min-w-0 flex-col justify-center">
                   <div className="grid min-w-0 grid-cols-4 gap-2">
-                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                       <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border px-1 py-1.5 text-center transition-colors ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}>
+                    </button>
+                    <button type="button" disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}>
                       <span className="text-lg leading-none" aria-hidden="true">▣</span><span className="text-[11px] font-extrabold leading-tight">All</span>
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    </button>
+                    <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                       <span className="text-lg leading-none" aria-hidden="true">⇄</span><span className="text-[11px] font-extrabold leading-tight">Invert</span>
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    </button>
+                    <button type="button" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                       <span className="text-lg leading-none" aria-hidden="true">✕</span><span className="text-[11px] font-extrabold leading-tight">Clear</span>
-                    </Button>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1683,43 +1683,43 @@ export default function QuestionBankPage() {
               <div className="rounded-md bg-slate-50/70 p-2">
                 <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 sm:grid-cols-4 xl:grid-cols-8">
                   <div className="min-w-0">
-                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Institution</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                   <div className="min-w-0">
-                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Exam</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                   <div className="min-w-0">
-                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Post</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
-                  <div className="col-span-2 min-w-0">
-                    <div className="flex min-w-0 items-center gap-1">
-                      <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                        <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
-                      </Select>
-                      <span className="shrink-0 text-xs text-slate-500">–</span>
-                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                  <div className="min-w-0">
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
+                      <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                         <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
                       </Select>
                     </div>
                   </div>
                   <div className="min-w-0">
-                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Subject</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                   <div className="min-w-0">
-                    <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
                   </div>
                   <div className="min-w-0">
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
                       <option value="">Status</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                     </Select>
                   </div>
@@ -1782,10 +1782,10 @@ export default function QuestionBankPage() {
                 </div>
               )}
 
-              <div className="flex min-w-0 flex-wrap items-center justify-between gap-x-6 gap-y-1 pt-1 text-sm font-semibold text-slate-700">
-                <p className="shrink-0 whitespace-nowrap text-left text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
-                <p className="shrink-0 whitespace-nowrap text-left">পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
-                <p className="shrink-0 whitespace-nowrap text-right text-sm font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+              <div className="grid min-w-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 overflow-visible px-1 pb-2 pt-2 text-sm font-semibold text-slate-700 sm:grid-cols-[auto_auto_minmax(0,1fr)]">
+                <p className="whitespace-nowrap text-left text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
+                <p className="whitespace-nowrap text-left">পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
+                <p className="whitespace-nowrap text-left text-sm font-bold text-slate-700 sm:text-right">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
             </div>
           )}
