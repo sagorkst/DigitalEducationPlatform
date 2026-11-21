@@ -1614,7 +1614,7 @@ export default function QuestionBankPage() {
               </div>
             </div>
 
-            <div className="flex shrink-0 items-center gap-1.5">
+            <div className="flex shrink-0 items-center gap-3">
               <button
                 type="button"
                 disabled={loading || filteredQuestions.length === 0 || bulkSaving}
@@ -1659,7 +1659,7 @@ export default function QuestionBankPage() {
 
           {managementWorkspaceOpen && (
             <div className="mt-2 space-y-2">
-              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2"><div className="flex min-w-0 flex-col">
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2 xl:gap-x-6"><div className="flex min-w-0 flex-col">
                   <div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
                     <span className="whitespace-nowrap">Management Workspace</span>
                     <span className="h-px flex-1 bg-slate-200" />
@@ -1702,9 +1702,9 @@ export default function QuestionBankPage() {
                       <span className="text-sm font-extrabold whitespace-nowrap">Subjects - <strong className="text-base font-black tabular-nums">{String(globalStats.totalSubjects).padStart(2, "0")}</strong></span>
                     </button>
                   </div>
-                </div><div className="flex min-w-0 flex-col"><div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Actions</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-6 auto-rows-[58px] gap-3">
+                </div><div className="flex min-w-0 flex-col"><div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Actions</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-[repeat(5,minmax(0,1fr))_minmax(0,1.35fr)] auto-rows-[58px] gap-3">
                   <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[58px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1.5 rounded-md border border-emerald-700 bg-emerald-700 px-0.5 py-1 text-center text-white transition-colors hover:border-emerald-800 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
-                    <span className="text-2xl font-black leading-none" aria-hidden="true">⬆</span><span className="text-[11px] font-extrabold leading-tight">Publish All</span><strong className="text-xs font-black tabular-nums">{draftCount.toLocaleString("en-US")}</strong>
+                    <span className="text-[11px] font-extrabold leading-tight">Publish All</span><strong className="text-xs font-black tabular-nums">{draftCount.toLocaleString("en-US")}</strong>
                   </button>
                   <a href="/api/imports/export?format=json" className="flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-md border border-blue-200 bg-blue-50/60 px-0.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                     <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span><span className="text-base leading-none" aria-hidden="true">⇩</span>
@@ -1721,7 +1721,7 @@ export default function QuestionBankPage() {
                   <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[58px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-2 rounded-md border border-red-700 bg-red-700 px-0.5 py-1 text-center text-white transition-colors hover:border-red-800 hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50">
                     <span className="text-xl leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
                   </button>
-                  </div></div></div><div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                  </div></div></div><div className="min-w-0"><div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Filters</span><span className="h-px flex-1 bg-slate-200" /></div><div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
                 <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-[repeat(8,minmax(0,1fr))_36px]">
                   {filterOptions.slice(0, 3).map((item) => {
                     const value = filters[item.key as keyof typeof initialFilters];
@@ -1792,7 +1792,7 @@ export default function QuestionBankPage() {
                   </div>
                   <button type="button" onClick={resetFilters} aria-label="Reset all filters" title="Reset filters" className="flex h-10 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-lg font-black text-amber-700 transition-colors hover:border-amber-400 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">↻</button>
                 </div>
-              </div>
+              </div></div>
 
               <div className="min-w-0"><div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Bulk Edit</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 auto-rows-[70px] gap-1.5">
                     <label className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
