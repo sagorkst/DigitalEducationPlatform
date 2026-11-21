@@ -1618,12 +1618,12 @@ export default function QuestionBankPage() {
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <section className="min-w-0 rounded-lg border border-slate-200 p-2" aria-label="Management Workspace">
                   <h3 className="mb-1 text-left text-sm font-extrabold text-slate-900">▦ Management Workspace</h3>
-                  <div className="grid min-w-0 grid-cols-4 gap-1.5">
+                  <div className="mx-auto grid w-full max-w-[560px] min-w-0 grid-cols-4 gap-2">
                     <button
                       type="button"
                       aria-pressed={viewMode === "single" && !filters.subject}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
-                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">▰</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রশ্ন</span>
@@ -1633,7 +1633,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "institution"}
                       onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">🏛️</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রতিষ্ঠান</span>
@@ -1643,7 +1643,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "exam"}
                       onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📋</span>
                       <span className="text-[11px] font-extrabold leading-tight">Exam</span>
@@ -1653,7 +1653,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={Boolean(filters.subject)}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
-                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📖</span>
                       <span className="text-[11px] font-extrabold leading-tight">বিষয়</span>
@@ -1686,9 +1686,9 @@ export default function QuestionBankPage() {
                 </section>
               </div>
 
-              <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1 sm:grid-cols-4 xl:grid-cols-8">
+              <div className="rounded-md border border-slate-200 p-2"><div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 sm:grid-cols-4 xl:grid-cols-8">
                 <div className="min-w-0">
-                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-8 min-w-0 w-full text-center text-xs">
+                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-xs">
                     <option value="">Institution</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
@@ -1728,7 +1728,7 @@ export default function QuestionBankPage() {
                     <option value="">Status</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                   </Select>
                 </div>
-              </div>
+              </div></div>
 
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2" aria-label="Bulk Edit">
@@ -1790,9 +1790,9 @@ export default function QuestionBankPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-center text-sm font-semibold text-slate-700">
-                <p>পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
-                <p className="text-sm font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+              <div className="flex min-w-0 items-center justify-between gap-8 pt-1 text-sm font-semibold text-slate-700">
+                <p className="shrink-0 text-left whitespace-nowrap">পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
+                <p className="min-w-0 text-right whitespace-nowrap text-sm font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
             </div>
           )}
