@@ -1603,7 +1603,6 @@ export default function QuestionBankPage() {
 
           {managementWorkspaceOpen && (
             <div className="mt-3 space-y-3">
-              <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2"><div className="flex min-w-0 flex-col">
                   <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
                     <span className="whitespace-nowrap">Management Workspace</span>
