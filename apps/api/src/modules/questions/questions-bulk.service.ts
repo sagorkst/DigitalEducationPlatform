@@ -7,10 +7,63 @@ import {
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { BulkUpdateQuestionsDto } from './dto/bulk-update-questions.dto';
+import { BulkFilteredQuestionsDto } from './dto/bulk-filtered-questions.dto';
+import { QuestionsService } from './questions.service';
 
 @Injectable()
 export class QuestionsBulkService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly questionsService: QuestionsService,
+  ) {}
+
+  private async collectFilteredIds(
+    filters: BulkFilteredQuestionsDto['filters'],
+    excludedIds: string[] = [],
+  ) {
+    const ids: string[] = [];
+    let page = 1;
+    let totalPages = 1;
+    do {
+      const result = await this.questionsService.findAll({
+        ...filters,
+        page: String(page),
+        limit: '100',
+      });
+      ids.push(...result.data.map((question) => question.id));
+      totalPages = result.pagination.totalPages;
+      page += 1;
+    } while (page <= totalPages);
+    if (excludedIds.length === 0) return ids;
+    const excluded = new Set(excludedIds);
+    return ids.filter((id) => !excluded.has(id));
+  }
+
+  async bulkUpdateFiltered(dto: BulkFilteredQuestionsDto) {
+    const updates = dto.updates;
+    if (!updates) throw new BadRequestException('Bulk updates are required.');
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
+    let updatedCount = 0;
+    let batches = 0;
+    for (let index = 0; index < ids.length; index += 500) {
+      const result = await this.bulkUpdate({ ids: ids.slice(index, index + 500), updates });
+      updatedCount += result.updatedCount;
+      batches += 1;
+    }
+    return { success: true, message: `${updatedCount} matching question(s) updated successfully.`, updatedCount, matchedCount: ids.length, batches };
+  }
+
+  async bulkSoftDeleteFiltered(dto: BulkFilteredQuestionsDto) {
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
+    let deletedCount = 0;
+    let batches = 0;
+    for (let index = 0; index < ids.length; index += 500) {
+      const result = await this.bulkSoftDelete(ids.slice(index, index + 500));
+      deletedCount += result.deletedCount;
+      batches += 1;
+    }
+    return { success: true, message: `${deletedCount} matching question(s) moved to Trash.`, deletedCount, matchedCount: ids.length, batches };
+  }
 
   private async saveHistory(
     tx: Prisma.TransactionClient,
@@ -228,6 +281,73 @@ export class QuestionsBulkService {
         timeout: 30000,
       },
     );
+  }
+
+  // PERMANENTLY DELETE SELECTED QUESTIONS WITHOUT MOVING THEM TO TRASH.
+  async bulkPermanentDelete(ids: string[]) {
+    if (!ids.length) throw new BadRequestException('Select at least one question.');
+
+    return this.prisma.$transaction(
+      async (tx) => {
+        const questions = await tx.question.findMany({
+          where: { id: { in: ids } },
+          select: { id: true },
+        });
+
+        if (questions.length !== ids.length) {
+          throw new NotFoundException(
+            'One or more selected questions no longer exist. No questions were permanently deleted.',
+          );
+        }
+
+        const detachedImportRows = await tx.importRow.updateMany({
+          where: { questionId: { in: ids } },
+          data: { questionId: null },
+        });
+
+        const deletion = await tx.question.deleteMany({
+          where: { id: { in: ids } },
+        });
+
+        if (deletion.count !== ids.length) {
+          throw new BadRequestException(
+            'Permanent deletion could not safely complete. No selected questions were deleted.',
+          );
+        }
+
+        return {
+          success: true,
+          message: `${deletion.count} question(s) permanently deleted.`,
+          deletedCount: deletion.count,
+          detachedImportRows: detachedImportRows.count,
+        };
+      },
+      { maxWait: 10000, timeout: 120000 },
+    );
+  }
+
+  // PERMANENTLY DELETE ALL QUESTIONS MATCHING FILTERS, INCLUDING ACTIVE RECORDS.
+  async bulkPermanentDeleteFiltered(dto: BulkFilteredQuestionsDto) {
+    const ids = await this.collectFilteredIds(dto.filters, dto.excludedIds);
+    let deletedCount = 0;
+    let detachedImportRows = 0;
+    let batches = 0;
+
+    for (let index = 0; index < ids.length; index += 500) {
+      const result = await this.bulkPermanentDelete(ids.slice(index, index + 500));
+      deletedCount += result.deletedCount;
+      detachedImportRows += result.detachedImportRows;
+      batches += 1;
+    }
+
+    return {
+      success: true,
+      message: `${deletedCount} matching question(s) permanently deleted.`,
+      deletedCount,
+      matchedCount: ids.length,
+      detachedImportRows,
+      batches,
+    };
   }
 
   async publishAllDrafts() {

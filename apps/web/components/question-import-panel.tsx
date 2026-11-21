@@ -2,12 +2,21 @@
 "use client";
 
 import { useRef, useState } from "react";
+import OcrQuestionImportPanel from "./ocr-question-import-panel";
 
 type ImportSummary = {
   totalRows: number;
   validRows: number;
   invalidRows: number;
   duplicateRows: number;
+};
+
+type HtmlParserSummary = {
+  detectedStructure: string;
+  totalCandidates: number;
+  extractedCount: number;
+  skippedCount: number;
+  warnings: string[];
 };
 
 type ImportRow = {
@@ -77,8 +86,11 @@ export default function QuestionImportPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
+  const [parserSummary, setParserSummary] = useState<HtmlParserSummary | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  const [selectAllBatch, setSelectAllBatch] = useState(false);
+  const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -89,10 +101,14 @@ export default function QuestionImportPanel() {
     examName: "",
     examYear: "",
     postName: "",
+    department: "",
   });
+  const [batchOccurrences, setBatchOccurrences] = useState([
+    { examName: "", examYear: "", postName: "", department: "" },
+  ]);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, any> | null>(null);
-  const [optionsJson, setOptionsJson] = useState("[]");
+  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
 
@@ -102,7 +118,7 @@ export default function QuestionImportPanel() {
     const extension = `.${selectedFile.name.split(".").pop()?.toLowerCase()}`;
 
     if (!ACCEPTED_EXTENSIONS.includes(extension)) {
-      setError("শুধুমাত্র Excel, CSV অথবা JSON ফাইল নির্বাচন করুন।");
+      setError("Excel, CSV, JSON অথবা HTML/MHTML ফাইল নির্বাচন করুন।");
       return;
     }
 
@@ -117,9 +133,11 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setBatchId("");
     setSelectedIds([]);
+    setSelectAllBatch(false);
   }
 
   async function loadRows(id: string, pageNumber = 1) {
@@ -136,7 +154,6 @@ export default function QuestionImportPanel() {
 
     setRows(Array.isArray(result.data) ? result.data : []);
     setPage(pageNumber);
-    setSelectedIds([]);
 
     const pages = Number(result.pagination?.totalPages);
     setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
@@ -152,8 +169,10 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
+    setSelectAllBatch(false);
 
     try {
       const formData = new FormData();
@@ -181,6 +200,7 @@ export default function QuestionImportPanel() {
 
       setBatchId(id);
       setSummary(result.data.summary);
+      setParserSummary(result.parser ?? null);
       await loadRows(id, 1);
       setMessage("ফাইল সফলভাবে Preview তৈরি হয়েছে।");
     } catch (err) {
@@ -193,50 +213,106 @@ export default function QuestionImportPanel() {
   }
 
   function toggleRow(id: string, checked: boolean) {
+    if (selectAllBatch) {
+      setExcludedIds((current) =>
+        checked
+          ? current.filter((item) => item !== id)
+          : current.includes(id) ? current : [...current, id],
+      );
+      return;
+    }
     setSelectedIds((current) =>
       checked
-        ? [...current, id]
+        ? current.includes(id) ? current : [...current, id]
         : current.filter((item) => item !== id),
     );
   }
 
   function selectAllValid() {
-    const importableIds = rows
-      .filter((row) => ["VALID", "DUPLICATE"].includes(row.status))
-      .map((row) => row.id);
-
-    setSelectedIds((current) =>
-      Array.from(new Set([...current, ...importableIds])),
-    );
+    setSelectedIds([]);
+    setExcludedIds([]);
+    setSelectAllBatch(true);
   }
 
   async function performAction(action: "commit" | "skip") {
-    const actionIds =
-      action === "commit"
-        ? rows
-            .filter(
-              (row) =>
-                ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id),
-            )
-            .map((row) => row.id)
-        : selectedIds;
-
-    if (!batchId || actionIds.length === 0) {
-      setError("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
-      return;
-    }
+    let actionIds = selectedIds;
 
     setLoading(true);
     setError("");
     setMessage("");
 
     try {
+      if (action === "commit" && selectAllBatch) {
+        const firstResponse = await fetch(
+          `/api/imports/${batchId}/rows?page=1&limit=${PAGE_SIZE}`,
+          { cache: "no-store" },
+        );
+        const firstResult = await firstResponse.json();
+
+        if (!firstResponse.ok || !firstResult.success) {
+          throw new Error(firstResult.message || "সব Import Row লোড করা যায়নি।");
+        }
+
+        const allRows: ImportRow[] = Array.isArray(firstResult.data)
+          ? firstResult.data
+          : [];
+        const pageCount = Math.max(
+          1,
+          Number(firstResult.pagination?.totalPages) || 1,
+        );
+
+        if (pageCount > 1) {
+          const remainingPages = await Promise.all(
+            Array.from({ length: pageCount - 1 }, async (_, index) => {
+              const pageNumber = index + 2;
+              const pageResponse = await fetch(
+                `/api/imports/${batchId}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`,
+                { cache: "no-store" },
+              );
+              const pageResult = await pageResponse.json();
+
+              if (!pageResponse.ok || !pageResult.success) {
+                throw new Error(
+                  pageResult.message || `Import Row page ${pageNumber} লোড করা যায়নি।`,
+                );
+              }
+
+              return Array.isArray(pageResult.data)
+                ? (pageResult.data as ImportRow[])
+                : [];
+            }),
+          );
+          allRows.push(...remainingPages.flat());
+        }
+
+        actionIds = allRows
+          .filter((row) => ["VALID", "DUPLICATE"].includes(row.status))
+          .filter((row) => !excludedIds.includes(row.id))
+          .map((row) => row.id);
+      }
+
+      if (!batchId || actionIds.length === 0) {
+        throw new Error("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
+      }
+
+      const requestBody =
+        action === "commit"
+          ? { rowIds: actionIds }
+          : selectAllBatch
+            ? {
+                allRows: true,
+                ...(excludedIds.length > 0
+                  ? { excludedRowIds: excludedIds }
+                  : {}),
+              }
+            : { rowIds: actionIds };
+
       const response = await fetch(
         `/api/imports/${batchId}/${action}`,
         {
           method: action === "commit" ? "POST" : "PUT",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ rowIds: actionIds }),
+          body: JSON.stringify(requestBody),
         },
       );
 
@@ -247,10 +323,12 @@ export default function QuestionImportPanel() {
       }
 
       setSelectedIds([]);
+      setSelectAllBatch(false);
+      setExcludedIds([]);
 
       setMessage(
         action === "commit"
-          ? `${result.data?.importedRows ?? 0}টি প্রশ্ন Import হয়েছে।`
+          ? `${result.data?.importedRows ?? 0}টি প্রশ্ন Import হয়েছে।${result.data?.failedRows ? ` ${result.data.failedRows}টি Row Import হয়নি—Row-এর Error দেখুন।` : ""}`
           : `${result.data?.skippedRows ?? actionIds.length}টি Row Skip হয়েছে।`,
       );
 
@@ -280,22 +358,67 @@ export default function QuestionImportPanel() {
     );
   }
 
-  function updateEditingOccurrence(field: string, value: string) {
+  function updateEditingOccurrence(index: number, field: string, value: string) {
     setEditingData((current) => {
       if (!current) return current;
-      const occurrences = Array.isArray(current.occurrences)
-        ? [...current.occurrences]
-        : [{}];
-
-      occurrences[0] = {
-        ...(occurrences[0] ?? {}),
-        [field]: field === "examYear" && value.trim() !== ""
-          ? Number(value)
-          : value,
+      const occurrences = Array.isArray(current.occurrences) ? [...current.occurrences] : [];
+      occurrences[index] = {
+        ...(occurrences[index] ?? {}),
+        [field]: field === "examYear" && value.trim() !== "" ? Number(value) : value,
       };
-
       return { ...current, occurrences };
     });
+  }
+
+  function addBatchOccurrence() {
+    setBatchOccurrences((current) => [...current, { examName: "", examYear: "", postName: "", department: "" }]);
+  }
+
+  function updateBatchOccurrence(index: number, field: string, value: string) {
+    setBatchOccurrences((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
+  }
+
+  function addEditingOccurrence() {
+    setEditingData((current) => current ? { ...current, occurrences: [...(Array.isArray(current.occurrences) ? current.occurrences : []), {}] } : current);
+  }
+
+  function removeEditingOccurrence(index: number) {
+    setEditingData((current) => current ? { ...current, occurrences: (Array.isArray(current.occurrences) ? current.occurrences : []).filter((_: unknown, i: number) => i !== index) } : current);
+  }
+
+  function addEditingOption() {
+    setEditingOptions((current) => [...current, {
+      label: String.fromCharCode(65 + current.length),
+      optionText: "",
+      isCorrect: false,
+      sortOrder: current.length,
+    }]);
+  }
+
+  function updateEditingOption(index: number, field: "optionText" | "label", value: string) {
+    setEditingOptions((current) => current.map((option, i) => i === index ? { ...option, [field]: value } : option));
+  }
+
+  function toggleCorrectEditingOption(index: number) {
+    const nextOptions = editingOptions.map((option, i) =>
+      i === index ? { ...option, isCorrect: !option.isCorrect } : option,
+    );
+    setEditingOptions(nextOptions);
+    setEditingData((current) =>
+      current
+        ? {
+            ...current,
+            correctAnswer: nextOptions
+              .filter((option) => option.isCorrect)
+              .map((option) => option.label)
+              .join(", "),
+          }
+        : current,
+    );
+  }
+
+  function removeEditingOption(index: number) {
+    setEditingOptions((current) => current.filter((_, i) => i !== index).map((option, i) => ({ ...option, sortOrder: i })));
   }
 
   function startManualImportEdit(row: ImportRow) {
@@ -306,7 +429,7 @@ export default function QuestionImportPanel() {
 
     setEditingRowId(row.id);
     setEditingData(raw);
-    setOptionsJson(JSON.stringify(raw.options ?? [], null, 2));
+    setEditingOptions(Array.isArray(raw.options) ? raw.options.map((option: any, index: number) => ({ label: String(option.label ?? String.fromCharCode(65 + index)), optionText: String(option.optionText ?? ""), isCorrect: Boolean(option.isCorrect), sortOrder: Number(option.sortOrder ?? index) })) : []);
     setError("");
     setMessage("");
   }
@@ -314,16 +437,27 @@ export default function QuestionImportPanel() {
   async function applyBatchMetadataNow() {
     if (!batchId) return;
 
+    const occurrences = batchOccurrences
+      .filter((item) => item.examName.trim())
+      .map((item) => ({
+        examName: item.examName.trim(),
+        examYear: item.examYear.trim() ? Number(item.examYear) : undefined,
+        postName: item.postName.trim() || undefined,
+        department: item.department.trim() || undefined,
+      }));
     const body = {
       institution: batchMetadata.institution.trim() || undefined,
       examName: batchMetadata.examName.trim() || undefined,
-      examYear: batchMetadata.examYear.trim()
-        ? Number(batchMetadata.examYear)
-        : undefined,
+      examYear: batchMetadata.examYear.trim() ? Number(batchMetadata.examYear) : undefined,
       postName: batchMetadata.postName.trim() || undefined,
+      department: batchMetadata.department.trim() || undefined,
+      occurrences: occurrences.length ? occurrences : undefined,
+      rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
+      applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
+      overwriteExisting: false,
     };
 
-    if (!body.institution && !body.examName && !body.examYear && !body.postName) {
+    if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
       return;
     }
@@ -352,7 +486,7 @@ export default function QuestionImportPanel() {
         current ? { ...current, ...counts } : current,
       );
       await loadRows(batchId, page);
-      setMessage("Batch Metadata প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।");
+      setMessage(`Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
     } finally {
@@ -363,19 +497,14 @@ export default function QuestionImportPanel() {
   async function saveManualImportEdit() {
     if (!batchId || !editingRowId || !editingData) return;
 
-    let parsedOptions: unknown;
-
-    try {
-      parsedOptions = JSON.parse(optionsJson);
-      if (!Array.isArray(parsedOptions)) {
-        throw new Error("Options অবশ্যই JSON array হতে হবে।");
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Options JSON সঠিক নয়।");
+    const normalizedOptions = editingOptions
+      .filter((option) => option.optionText.trim())
+      .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
+    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.length > 4)) {
+      setError("MCQ-এর জন্য ২ থেকে ৪টি Option দিতে হবে। সঠিক উত্তর একাধিক বা অনির্ধারিত থাকতে পারে।");
       return;
     }
-
-    const rawData = { ...editingData, options: parsedOptions };
+    const rawData = { ...editingData, options: normalizedOptions };
 
     setSavingEdit(true);
     setError("");
@@ -428,6 +557,7 @@ export default function QuestionImportPanel() {
     setFile(null);
     setBatchId("");
     setSummary(null);
+    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setPage(1);
@@ -438,15 +568,18 @@ export default function QuestionImportPanel() {
 
   return (
     <>
+      <OcrQuestionImportPanel embedded />
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-slate-800 focus:outline-none focus:ring-4 focus:ring-slate-200"
+        className="flex h-full min-h-0 w-full min-w-0 flex-col items-center justify-center gap-3 rounded-md bg-transparent px-1 text-center text-sm font-bold leading-tight text-slate-800 transition-colors hover:bg-emerald-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
       >
-        <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4">
+        <svg viewBox="0 0 24 24" fill="none" className="hidden h-4 w-4">
           <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        প্রশ্ন Import
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center text-emerald-700"><svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </span>
+        <span className="text-center text-sm font-bold leading-tight">Import</span>
       </button>
 
       {open && (
@@ -589,37 +722,27 @@ export default function QuestionImportPanel() {
                     </p>
                   </div>
 
-                  <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-lg">
-                        PDF
+                  <div className="mt-5 rounded-xl border border-violet-200 bg-violet-50/50 p-4">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-100 text-violet-700">
+                          <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
+                            <path d="M5 3h9l5 5v13H5zM14 3v5h5M8 13h8M8 17h5" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-slate-900">PDF / Image থেকে OCR Import</p>
+                          <p className="mt-0.5 text-xs text-slate-500">স্ক্যান করা PDF, PDF text এবং JPG/PNG থেকে প্রশ্ন শনাক্ত ও যাচাই করুন</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          PDF Import
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          Text extraction & OCR â€” Coming in a later phase
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
-                      <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-lg">
-                        <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6 text-amber-700">
-                          <rect x="3" y="3" width="18" height="18" rx="3" stroke="currentColor" strokeWidth="1.7" />
-                          <circle cx="8.5" cy="8.5" r="1.5" stroke="currentColor" strokeWidth="1.5" />
-                          <path d="m4 17 5-5 3 3 3-4 5 6" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                      </div>
-                      <div>
-                        <p className="text-sm font-semibold text-slate-700">
-                          Image Import
-                        </p>
-                        <p className="text-xs text-slate-400">
-                          OCR & question extraction â€” Coming in a later phase
-                        </p>
-                      </div>
+                      <button
+                        type="button"
+                        onClick={() => window.dispatchEvent(new Event("shikhasetu:open-ocr-import"))}
+                        disabled={loading}
+                        className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-violet-600 px-4 text-sm font-semibold text-white transition hover:bg-violet-700 disabled:opacity-50"
+                      >
+                        <span>＋</span> OCR PDF / Image Add
+                      </button>
                     </div>
                   </div>
                 </>
@@ -707,33 +830,35 @@ export default function QuestionImportPanel() {
                       আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
                     </p>
 
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-                      <input
-                        value={batchMetadata.institution}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))}
-                        placeholder="Institution"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.examName}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))}
-                        placeholder="Exam Name"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.examYear}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))}
-                        placeholder="Exam Year"
-                        inputMode="numeric"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
-                      <input
-                        value={batchMetadata.postName}
-                        onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))}
-                        placeholder="Post Name"
-                        className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                      />
+                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                      <input value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Shared Institution" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Default Exam Name (optional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Default Exam Year" inputMode="numeric" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Shared Post Name" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                      <input value={batchMetadata.department} onChange={(e) => setBatchMetadata((v) => ({ ...v, department: e.target.value }))} placeholder="Shared Department" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                     </div>
+                    <div className="mt-4 rounded-lg border border-slate-200 p-3">
+                      <div className="mb-3 flex items-center justify-between gap-2">
+                        <p className="text-sm font-semibold text-slate-700">একই প্রশ্নের জন্য একাধিক Exam যুক্ত করুন</p>
+                        <button type="button" onClick={addBatchOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
+                      </div>
+                      <div className="space-y-3">
+                        {batchOccurrences.map((item, index) => (
+                          <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+                            <input value={item.examName} onChange={(e) => updateBatchOccurrence(index, "examName", e.target.value)} placeholder={`Exam Name ${index + 1}`} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <input value={item.examYear} onChange={(e) => updateBatchOccurrence(index, "examYear", e.target.value)} placeholder="Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <input value={item.postName} onChange={(e) => updateBatchOccurrence(index, "postName", e.target.value)} placeholder="Post" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                            <div className="flex gap-2">
+                              <input value={item.department} onChange={(e) => updateBatchOccurrence(index, "department", e.target.value)} placeholder="Department" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                              <button type="button" onClick={() => setBatchOccurrences((current) => current.filter((_, i) => i !== index))} disabled={batchOccurrences.length === 1} aria-label="Remove exam" className="rounded-md border border-red-200 px-2 text-red-600 disabled:opacity-30">×</button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <p className="mt-3 text-xs text-slate-500">
+                      Apply target: {selectAllBatch ? "সব import row" : selectedIds.length ? `${selectedIds.length}টি selected row` : "সব import row"}।
+                    </p>
 
                     <button
                       type="button"
@@ -745,7 +870,7 @@ export default function QuestionImportPanel() {
                     </button>
                   </section>
 
-                  <section className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
+                  <section id="manual-question-edit-form" className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
                     <h3 className="text-base font-bold text-slate-900">
                       Manual Question Edit
                     </h3>
@@ -784,55 +909,47 @@ export default function QuestionImportPanel() {
                         />
 
                         <div className="grid gap-3 sm:grid-cols-2">
-                          <input
-                            value={String(editingData.subject ?? "")}
-                            onChange={(e) => updateEditingField("subject", e.target.value)}
-                            placeholder="Subject"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.topic ?? "")}
-                            onChange={(e) => updateEditingField("topic", e.target.value)}
-                            placeholder="Topic"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.institution ?? "")}
-                            onChange={(e) => updateEditingOccurrence("institution", e.target.value)}
-                            placeholder="Institution"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.examName ?? "")}
-                            onChange={(e) => updateEditingOccurrence("examName", e.target.value)}
-                            placeholder="Exam Name"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.examYear ?? "")}
-                            onChange={(e) => updateEditingOccurrence("examYear", e.target.value)}
-                            placeholder="Exam Year"
-                            inputMode="numeric"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
-                          <input
-                            value={String(editingData.occurrences?.[0]?.postName ?? "")}
-                            onChange={(e) => updateEditingOccurrence("postName", e.target.value)}
-                            placeholder="Post Name"
-                            className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
-                          />
+                          <input value={String(editingData.subject ?? "")} onChange={(e) => updateEditingField("subject", e.target.value)} placeholder="Subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                          <input value={String(editingData.topic ?? "")} onChange={(e) => updateEditingField("topic", e.target.value)} placeholder="Topic" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-700">Exam Occurrences</p>
+                            <button type="button" onClick={addEditingOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
+                          </div>
+                          <div className="space-y-3">
+                            {(Array.isArray(editingData.occurrences) ? editingData.occurrences : []).map((occurrence: Record<string, unknown>, index: number) => (
+                              <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
+                                <input value={String(occurrence.institution ?? "")} onChange={(e) => updateEditingOccurrence(index, "institution", e.target.value)} placeholder="Institution" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.examName ?? "")} onChange={(e) => updateEditingOccurrence(index, "examName", e.target.value)} placeholder="Exam Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.examYear ?? "")} onChange={(e) => updateEditingOccurrence(index, "examYear", e.target.value)} placeholder="Exam Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <div className="flex gap-2">
+                                  <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                  <button type="button" onClick={() => removeEditingOccurrence(index)} aria-label="Remove exam occurrence" className="rounded-md border border-red-200 px-2 text-red-600">×</button>
+                                </div>
+                              </div>
+                            ))}
+                            {(!Array.isArray(editingData.occurrences) || editingData.occurrences.length === 0) && <p className="text-xs text-slate-500">এখনো কোনো Exam যুক্ত হয়নি।</p>}
+                          </div>
                         </div>
 
-                        <label className="block text-xs font-semibold text-slate-600">
-                          Options (JSON Array)
-                          <textarea
-                            value={optionsJson}
-                            onChange={(e) => setOptionsJson(e.target.value)}
-                            rows={6}
-                            spellCheck={false}
-                            className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 font-mono text-xs"
-                          />
-                        </label>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <div className="mb-3 flex items-center justify-between gap-2">
+                            <p className="text-sm font-semibold text-slate-700">Question Options</p>
+                            <button type="button" onClick={addEditingOption} disabled={editingOptions.length >= 4} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50 disabled:opacity-40">+ Add Option</button>
+                          </div>
+                          <div className="space-y-2">
+                            {editingOptions.map((option, index) => (
+                              <div key={index} className="flex items-center gap-2">
+                                <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
+                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1}`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                                <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={option.isCorrect} onChange={() => toggleCorrectEditingOption(index)} /> Correct</label>
+                                <button type="button" onClick={() => removeEditingOption(index)} aria-label="Remove option" className="rounded-md border border-red-200 px-2 py-2 text-red-600">×</button>
+                              </div>
+                            ))}
+                            {editingOptions.length === 0 && <p className="text-xs text-slate-500">এই প্রশ্নে এখনো কোনো Option নেই।</p>}
+                          </div>
+                        </div>
 
                         <input
                           value={String(editingData.correctAnswer ?? "")}
@@ -937,6 +1054,45 @@ export default function QuestionImportPanel() {
                     ))}
                   </div>
 
+                  {parserSummary && (
+                    <section className="mb-5 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <h4 className="text-sm font-bold text-blue-950">
+                          Source Extraction Report
+                        </h4>
+                        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-800">
+                          {parserSummary.detectedStructure}
+                        </span>
+                      </div>
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {[
+                          { label: "Source Records", value: parserSummary.totalCandidates },
+                          { label: "Text Extracted", value: parserSummary.extractedCount },
+                          { label: "Needs Review", value: parserSummary.skippedCount },
+                        ].map((item) => (
+                          <div key={item.label} className="rounded-lg border border-blue-100 bg-white p-3">
+                            <p className="text-[10px] font-semibold text-slate-500">{item.label}</p>
+                            <p className="mt-1 text-xl font-black tabular-nums text-slate-900">
+                              {item.value.toLocaleString("en-US")}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      {parserSummary.skippedCount > 0 && (
+                        <p className="mt-3 text-xs font-medium text-amber-800">
+                          {parserSummary.skippedCount}টি Source Record থেকে প্রশ্নের লেখা পুরোপুরি পাওয়া যায়নি। কোনো Record বাদ দেওয়া হয়নি—সবগুলো Preview-তে রাখা হয়েছে, অসম্পূর্ণগুলো INVALID হিসেবে সংশোধন করতে হবে।
+                        </p>
+                      )}
+                      {parserSummary.warnings.length > 0 && (
+                        <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600">
+                          {parserSummary.warnings.map((warning, index) => (
+                            <li key={index}>{warning}</li>
+                          ))}
+                        </ul>
+                      )}
+                    </section>
+                  )}
+
                   <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
                     <div>
                       <h4 className="text-sm font-bold text-slate-900">
@@ -954,12 +1110,12 @@ export default function QuestionImportPanel() {
                         disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
                       >
-                        Select Valid + Duplicate
+                        Select All Rows (Across All Pages)
                       </button>
                       <button
                         type="button"
-                        onClick={() => setSelectedIds([])}
-                        disabled={loading || selectedIds.length === 0}
+                        onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }}
+                        disabled={loading || (selectedIds.length === 0 && !selectAllBatch)}
                         className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
                       >
                         Clear Selection
@@ -969,7 +1125,7 @@ export default function QuestionImportPanel() {
 
                   <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
                     <span className="mr-auto text-xs font-semibold text-slate-600">
-                      {selectedIds.length} selected
+                      {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
                     </span>
 
                     <button
@@ -977,11 +1133,9 @@ export default function QuestionImportPanel() {
                       onClick={() => performAction("commit")}
                       disabled={
                         loading ||
-                        !rows.some(
-                          (row) =>
-                            ["VALID", "DUPLICATE"].includes(row.status) &&
-                            selectedIds.includes(row.id),
-                        )
+                        (selectAllBatch
+                          ? summary.validRows + summary.duplicateRows <= excludedIds.length
+                          : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))
                       }
                       className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40"
                     >
@@ -991,7 +1145,7 @@ export default function QuestionImportPanel() {
                     <button
                       type="button"
                       onClick={() => performAction("skip")}
-                      disabled={loading || selectedIds.length === 0}
+                      disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)}
                       className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
                     >
                       Skip Selected
@@ -1015,6 +1169,7 @@ export default function QuestionImportPanel() {
                             <th className="p-3">Question</th>
                             <th className="p-3">Subject / Topic</th>
                             <th className="p-3">Status / Errors</th>
+                            <th className="w-24 p-3">Action</th>
                           </tr>
                         </thead>
 
@@ -1036,8 +1191,16 @@ export default function QuestionImportPanel() {
                                 <td className="p-3">
                                   <input
                                     type="checkbox"
-                                    checked={selectedIds.includes(row.id)}
-                                    disabled={!selectable || loading}
+                                    checked={
+                                      selectAllBatch
+                                        ? ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)
+                                        : selectedIds.includes(row.id)
+                                    }
+                                    disabled={
+                                      !selectable ||
+                                      loading ||
+                                      (selectAllBatch && !["VALID", "DUPLICATE"].includes(row.status))
+                                    }
                                     onChange={(event) =>
                                       toggleRow(row.id, event.target.checked)
                                     }
@@ -1050,6 +1213,13 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
+                                  {Boolean(raw.htmlImportMetadata) &&
+                                    typeof raw.htmlImportMetadata === "object" &&
+                                    typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
+                                      <p className="mb-1 text-[10px] font-semibold text-blue-700">
+                                        Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
+                                      </p>
+                                    )}
                                   {String(raw.questionText ?? "â€”")}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
                                     <div className="mt-3 space-y-1.5">
@@ -1108,6 +1278,19 @@ export default function QuestionImportPanel() {
                                     </ul>
                                   )}
                                 </td>
+                                <td className="p-3">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      startManualImportEdit(row);
+                                      document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                    }}
+                                    disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
+                                    className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
+                                  >
+                                    Edit
+                                  </button>
+                                </td>
                               </tr>
                             );
                           })}
@@ -1115,7 +1298,7 @@ export default function QuestionImportPanel() {
                           {rows.length === 0 && (
                             <tr>
                               <td
-                                colSpan={5}
+                                colSpan={6}
                                 className="p-10 text-center text-sm text-slate-500"
                               >
                                 এই পেজে কোনো Row পাওয়া যায়নি।

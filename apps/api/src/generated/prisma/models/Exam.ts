@@ -42,6 +42,7 @@ export type ExamMinAggregateOutputType = {
   slug: string | null
   examYear: number | null
   examType: string | null
+  grade: string | null
   description: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -55,6 +56,7 @@ export type ExamMaxAggregateOutputType = {
   slug: string | null
   examYear: number | null
   examType: string | null
+  grade: string | null
   description: string | null
   createdAt: Date | null
   updatedAt: Date | null
@@ -68,6 +70,7 @@ export type ExamCountAggregateOutputType = {
   slug: number
   examYear: number
   examType: number
+  grade: number
   description: number
   createdAt: number
   updatedAt: number
@@ -91,6 +94,7 @@ export type ExamMinAggregateInputType = {
   slug?: true
   examYear?: true
   examType?: true
+  grade?: true
   description?: true
   createdAt?: true
   updatedAt?: true
@@ -104,6 +108,7 @@ export type ExamMaxAggregateInputType = {
   slug?: true
   examYear?: true
   examType?: true
+  grade?: true
   description?: true
   createdAt?: true
   updatedAt?: true
@@ -117,6 +122,7 @@ export type ExamCountAggregateInputType = {
   slug?: true
   examYear?: true
   examType?: true
+  grade?: true
   description?: true
   createdAt?: true
   updatedAt?: true
@@ -217,6 +223,7 @@ export type ExamGroupByOutputType = {
   slug: string | null
   examYear: number
   examType: string | null
+  grade: string | null
   description: string | null
   createdAt: Date
   updatedAt: Date
@@ -253,6 +260,7 @@ export type ExamWhereInput = {
   slug?: Prisma.StringNullableFilter<"Exam"> | string | null
   examYear?: Prisma.IntFilter<"Exam"> | number
   examType?: Prisma.StringNullableFilter<"Exam"> | string | null
+  grade?: Prisma.StringNullableFilter<"Exam"> | string | null
   description?: Prisma.StringNullableFilter<"Exam"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
@@ -269,6 +277,7 @@ export type ExamOrderByWithRelationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   examYear?: Prisma.SortOrder
   examType?: Prisma.SortOrderInput | Prisma.SortOrder
+  grade?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -288,6 +297,7 @@ export type ExamWhereUniqueInput = Prisma.AtLeast<{
   slug?: Prisma.StringNullableFilter<"Exam"> | string | null
   examYear?: Prisma.IntFilter<"Exam"> | number
   examType?: Prisma.StringNullableFilter<"Exam"> | string | null
+  grade?: Prisma.StringNullableFilter<"Exam"> | string | null
   description?: Prisma.StringNullableFilter<"Exam"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
@@ -304,6 +314,7 @@ export type ExamOrderByWithAggregationInput = {
   slug?: Prisma.SortOrderInput | Prisma.SortOrder
   examYear?: Prisma.SortOrder
   examType?: Prisma.SortOrderInput | Prisma.SortOrder
+  grade?: Prisma.SortOrderInput | Prisma.SortOrder
   description?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -325,6 +336,7 @@ export type ExamScalarWhereWithAggregatesInput = {
   slug?: Prisma.StringNullableWithAggregatesFilter<"Exam"> | string | null
   examYear?: Prisma.IntWithAggregatesFilter<"Exam"> | number
   examType?: Prisma.StringNullableWithAggregatesFilter<"Exam"> | string | null
+  grade?: Prisma.StringNullableWithAggregatesFilter<"Exam"> | string | null
   description?: Prisma.StringNullableWithAggregatesFilter<"Exam"> | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Exam"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Exam"> | Date | string
@@ -336,6 +348,7 @@ export type ExamCreateInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -352,6 +365,7 @@ export type ExamUncheckedCreateInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -364,6 +378,7 @@ export type ExamUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -380,6 +395,7 @@ export type ExamUncheckedUpdateInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -394,6 +410,7 @@ export type ExamCreateManyInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -405,6 +422,7 @@ export type ExamUpdateManyMutationInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -418,6 +436,7 @@ export type ExamUncheckedUpdateManyInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -441,6 +460,7 @@ export type ExamCountOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
   examType?: Prisma.SortOrder
+  grade?: Prisma.SortOrder
   description?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -458,6 +478,7 @@ export type ExamMaxOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
   examType?: Prisma.SortOrder
+  grade?: Prisma.SortOrder
   description?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -471,6 +492,7 @@ export type ExamMinOrderByAggregateInput = {
   slug?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
   examType?: Prisma.SortOrder
+  grade?: Prisma.SortOrder
   description?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
@@ -591,6 +613,7 @@ export type ExamCreateWithoutInstitutionInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -605,6 +628,7 @@ export type ExamUncheckedCreateWithoutInstitutionInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -648,6 +672,7 @@ export type ExamScalarWhereInput = {
   slug?: Prisma.StringNullableFilter<"Exam"> | string | null
   examYear?: Prisma.IntFilter<"Exam"> | number
   examType?: Prisma.StringNullableFilter<"Exam"> | string | null
+  grade?: Prisma.StringNullableFilter<"Exam"> | string | null
   description?: Prisma.StringNullableFilter<"Exam"> | string | null
   createdAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Exam"> | Date | string
@@ -659,6 +684,7 @@ export type ExamCreateWithoutPostInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -673,6 +699,7 @@ export type ExamUncheckedCreateWithoutPostInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -711,6 +738,7 @@ export type ExamCreateWithoutOccurrencesInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -726,6 +754,7 @@ export type ExamUncheckedCreateWithoutOccurrencesInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -753,6 +782,7 @@ export type ExamUpdateWithoutOccurrencesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -768,6 +798,7 @@ export type ExamUncheckedUpdateWithoutOccurrencesInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -780,6 +811,7 @@ export type ExamCreateManyInstitutionInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -791,6 +823,7 @@ export type ExamUpdateWithoutInstitutionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -805,6 +838,7 @@ export type ExamUncheckedUpdateWithoutInstitutionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -818,6 +852,7 @@ export type ExamUncheckedUpdateManyWithoutInstitutionInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -830,6 +865,7 @@ export type ExamCreateManyPostInput = {
   slug?: string | null
   examYear: number
   examType?: string | null
+  grade?: string | null
   description?: string | null
   createdAt?: Date | string
   updatedAt?: Date | string
@@ -841,6 +877,7 @@ export type ExamUpdateWithoutPostInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -855,6 +892,7 @@ export type ExamUncheckedUpdateWithoutPostInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -868,6 +906,7 @@ export type ExamUncheckedUpdateManyWithoutPostInput = {
   slug?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   examYear?: Prisma.IntFieldUpdateOperationsInput | number
   examType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  grade?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
@@ -912,6 +951,7 @@ export type ExamSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   slug?: boolean
   examYear?: boolean
   examType?: boolean
+  grade?: boolean
   description?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -929,6 +969,7 @@ export type ExamSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   slug?: boolean
   examYear?: boolean
   examType?: boolean
+  grade?: boolean
   description?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -944,6 +985,7 @@ export type ExamSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensio
   slug?: boolean
   examYear?: boolean
   examType?: boolean
+  grade?: boolean
   description?: boolean
   createdAt?: boolean
   updatedAt?: boolean
@@ -959,12 +1001,13 @@ export type ExamSelectScalar = {
   slug?: boolean
   examYear?: boolean
   examType?: boolean
+  grade?: boolean
   description?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ExamOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "institutionId" | "postId" | "name" | "slug" | "examYear" | "examType" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["exam"]>
+export type ExamOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "institutionId" | "postId" | "name" | "slug" | "examYear" | "examType" | "grade" | "description" | "createdAt" | "updatedAt", ExtArgs["result"]["exam"]>
 export type ExamInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   institution?: boolean | Prisma.Exam$institutionArgs<ExtArgs>
   post?: boolean | Prisma.Exam$postArgs<ExtArgs>
@@ -995,6 +1038,7 @@ export type $ExamPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     slug: string | null
     examYear: number
     examType: string | null
+    grade: string | null
     description: string | null
     createdAt: Date
     updatedAt: Date
@@ -1431,6 +1475,7 @@ export interface ExamFieldRefs {
   readonly slug: Prisma.FieldRef<"Exam", 'String'>
   readonly examYear: Prisma.FieldRef<"Exam", 'Int'>
   readonly examType: Prisma.FieldRef<"Exam", 'String'>
+  readonly grade: Prisma.FieldRef<"Exam", 'String'>
   readonly description: Prisma.FieldRef<"Exam", 'String'>
   readonly createdAt: Prisma.FieldRef<"Exam", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Exam", 'DateTime'>

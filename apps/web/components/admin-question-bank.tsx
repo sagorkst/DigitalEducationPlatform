@@ -14,7 +14,6 @@ import {
   Badge,
 } from "@shikhasetu/ui";
 import QuestionImportPanel from "./question-import-panel";
-import OcrQuestionImportPanel from "./ocr-question-import-panel";
 import QuestionImportTemplates from "./question-import-templates";
 import QuestionImportHistory from "./question-import-history";
 
@@ -211,8 +210,12 @@ export default function QuestionBankPage() {
   const [saving, setSaving] = useState(false);
   const [pageError, setPageError] = useState("");
   const [totalQuestions, setTotalQuestions] = useState(0);
+  const [globalStats, setGlobalStats] = useState({ totalQuestions: 0, totalInstitutions: 0, totalExams: 0, totalSubjects: 0 });
 
   const [selectedQuestionIds, setSelectedQuestionIds] = useState<string[]>([]);
+  const [allMatchingSelected, setAllMatchingSelected] = useState(false);
+  const [excludedQuestionIds, setExcludedQuestionIds] = useState<string[]>([]);
+  const [tableDensity, setTableDensity] = useState<"compact" | "ultra">("compact");
   const [bulkDifficulty, setBulkDifficulty] = useState("");
   const [bulkStatus, setBulkStatus] = useState("");
   const [bulkSaving, setBulkSaving] = useState(false);
@@ -221,6 +224,7 @@ export default function QuestionBankPage() {
   const [draftCount, setDraftCount] = useState(0);
 
   const [viewMode, setViewMode] = useState<QuestionViewMode>("single");
+  const [managementWorkspaceOpen, setManagementWorkspaceOpen] = useState(true);
   const [groupOptions, setGroupOptions] = useState<{
     institutions: InstitutionGroup[];
     exams: ExamGroup[];
@@ -268,7 +272,7 @@ export default function QuestionBankPage() {
       if (filters.post) params.set("post", filters.post);
       if (filters.subject) params.set("subject", filters.subject);
       if (filters.topic) params.set("topic", filters.topic);
-      if (filters.status) params.set("status", filters.status);
+      if (filters.status) params.set("status", filters.status.toUpperCase());
 
       const response = await fetch(`/api/questions?${params.toString()}`, {
         method: "GET",
@@ -319,6 +323,14 @@ export default function QuestionBankPage() {
         institutions: result.data?.institutions ?? [],
         exams: result.data?.exams ?? [],
       });
+      if (result.stats) {
+        setGlobalStats({
+          totalQuestions: Number(result.stats.totalQuestions ?? 0),
+          totalInstitutions: Number(result.stats.totalInstitutions ?? 0),
+          totalExams: Number(result.stats.totalExams ?? 0),
+          totalSubjects: Number(result.stats.totalSubjects ?? 0),
+        });
+      }
     } catch (error) {
       setPageError(
         error instanceof Error ? error.message : "Exam group লোড করতে সমস্যা হয়েছে।",
@@ -472,7 +484,34 @@ export default function QuestionBankPage() {
     void refreshDraftCount();
   }, [refreshDraftCount]);
 
+  useEffect(() => {
+    setSelectedQuestionIds([]);
+    setAllMatchingSelected(false);
+    setExcludedQuestionIds([]);
+  }, [search, filters]);
+
+  const currentFilterPayload = () => ({
+    search: search.trim() || undefined,
+    yearFrom: filters.from || undefined,
+    yearTo: filters.to || undefined,
+    institution: filters.institution || undefined,
+    exam: filters.exam || undefined,
+    post: filters.post || undefined,
+    subject: filters.subject || undefined,
+    topic: filters.topic || undefined,
+    status: filters.status ? filters.status.toUpperCase() : undefined,
+  });
+
+  const bulkSelectionCount = allMatchingSelected
+    ? Math.max(0, totalQuestions - excludedQuestionIds.length)
+    : selectedQuestionIds.length;
+  const bulkChangeSummary = [
+    bulkDifficulty ? `Difficulty: ${bulkDifficulty}` : "",
+    bulkStatus ? `Status: ${bulkStatus}` : "",
+  ].filter(Boolean).join(" · ");
+
   const toggleCurrentPageSelection = () => {
+    setAllMatchingSelected(false);
     const currentIds = filteredQuestions.map((question) => question.id);
     const allSelected =
       currentIds.length > 0 &&
@@ -500,21 +539,49 @@ export default function QuestionBankPage() {
     setBulkSuccess("");
   };
 
-  const applyBulkEdit = async () => {
-    if (selectedQuestionIds.length === 0) {
-      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
+  const invertCurrentPageSelection = () => {
+    const currentIds = filteredQuestions.map((question) => question.id);
+
+    if (allMatchingSelected) {
+      const nextExcluded = new Set(excludedQuestionIds);
+      currentIds.forEach((id) => {
+        if (nextExcluded.has(id)) nextExcluded.delete(id);
+        else nextExcluded.add(id);
+      });
+      setExcludedQuestionIds(Array.from(nextExcluded));
+    } else {
+      const nextIds = selectedQuestionIds.filter((id) => !currentIds.includes(id));
+      const newlySelectedIds = currentIds.filter((id) => !selectedQuestionIds.includes(id));
+      const combinedIds = [...nextIds, ...newlySelectedIds];
+
+      if (combinedIds.length > 500) {
+        setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন নির্বাচন করা যাবে। কিছু নির্বাচন Clear করে আবার চেষ্টা করুন।");
+        setBulkSuccess("");
+        return;
+      }
+
+      setSelectedQuestionIds(combinedIds);
+    }
+
+    setBulkError("");
+    setBulkSuccess("");
+  };
+
+  const applyBulkEdit = async (statusOverride?: string) => {
+    if (!allMatchingSelected && selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");
       return;
     }
 
-    if (selectedQuestionIds.length > 500) {
+    if (!allMatchingSelected && selectedQuestionIds.length > 500) {
       setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন পরিবর্তন করা যাবে।");
       return;
     }
 
     const updates: Record<string, string> = {};
 
-    if (bulkDifficulty) updates.difficulty = bulkDifficulty;
-    if (bulkStatus) updates.status = bulkStatus;
+    if (bulkDifficulty && !statusOverride) updates.difficulty = bulkDifficulty;
+    if (bulkStatus || statusOverride) updates.status = statusOverride || bulkStatus;
 
     if (Object.keys(updates).length === 0) {
       setBulkError("পরিবর্তনের জন্য Difficulty অথবা Status নির্বাচন করুন।");
@@ -522,7 +589,7 @@ export default function QuestionBankPage() {
     }
 
     if (!window.confirm(
-      `${selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
+      `${allMatchingSelected ? totalQuestions - excludedQuestionIds.length : selectedQuestionIds.length}টি প্রশ্নের তথ্য একসঙ্গে পরিবর্তন করবেন?`,
     )) {
       return;
     }
@@ -532,16 +599,12 @@ export default function QuestionBankPage() {
     setBulkSuccess("");
 
     try {
-      const response = await fetch("/api/questions/bulk", {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/filtered" : "/api/questions/bulk", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ids: selectedQuestionIds,
-          updates: {
-            ...updates,
-            changeNote: "Bulk update from Question Bank management.",
-          },
-        }),
+        body: JSON.stringify(allMatchingSelected
+          ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds, updates: { ...updates, changeNote: "Bulk update across all filtered questions." } }
+          : { ids: selectedQuestionIds, updates: { ...updates, changeNote: "Bulk update from Question Bank management." } }),
       });
 
       const result = await response.json();
@@ -554,6 +617,8 @@ export default function QuestionBankPage() {
 
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে পরিবর্তন হয়েছে।`);
       setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
       setBulkDifficulty("");
       setBulkStatus("");
 
@@ -570,18 +635,15 @@ export default function QuestionBankPage() {
   };
 
   const bulkDeleteQuestions = async () => {
-    if (selectedQuestionIds.length === 0) {
-      setBulkError("প্রথমে অন্তত একটি প্রশ্ন নির্বাচন করুন।");
-      return;
-    }
-
-    if (selectedQuestionIds.length > 500) {
+    if (!allMatchingSelected && selectedQuestionIds.length === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন অথবা সব Filtered প্রশ্ন নির্বাচন করুন।");      return;    }
+    if (!allMatchingSelected && selectedQuestionIds.length > 500) {
       setBulkError("একবারে সর্বোচ্চ ৫০০টি প্রশ্ন Trash-এ পাঠানো যাবে।");
       return;
     }
 
     if (!window.confirm(
-      `আপনি কি নির্বাচিত ${selectedQuestionIds.length}টি প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
+      `আপনি কি ${allMatchingSelected ? totalQuestions - excludedQuestionIds.length : selectedQuestionIds.length}টি matching প্রশ্ন Trash-এ পাঠাতে চান? Trash থেকে পরে Recover করা যাবে।`,
     )) {
       return;
     }
@@ -593,10 +655,10 @@ export default function QuestionBankPage() {
     try {
       const idsToDelete = [...selectedQuestionIds];
 
-      const response = await fetch("/api/questions/bulk/delete", {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/delete-filtered" : "/api/questions/bulk/delete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ids: idsToDelete }),
+        body: JSON.stringify(allMatchingSelected ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds } : { ids: idsToDelete }),
       });
 
       const result = await response.json();
@@ -605,12 +667,14 @@ export default function QuestionBankPage() {
         throw new Error(result.message || "নির্বাচিত প্রশ্ন Trash-এ পাঠানো যায়নি।");
       }
 
-      const count = Number(result.deletedCount ?? idsToDelete.length);
+      const count = Number(result.deletedCount ?? (allMatchingSelected ? totalQuestions : idsToDelete.length));
 
       setBulkSuccess(`${count}টি প্রশ্ন সফলভাবে Trash-এ পাঠানো হয়েছে।`);
       setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
 
-      if (selected && idsToDelete.includes(selected)) {
+      if (allMatchingSelected || (selected && idsToDelete.includes(selected))) {
         setSelected(null);
       }
 
@@ -633,6 +697,47 @@ export default function QuestionBankPage() {
       setBulkSaving(false);
     }
   };
+  const bulkPermanentDeleteQuestions = async () => {
+    if (bulkSelectionCount === 0) {
+      setBulkError("প্রথমে প্রশ্ন নির্বাচন করুন।");
+      return;
+    }
+
+    const count = bulkSelectionCount;
+    if (!window.confirm(`সতর্কতা: ${count.toLocaleString("bn-BD")}টি নির্বাচিত প্রশ্ন সরাসরি Database থেকে স্থায়ীভাবে মুছে যাবে। Trash-এ যাবে না এবং আর Recover করা যাবে না। আপনি কি নিশ্চিত?`)) return;
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+
+    try {
+      const response = await fetch(allMatchingSelected ? "/api/questions/bulk/permanent-delete-filtered" : "/api/questions/bulk/permanent-delete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(allMatchingSelected
+          ? { filters: currentFilterPayload(), excludedIds: excludedQuestionIds }
+          : { ids: selectedQuestionIds }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) throw new Error(result.message || "নির্বাচিত প্রশ্ন স্থায়ীভাবে মুছে ফেলা যায়নি।");
+
+      const deletedCount = Number(result.deletedCount ?? count);
+      setBulkSuccess(`${deletedCount.toLocaleString("bn-BD")}টি প্রশ্ন Trash-এ না পাঠিয়ে স্থায়ীভাবে মুছে ফেলা হয়েছে।`);
+      setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
+      setSelected(null);
+      await loadQuestions(1, false);
+      await refreshDraftCount();
+      await loadGroupOptions();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Permanent Delete ব্যর্থ হয়েছে।");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const publishAllDrafts = async () => {
     if (draftCount <= 0) {
       setBulkError("Publish করার মতো কোনো Draft প্রশ্ন পাওয়া যায়নি।");
@@ -1027,6 +1132,53 @@ export default function QuestionBankPage() {
     }
   };
 
+  const trashQuestionsByScope = async (
+    label: string,
+    scopeFilters: Record<string, string | undefined>,
+  ) => {
+    const scope = Object.fromEntries(
+      Object.entries(scopeFilters).filter(([, value]) => Boolean(value)),
+    );
+    if (Object.keys(scope).length === 0) {
+      setBulkError("প্রশ্নের Scope নির্ধারণ করা যায়নি।");
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `“${label}” এর সঙ্গে মেলা সব প্রশ্ন Trash-এ পাঠাবেন? প্রশ্নগুলো পরে Trash থেকে Recover করা যাবে।`,
+    );
+    if (!confirmed) return;
+
+    setBulkSaving(true);
+    setBulkError("");
+    setBulkSuccess("");
+    try {
+      const response = await fetch("/api/questions/bulk/delete-filtered", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ filters: scope }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "প্রশ্নগুলো Trash-এ পাঠানো যায়নি।");
+      }
+
+      const count = Number(result.deletedCount ?? 0);
+      setBulkSuccess(`${label} থেকে ${count.toLocaleString("bn-BD")}টি প্রশ্ন Trash-এ পাঠানো হয়েছে।`);
+      setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setSelected(null);
+      await loadQuestions(1, false);
+      await loadGroupOptions();
+      await refreshDraftCount();
+      window.dispatchEvent(new Event("shikhasetu:questions-updated"));
+    } catch (error) {
+      setBulkError(error instanceof Error ? error.message : "Bulk Trash ব্যর্থ হয়েছে।");
+    } finally {
+      setBulkSaving(false);
+    }
+  };
+
   const filterOptions = [
     {
       key: "institution",
@@ -1036,7 +1188,7 @@ export default function QuestionBankPage() {
     {
       key: "exam",
       label: "পরীক্ষার নাম",
-      options: [...new Set(questions.map((q) => q.exam).filter(Boolean))],
+      options: [...new Set(groupOptions.exams.map((item) => item.examName).filter(Boolean))],
     },
     {
       key: "post",
@@ -1070,52 +1222,40 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <main className="min-h-screen bg-slate-50 p-4 md:p-8">
-      <div className="mx-auto max-w-7xl space-y-7">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-center">
-          <div>
-            <p className="text-sm font-bold uppercase tracking-widest text-blue-700">
-              SHIKHASETU / QUESTION BANK
-            </p>
-            <h1 className="mt-2 text-3xl font-black text-slate-900">
-              প্রশ্নব্যাংক
-            </h1>
-            <p className="mt-2 text-sm text-slate-500">
-              সকল প্রতিষ্ঠানের বিগত পরীক্ষার প্রশ্ন এক জায়গায় পরিচালনা করুন।
-            </p>
+    <main className="min-h-screen bg-[#f3f6fb] px-3 pb-3 pt-[3px] md:px-5 md:pb-5 md:pt-[3px]">
+      <style jsx global>{`@keyframes filter-marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } } .filter-marquee-track { animation: filter-marquee 8s linear infinite; } .filter-marquee-track:hover { animation-play-state: paused; }`}</style>
+      <div className="mx-auto w-full max-w-none space-y-4">
+        <section className="min-h-[76px] rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
+          <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-blue-50 text-lg">📖</div>
+              <div className="min-w-0">
+                <p className="text-xs font-extrabold uppercase tracking-[0.11em] text-blue-700">SHIKHASETU / ADMIN WORKSPACE</p>
+                <h1 className="mt-0.5 whitespace-nowrap text-base font-black leading-tight tracking-tight text-slate-950 xl:text-lg">Question Bank Control Center</h1>
+                <p className="mt-0.5 text-sm font-semibold text-slate-600">Manage all questions</p>
+              </div>
+            </div>
+            <div className="grid min-w-0 items-stretch gap-2 lg:grid-cols-[108px_minmax(0,1fr)] lg:border-l lg:border-slate-100 lg:pl-4">              <div className="flex min-h-[64px] items-center justify-center border-b border-slate-100 pb-2 text-center lg:border-b-0 lg:border-r lg:pb-0 lg:pr-2">
+                <h2 className="flex flex-col gap-1 whitespace-nowrap text-base font-black leading-none text-slate-900"><span>Import</span><span>&amp;</span><span>Data Tools</span></h2>              </div>
+              <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">                {!showTrash && (
+                  <>
+                    <Button onClick={openAddForm} className="flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 whitespace-normal rounded-md bg-blue-700 px-1 text-sm font-bold leading-tight text-white hover:bg-blue-800"><svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span className="text-center text-sm font-bold">নতুন প্রশ্ন</span></Button>
+                    <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80"><QuestionImportPanel /></div>
+                    <a href="/api/imports/export?format=xlsx" className="inline-flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 whitespace-normal rounded-md border border-slate-300 bg-white px-1 text-sm font-bold leading-tight text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><span className="text-sm font-bold">Export</span></a>
+                    <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-violet-200 bg-violet-50/40 transition-colors hover:border-violet-400 hover:bg-violet-100/80"><QuestionImportTemplates /></div>
+                    <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50/40 transition-colors hover:border-blue-400 hover:bg-blue-100/80"><QuestionImportHistory /></div>
+                  </>
+                )}
+                <button type="button" onClick={toggleTrash} className={`flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 whitespace-normal rounded-md border px-1 text-sm font-bold leading-tight transition-colors ${showTrash ? "border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100" : "border-red-200 bg-red-50/50 text-red-700 hover:bg-red-50"}`}>
+                  <svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0"><path d="M4 7h16M10 11v6m4-6v6M6 7l1 14h10l1-14M9 7V4h6v3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                  <span className="text-center text-sm font-bold">{showTrash ? "Question Bank" : "Trash"}{!showTrash && deletedQuestions.length > 0 ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})` : ""}</span>
+                </button>
+              </div>
+            </div>
           </div>
+        </section>
 
-          <div className="flex flex-wrap items-center justify-end gap-3">
-  {!showTrash && (
-    <>
-      <div className="flex items-center">
-        <QuestionImportPanel />
-      </div>
 
-      <div className="flex items-center">
-        <OcrQuestionImportPanel />
-      </div>
-
-      <QuestionImportTemplates />
-
-      <div className="flex items-center">
-        <QuestionImportHistory />
-      </div>
-    </>
-  )}
-
-  <div className="flex items-center">
-    <Button variant="outline" onClick={toggleTrash}>
-              🗑 {showTrash ? "Trash বন্ধ করুন" : "Trash"}
-              {deletedQuestions.length > 0
-                ? ` (${deletedQuestions.length.toLocaleString("bn-BD")})`
-                : ""}
-            </Button>
-  </div>
-
-  {!showTrash && <Button onClick={openAddForm}>+ নতুন প্রশ্ন</Button>}
-</div>
-        </div>
 
         {!showTrash && (
           <>
@@ -1132,53 +1272,6 @@ export default function QuestionBankPage() {
             </Button>
           </div>
         )}
-
-        <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {[
-            {
-              label: "মোট প্রশ্ন",
-              value: totalQuestions.toLocaleString("bn-BD"),
-              icon: "📚",
-            },
-            {
-              label: "প্রতিষ্ঠান",
-              value: new Set(
-                questions.map((q) => q.institution).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "🏛️",
-            },
-            {
-              label: "পরীক্ষা",
-              value: new Set(
-                questions.map((q) => q.exam).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "📝",
-            },
-            {
-              label: "বিষয়",
-              value: new Set(
-                questions.map((q) => q.subject).filter(Boolean),
-              ).size.toLocaleString("bn-BD"),
-              icon: "📖",
-            },
-          ].map((item) => (
-            <Card key={item.label}>
-              <CardContent className="flex items-center gap-3 pt-6">
-                <div className="rounded-xl bg-blue-50 p-3 text-2xl">
-                  {item.icon}
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-slate-500">
-                    {item.label}
-                  </p>
-                  <p className="mt-1 text-xl font-black text-slate-900">
-                    {item.value}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
 
           </>
         )}
@@ -1251,7 +1344,7 @@ export default function QuestionBankPage() {
                         <Badge>Trash</Badge>
                       </div>
 
-                      <p className="mt-3 font-bold text-slate-900">
+                      <p className={`${tableDensity === "ultra" ? "mt-1 text-sm" : "mt-2 font-bold text-slate-900"}`}>
                         {q.question}
                       </p>
 
@@ -1493,148 +1586,252 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <Card>
-          <CardHeader>
-            <CardTitle>প্রশ্ন দেখার পদ্ধতি</CardTitle>
-            <p className="text-sm text-slate-500">
-              সব প্রশ্ন একসঙ্গে, Exam অনুযায়ী অথবা Institution অনুযায়ী দেখুন।
-            </p>
-          </CardHeader>
-          <CardContent className="flex flex-wrap gap-2">
-            <Button
-              variant={viewMode === "single" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("single");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-              }}
+        <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
+            <button
+              type="button"
+              onClick={() => setManagementWorkspaceOpen((open) => !open)}
+              aria-expanded={managementWorkspaceOpen}
+              aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"}
+              className="flex h-10 shrink-0 items-center gap-2 rounded-md px-1 text-left text-base font-black tracking-tight text-slate-950 transition-colors hover:bg-slate-50 focus-visible:outline-none sm:text-lg"
             >
-              Single List
-            </Button>
-            <Button
-              variant={viewMode === "exam" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("exam");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-                void loadGroupOptions();
-              }}
-            >
-              Exam Wise
-            </Button>
-            <Button
-              variant={viewMode === "institution" ? "outline" : "ghost"}
-              onClick={() => {
-                setViewMode("institution");
-                setSelectedExamGroup(null);
-                setSelectedInstitutionKey(null);
-                setSelected(null);
-                void loadGroupOptions();
-              }}
-            >
-              Institution Wise
-            </Button>
-          </CardContent>
-        </Card>
+              <span className="text-xl" aria-hidden="true">▦</span>
+              <span className="whitespace-nowrap">Management &amp; Control</span>
+              <span className="ml-1 text-sm text-slate-500" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
+            </button>
 
-        {true && (
-        <Card>
-          <CardHeader>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <CardTitle>Advanced Question Search</CardTitle>
-                <p className="mt-1 text-sm text-slate-500">
-                  একাধিক Filter একসঙ্গে ব্যবহার করে প্রশ্ন খুঁজুন।
-                </p>
+            <div className="mx-[100px] min-w-[220px] flex-1">
+              <div className="box-border flex h-10 min-w-0 items-center gap-2 rounded-md border-2 border-slate-400 bg-white px-3 transition-[border-color,background-color,box-shadow] duration-150 focus-within:border-blue-700 focus-within:bg-white focus-within:shadow-none">
+                <span className="shrink-0 text-lg text-slate-500" aria-hidden="true">⌕</span>
+                <input
+                  type="search"
+                  aria-label="Search questions"
+                  placeholder="Search questions by keyword..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm text-slate-900 shadow-none outline-none ring-0 placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
+                />
               </div>
-              <Button variant="ghost" size="sm" onClick={resetFilters}>
-                ↻ Reset Filters
-              </Button>
-            </div>
-          </CardHeader>
-
-          <CardContent className="space-y-5">
-            <Input
-              placeholder="প্রশ্ন, Keyword, Exam অথবা Question ID দিয়ে খুঁজুন..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Select
-                label="Year From"
-                value={filters.from}
-                onChange={(e) => updateFilter("from", e.target.value)}
-              >
-                <option value="">শুরু বছর</option>
-                {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </Select>
-
-              <Select
-                label="Year To"
-                value={filters.to}
-                onChange={(e) => updateFilter("to", e.target.value)}
-              >
-                <option value="">শেষ বছর</option>
-                {Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </Select>
-
-              <Select
-                label="Status"
-                value={filters.status}
-                onChange={(e) => updateFilter("status", e.target.value)}
-              >
-                <option value="">সকল</option>
-                <option value="DRAFT">Draft</option>
-                <option value="PUBLISHED">Published</option>
-                <option value="HIDDEN">Hidden</option>
-                <option value="ARCHIVED">Archived</option>
-              </Select>
-              {filterOptions.map((filter) => (
-                <Select
-                  key={filter.key}
-                  label={filter.label}
-                  value={filters[filter.key as keyof typeof initialFilters]}
-                  onChange={(e) =>
-                    updateFilter(
-                      filter.key as keyof typeof initialFilters,
-                      e.target.value,
-                    )
-                  }
-                >
-                  <option value="">সকল</option>
-                  {filter.options.map((option) => (
-                    <option key={option} value={option}>
-                      {option}
-                    </option>
-                  ))}
-                </Select>
-              ))}
             </div>
 
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-              <p className="text-sm text-slate-600">
-                পাওয়া গেছে:{" "}
-                <strong className="text-blue-700">
-                  {totalQuestions.toLocaleString("bn-BD")}
-                </strong>{" "}
-                টি প্রশ্ন
-              </p>
-              <Badge>Backend Filters Active</Badge>
+            <div className="flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                disabled={loading || filteredQuestions.length === 0 || bulkSaving}
+                onClick={toggleCurrentPageSelection}
+                aria-label="Select current page"
+                aria-pressed={filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))}
+                className={`flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id)) ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800"}`}
+              >
+                <span aria-hidden="true">☑</span><span>Select</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading || totalQuestions === 0 || bulkSaving}
+                onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                aria-label="Select all filtered questions"
+                aria-pressed={allMatchingSelected}
+                className={`flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800"}`}
+              >
+                <span aria-hidden="true">▣</span><span>Select All</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading || filteredQuestions.length === 0 || bulkSaving}
+                onClick={invertCurrentPageSelection}
+                aria-label="Invert current page selection"
+                className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span aria-hidden="true">⇄</span><span>Invert</span>
+              </button>
+              <button
+                type="button"
+                disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}
+                onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                aria-label="Clear selection"
+                className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span aria-hidden="true">✕</span><span>Clear</span>
+              </button>
             </div>
-          </CardContent>
-        </Card>
-        )}
+
+          </div>
+
+          {managementWorkspaceOpen && (
+            <div className="mt-2 space-y-2">
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2 xl:gap-x-6"><div className="flex min-w-0 flex-col">
+                  <div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
+                    <span className="whitespace-nowrap">Management Workspace</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                  <div className="mx-auto grid w-full min-w-0 grid-cols-4 gap-3">
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "single" && !filters.subject}
+                      onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
+                      className={`flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border px-1 py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">▰</span>
+                      <span className="text-sm font-extrabold whitespace-nowrap">All Ques - <strong className="text-base font-black tabular-nums">{globalStats.totalQuestions.toLocaleString("en-US")}</strong></span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "institution"}
+                      onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
+                      className={`flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border px-1 py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">🏛️</span>
+                      <span className="text-sm font-extrabold whitespace-nowrap">Institute - <strong className="text-base font-black tabular-nums">{String(globalStats.totalInstitutions).padStart(2, "0")}</strong></span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "exam"}
+                      onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
+                      className={`flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border px-1 py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">📋</span>
+                      <span className="text-sm font-extrabold whitespace-nowrap">Exam - <strong className="text-base font-black tabular-nums">{String(globalStats.totalExams).padStart(2, "0")}</strong></span>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={Boolean(filters.subject)}
+                      onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
+                      className={`flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden whitespace-nowrap rounded-md border px-1 py-1 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                    >
+                      <span className="text-2xl leading-none" aria-hidden="true">📖</span>
+                      <span className="text-sm font-extrabold whitespace-nowrap">Subjects - <strong className="text-base font-black tabular-nums">{String(globalStats.totalSubjects).padStart(2, "0")}</strong></span>
+                    </button>
+                  </div>
+                </div><div className="flex min-w-0 flex-col"><div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Actions</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-[repeat(5,minmax(0,1fr))_minmax(0,1.35fr)] auto-rows-[58px] gap-3">
+                  <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[58px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1.5 rounded-md border border-emerald-700 bg-emerald-700 px-0.5 py-1 text-center text-white transition-colors hover:border-emerald-800 hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-[11px] font-extrabold leading-tight">Publish All</span><strong className="text-xs font-black tabular-nums">{draftCount.toLocaleString("en-US")}</strong>
+                  </button>
+                  <a href="/api/imports/export?format=json" className="flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-md border border-blue-200 bg-blue-50/60 px-0.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span><span className="text-base leading-none" aria-hidden="true">⇩</span>
+                  </a>
+                  <a href="/api/imports/export?format=csv" className="flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-md border border-blue-200 bg-blue-50/60 px-0.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">▤</span><span>CSV</span><span className="text-base leading-none" aria-hidden="true">⇩</span>
+                  </a>
+                  <a href="/api/imports/export?format=xlsx" className="flex h-[58px] w-full min-w-0 items-center justify-center gap-2 overflow-hidden rounded-md border border-blue-200 bg-blue-50/60 px-0.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">▦</span><span>Excel</span><span className="text-base leading-none" aria-hidden="true">⇩</span>
+                  </a>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex h-[58px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-2 rounded-md border border-amber-700 bg-amber-600 px-0.5 py-1 text-center text-white transition-colors hover:border-amber-800 hover:bg-amber-700 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-xl leading-none" aria-hidden="true">🗑</span><span className="text-[11px] font-extrabold leading-tight">Delete</span>
+                  </button>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[58px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-2 rounded-md border border-red-700 bg-red-700 px-0.5 py-1 text-center text-white transition-colors hover:border-red-800 hover:bg-red-800 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-xl leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
+                  </button>
+                  </div></div></div><div className="min-w-0"><div className="mb-1 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Filters</span><span className="h-px flex-1 bg-slate-200" /></div><div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-[repeat(8,minmax(0,1fr))_36px]">
+                  {filterOptions.slice(0, 3).map((item) => {
+                    const value = filters[item.key as keyof typeof initialFilters];
+                    const display = value || (item.key === "institution" ? "Institution" : item.key === "exam" ? "Exam" : "Post");
+                    const long = display.length > 15;
+                    return (
+                      <div key={item.key} className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                        <select aria-label={item.key} value={value} onChange={(e) => updateFilter(item.key as keyof typeof initialFilters, e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                          <option value="">{item.key === "institution" ? "Institution" : item.key === "exam" ? "Exam" : "Post"}</option>
+                          {item.options.map((option) => <option key={option} value={option} className="text-slate-900">{option}</option>)}
+                        </select>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-5">
+                          {long ? (
+                            <span className="filter-marquee-track flex w-max shrink-0 items-center gap-8 whitespace-nowrap text-[13px] font-medium text-slate-700">
+                              <span>{display}</span><span aria-hidden="true">{display}</span>
+                            </span>
+                          ) : (
+                            <span className="max-w-full truncate whitespace-nowrap text-center text-[13px] font-medium text-slate-700">{display}</span>
+                          )}
+                        </div>
+                        <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                      </div>
+                    );
+                  })}
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year} className="text-slate-900">{year}</option>)}
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.from || "Year From"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                  </div>
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year} className="text-slate-900">{year}</option>)}
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.to || "Year To"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                  </div>
+                  {filterOptions.slice(3).map((item) => {
+                    const value = filters[item.key as keyof typeof initialFilters];
+                    const display = value || (item.key === "subject" ? "Subject" : "Topics");
+                    const long = display.length > 15;
+                    return (
+                      <div key={item.key} className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                        <select aria-label={item.key} value={value} onChange={(e) => updateFilter(item.key as keyof typeof initialFilters, e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                          <option value="">{item.key === "subject" ? "Subject" : "Topics"}</option>
+                          {item.options.map((option) => <option key={option} value={option} className="text-slate-900">{option}</option>)}
+                        </select>
+                        <div className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden px-5">
+                          {long ? (
+                            <span className="filter-marquee-track flex w-max shrink-0 items-center gap-8 whitespace-nowrap text-[13px] font-medium text-slate-700">
+                              <span>{display}</span><span aria-hidden="true">{display}</span>
+                            </span>
+                          ) : (
+                            <span className="max-w-full truncate whitespace-nowrap text-center text-[13px] font-medium text-slate-700">{display}</span>
+                          )}
+                        </div>
+                        <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                      </div>
+                    );
+                  })}
+                  <div className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
+                    <select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="absolute inset-0 z-10 h-full w-full cursor-pointer appearance-none border-0 bg-transparent px-2 text-transparent outline-none focus:ring-2 focus:ring-inset focus:ring-blue-400">
+                      <option value="">Status</option><option value="DRAFT" className="text-slate-900">Draft</option><option value="PUBLISHED" className="text-slate-900">Published</option><option value="HIDDEN" className="text-slate-900">Hidden</option><option value="ARCHIVED" className="text-slate-900">Archived</option>
+                    </select>
+                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.status ? ({ DRAFT: "Draft", PUBLISHED: "Published", HIDDEN: "Hidden", ARCHIVED: "Archived" } as Record<string, string>)[filters.status] : "Status"}</span>
+                    <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
+                  </div>
+                  <button type="button" onClick={resetFilters} aria-label="Reset all filters" title="Reset filters" className="flex h-10 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-lg font-black text-amber-700 transition-colors hover:border-amber-400 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">↻</button>
+                </div>
+              </div></div>
+
+              <div className="min-w-0"><div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Bulk Edit</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 auto-rows-[70px] gap-1.5">
+                    <label className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                      Difficulty
+                      <Select aria-label="Bulk Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
+                        <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                      </Select>
+                    </label>
+                    <label className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                      Status
+                      <Select aria-label="Bulk Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
+                        <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                      </Select>
+                    </label>
+                    {["Subject", "Topic", "Institution", "Exam", "Post"].map((field) => (
+                      <div key={field} aria-label={`Bulk ${field} (not available yet)`} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                        {field}
+                        <span className="flex h-8 w-full items-center justify-center overflow-hidden rounded-md border border-blue-200 bg-white px-1 text-center text-[10px] font-semibold">Coming soon</span>
+                      </div>
+                    ))}
+                    <button type="button" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                      <span className="text-lg leading-none" aria-hidden="true">✓</span><span className="text-[11px] font-extrabold leading-tight">Apply</span>
+                    </button>
+                  </div></div>
+              {(bulkError || bulkSuccess) && (
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
+                  {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
+                  {bulkSuccess && <p role="status" className="text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
+                </div>
+              )}
+
+              <div className="flex min-w-0 flex-wrap items-center justify-start gap-x-[100px] gap-y-2 overflow-visible rounded-md border border-slate-200 bg-white py-2 pl-[100px] pr-4 text-base font-semibold text-slate-700">
+                <p className="whitespace-nowrap text-left">Found: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("en-US")}</strong> Questions</p>
+                <p className="whitespace-nowrap text-left text-sm font-extrabold tabular-nums text-blue-800">Total: {bulkSelectionCount.toLocaleString("en-US")} Selected</p>
+                <p className="whitespace-nowrap text-left text-base font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+              </div>
+            </div>
+          )}
+        </section>
 
         {viewMode !== "single" && (
           <Card>
@@ -1668,21 +1865,54 @@ export default function QuestionBankPage() {
               {!selectedExamGroup && viewMode === "institution" && (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                   {groupOptions.institutions.map((institution) => (
-                    <button
+                    <div
                       key={institution.groupKey}
-                      type="button"
-                      onClick={() => setSelectedInstitutionKey(institution.groupKey)}
-                      className={`rounded-xl border p-4 text-left transition ${
+                      className={`rounded-xl border p-4 transition ${
                         selectedInstitutionKey === institution.groupKey
                           ? "border-blue-500 bg-blue-50"
-                          : "border-slate-200 hover:border-blue-300"
+                          : "border-slate-200 bg-white hover:border-blue-300"
                       }`}
                     >
-                      <p className="font-bold text-slate-900">{institution.name}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {institution.exams.length.toLocaleString("bn-BD")} টি Exam
-                      </p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedInstitutionKey(institution.groupKey)}
+                        className="w-full text-left"
+                      >
+                        <p className="font-bold text-slate-900">{institution.name}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {institution.exams.length.toLocaleString("bn-BD")} টি Exam
+                        </p>
+                      </button>
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={bulkSaving}
+                          onClick={() => void trashQuestionsByScope(
+                            institution.name,
+                            { institution: institution.name },
+                          )}
+                          className="border-red-200 text-red-700 hover:bg-red-50"
+                        >
+                          প্রতিষ্ঠানের সব প্রশ্ন Trash
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setFilters({ ...initialFilters, institution: institution.name });
+                            setSearch("");
+                            setViewMode("single");
+                            setSelectedInstitutionKey(null);
+                            setSelectedExamGroup(null);
+                          }}
+                        >
+                          প্রশ্নগুলো দেখুন
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1696,19 +1926,61 @@ export default function QuestionBankPage() {
                           (item) => item.groupKey === selectedInstitutionKey,
                         )?.exams ?? []
                   ).map((group) => (
-                    <button
+                    <div
                       key={group.groupKey}
-                      type="button"
-                      onClick={() => void loadGroupQuestions(group)}
-                      className="w-full rounded-xl border border-slate-200 p-4 text-left transition hover:border-blue-400 hover:bg-blue-50"
+                      className="w-full rounded-xl border border-slate-200 bg-white p-4 transition hover:border-blue-300"
                     >
-                      <p className="font-bold text-slate-900">{group.examName}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        {group.institutionName} · {group.examYear}
-                        {group.postName ? ` · ${group.postName}` : ""}
-                        {group.department ? ` · ${group.department}` : ""}
-                      </p>
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => void loadGroupQuestions(group)}
+                        className="w-full text-left"
+                      >
+                        <p className="font-bold text-slate-900">{group.examName}</p>
+                        <p className="mt-1 text-sm text-slate-500">
+                          {group.institutionName} · {group.examYear}
+                          {group.postName ? ` · ${group.postName}` : ""}                          {group.department ? ` · ${group.department}` : ""}                        </p>
+                      </button>
+                      <div className="mt-3 flex flex-wrap gap-2 border-t border-slate-100 pt-3">                        <Button
+                          type="button"
+                          size="sm"
+                          variant="outline"
+                          disabled={bulkSaving}
+                          onClick={() => void trashQuestionsByScope(
+                            `${group.institutionName} / ${group.examName} / ${group.examYear}`,
+                            {
+                              institution: group.institutionName,
+                              exam: group.examName,
+                              yearFrom: String(group.examYear),
+                              yearTo: String(group.examYear),
+                              ...(group.postName ? { post: group.postName } : {}),
+                            },
+                          )}
+                          className="border-red-200 text-red-700 hover:bg-red-50"
+                        >
+                          এই Exam-এর সব প্রশ্ন Trash
+                        </Button>
+                        <Button
+                          type="button"
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            setFilters({
+                              ...initialFilters,
+                              institution: group.institutionName,
+                              exam: group.examName,
+                              from: String(group.examYear),
+                              to: String(group.examYear),
+                              ...(group.postName ? { post: group.postName } : {}),
+                            });
+                            setSearch("");
+                            setViewMode("single");
+                            setSelectedExamGroup(null);
+                          }}
+                        >
+                          প্রশ্নগুলো দেখুন
+                        </Button>
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -1749,129 +2021,20 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        {true && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Bulk Question Management</CardTitle>
-              <p className="text-sm text-slate-500">
-                একাধিক প্রশ্ন নির্বাচন করে একসঙ্গে পরিবর্তন করুন অথবা সব Draft Publish করুন।
-              </p>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  onClick={toggleCurrentPageSelection}
-                  disabled={loading || filteredQuestions.length === 0 || bulkSaving}
-                >
-                  {filteredQuestions.length > 0 &&
-                  filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))
-                    ? "বর্তমান তালিকার নির্বাচন বাতিল"
-                    : "বর্তমান তালিকার সব নির্বাচন"}
-                </Button>
-
-                <span className="text-sm text-slate-600">
-                  নির্বাচিত: {selectedQuestionIds.length}টি
-                </span>
-
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => {
-                    setSelectedQuestionIds([]);
-                    setBulkError("");
-                    setBulkSuccess("");
-                  }}
-                  disabled={selectedQuestionIds.length === 0 || bulkSaving}
-                >
-                  Selection Clear
-                </Button>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-2">
-                <Select
-                  label="Bulk Difficulty"
-                  value={bulkDifficulty}
-                  onChange={(e) => setBulkDifficulty(e.target.value)}
-                  disabled={bulkSaving}
-                >
-                  <option value="">পরিবর্তন করবেন না</option>
-                  <option value="EASY">Easy</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HARD">Hard</option>
-                </Select>
-
-                <Select
-                  label="Bulk Status"
-                  value={bulkStatus}
-                  onChange={(e) => setBulkStatus(e.target.value)}
-                  disabled={bulkSaving}
-                >
-                  <option value="">পরিবর্তন করবেন না</option>
-                  <option value="DRAFT">Draft</option>
-                  <option value="PUBLISHED">Published</option>
-                  <option value="HIDDEN">Hidden</option>
-                  <option value="ARCHIVED">Archived</option>
-                </Select>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
-                <Button
-                  type="button"
-                  onClick={() => void applyBulkEdit()}
-                  disabled={bulkSaving || selectedQuestionIds.length === 0}
-                >
-                  {bulkSaving ? "Processing..." : "Apply Bulk Edit"}
-                </Button>
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void bulkDeleteQuestions()}
-                  disabled={bulkSaving || selectedQuestionIds.length === 0}
-                  className="border-red-300 text-red-700 hover:bg-red-50"
-                >
-                  {bulkSaving ? "Processing..." : "নির্বাচিত প্রশ্ন Trash-এ পাঠান"}
-                </Button>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => void publishAllDrafts()}
-                  disabled={bulkSaving || draftCount === 0}
-                >
-                  Publish All Drafts ({draftCount.toLocaleString("bn-BD")})
-                </Button>
-              </div>
-
-              {bulkError && (
-                <p role="alert" className="text-sm text-red-600">
-                  {bulkError}
-                </p>
-              )}
-
-              {bulkSuccess && (
-                <p role="status" className="text-sm text-green-700">
-                  {bulkSuccess}
-                </p>
-              )}
-
-              <p className="text-xs text-slate-500">
-                Select All বর্তমান loaded তালিকার প্রশ্ন নির্বাচন করে। Bulk Edit সর্বোচ্চ ৫০০টি প্রশ্নে কাজ করে। Publish All Drafts database-এর সব active Draft প্রশ্নে কাজ করে; Trash-এর প্রশ্ন এতে অন্তর্ভুক্ত নয়।
-              </p>
-            </CardContent>
-          </Card>
-        )}
 
         {(viewMode === "single" || selectedExamGroup) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>প্রশ্নের তালিকা</CardTitle>
-            <p className="text-sm text-slate-500">
-              প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
-            </p>
+        <Card className="border-slate-200 shadow-sm">
+          <CardHeader className="flex flex-row flex-wrap items-center justify-between gap-3 pb-3">
+            <div>
+              <CardTitle>প্রশ্নের তালিকা</CardTitle>
+              <p className="text-sm text-slate-500">
+                প্রশ্ন নির্বাচন করে বিস্তারিত তথ্য দেখুন।
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 p-1" aria-label="Table density">
+              <button type="button" onClick={() => setTableDensity("compact")} aria-pressed={tableDensity === "compact"} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${tableDensity === "compact" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Compact</button>
+              <button type="button" onClick={() => setTableDensity("ultra")} aria-pressed={tableDensity === "ultra"} className={`rounded-md px-3 py-1.5 text-xs font-semibold transition ${tableDensity === "ultra" ? "bg-white text-blue-700 shadow-sm" : "text-slate-500 hover:text-slate-800"}`}>Ultra compact</button>
+            </div>
           </CardHeader>
 
           <CardContent>
@@ -1880,87 +2043,28 @@ export default function QuestionBankPage() {
                 Database থেকে প্রশ্ন লোড হচ্ছে...
               </div>
             ) : (
-              <div className="space-y-3">
-                {filteredQuestions.map((q) => (
-                  <div
-                    key={q.id}
-                    className="relative rounded-xl border border-slate-200 p-4 pl-12 transition hover:border-blue-300"
-                  >
-                    {true && (
-                      <input
-                        type="checkbox"
-                        aria-label="প্রশ্ন নির্বাচন করুন"
-                        checked={selectedQuestionIds.includes(q.id)}
-                        disabled={bulkSaving}
-                        onChange={() => {
-                          setSelectedQuestionIds((previous) =>
-                            previous.includes(q.id)
-                              ? previous.filter((id) => id !== q.id)
-                              : previous.length < 500
-                                ? [...previous, q.id]
-                                : previous,
-                          );
-                          setBulkError("");
-                          setBulkSuccess("");
-                        }}
-                        className="absolute left-4 top-5 h-4 w-4"
-                      />
-                    )}
-                    <button
-                      onClick={() =>
-                        setSelected(selected === q.id ? null : q.id)
-                      }
-                      className="w-full text-left"
-                    >
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-blue-700">
-                          {q.id}
-                        </span>
-                        <Badge>{q.year}</Badge>
-                      </div>
-
-                      <p className="mt-3 font-bold text-slate-900">
-                        {q.question}
-                      </p>
-
-                      <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
-                        <span>{q.institution}</span>
-                        <span>•</span>
-                        <span>{q.exam}</span>
-                        <span>•</span>
-                        <span>{q.subject}</span>
-                      </div>
-                    </button>
-
-                    <div className="mt-3 flex gap-2 border-t border-slate-100 pt-3">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => openEditForm(q)}
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => void deleteQuestion(q.id)}
-                      >
-                        Delete
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-
-                {filteredQuestions.length === 0 && (
-                  <div className="rounded-xl bg-slate-50 p-10 text-center">
-                    <p className="font-bold text-slate-700">
-                      কোনো প্রশ্ন পাওয়া যায়নি
-                    </p>
-                    <p className="mt-2 text-sm text-slate-500">
-                      Search অথবা Filter পরিবর্তন করে আবার চেষ্টা করুন।
-                    </p>
-                  </div>
-                )}
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+                  <thead className="bg-slate-100/90 text-xs font-bold uppercase text-slate-600">
+                    <tr>
+                      <th className="w-12 px-3 py-3"><input type="checkbox" aria-label="বর্তমান পৃষ্ঠার সব প্রশ্ন নির্বাচন" checked={filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))} onChange={toggleCurrentPageSelection} disabled={loading || bulkSaving || allMatchingSelected} className="h-4 w-4 accent-blue-600" /></th>
+                      <th className="px-3 py-3">#</th><th className="px-3 py-3">প্রশ্ন</th><th className="px-3 py-3">প্রতিষ্ঠান</th><th className="px-3 py-3">পরীক্ষা</th><th className="px-3 py-3">বিষয়</th><th className="px-3 py-3">পদ</th><th className="px-3 py-3">স্থিতি</th><th className="px-3 py-3 text-right">কার্যক্রম</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredQuestions.map((q, index) => (
+                      <tr key={q.id} className={`transition hover:bg-blue-50/50 ${(allMatchingSelected && !excludedQuestionIds.includes(q.id)) || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
+                        <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected ? !excludedQuestionIds.includes(q.id) : selectedQuestionIds.includes(q.id)} disabled={bulkSaving} onChange={() => { if (allMatchingSelected) { setExcludedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : [...previous, q.id]); } else { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); } setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
+                        <td className="px-3 py-2 font-semibold text-slate-500">{((currentPage - 1) * 25 + index + 1).toLocaleString("bn-BD")}</td>
+                        <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question}</button><p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
+                        <td className="px-3 py-2 text-slate-700">{q.institution || "—"}</td><td className="px-3 py-2 text-slate-700">{q.exam || "—"}{q.year ? <span className="block text-[11px] text-slate-400">{q.year}</span> : null}</td><td className="px-3 py-2 text-slate-700">{q.subject || "—"}</td><td className="px-3 py-2 text-slate-700">{q.post || "—"}</td>
+                        <td className="px-3 py-2"><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${q.status === "Published" ? "bg-emerald-100 text-emerald-800" : q.status === "Draft" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>{q.status === "Published" ? "প্রকাশিত" : q.status === "Draft" ? "খসড়া" : q.status}</span></td>
+                        <td className="px-3 py-2"><div className="flex justify-end gap-1.5"><Button size="sm" variant="outline" onClick={() => setSelected(selected === q.id ? null : q.id)}>দেখুন</Button><Button size="sm" variant="outline" onClick={() => openEditForm(q)}>সম্পাদনা</Button><Button size="sm" variant="outline" onClick={() => void deleteQuestion(q.id)} className="border-red-200 text-red-700 hover:bg-red-50">Trash</Button></div></td>
+                      </tr>
+                    ))}
+                    {filteredQuestions.length === 0 && <tr><td colSpan={9} className="px-4 py-12 text-center text-slate-500">কোনো প্রশ্ন পাওয়া যায়নি। Search অথবা Filter পরিবর্তন করে আবার চেষ্টা করুন।</td></tr>}
+                  </tbody>
+                </table>
               </div>
             )}
           </CardContent>
@@ -1968,7 +2072,7 @@ export default function QuestionBankPage() {
         )}
 
         {true && (
-          <div className="mt-8 flex flex-col items-center gap-4 rounded-xl border border-slate-200 bg-white p-4">
+          <div className="mt-2 flex flex-col items-center gap-2 rounded-lg border border-slate-200 bg-white p-2.5">
             {hasMore && (
               <Button
                 type="button"

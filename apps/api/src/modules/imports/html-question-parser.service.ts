@@ -110,22 +110,19 @@ export class HtmlQuestionParserService {
 
     const candidates = this.findQuestionContainers($);
     const questions: HtmlImportedQuestion[] = [];
-    const seen = new Set<string>();
 
     for (const element of candidates) {
       const container = $(element);
       const question = this.extractQuestion($, container);
-
-      if (!question) continue;
-
-      const fingerprint = this.normalize(question.questionText)
-        .toLocaleLowerCase();
-
-      if (!fingerprint || seen.has(fingerprint)) continue;
-
-      seen.add(fingerprint);
       questions.push(question);
     }
+
+    // Never discard a source record because its text repeats or extraction is incomplete.
+    // Duplicate classification belongs to Import Preview, where every row remains reviewable.
+    const extractedCount = questions.filter(
+      (question) => question.questionText.trim().length >= 3,
+    ).length;
+    const skippedCount = Math.max(0, candidates.length - extractedCount);
 
     if (candidates.length === 0) {
       warnings.push(
@@ -133,9 +130,9 @@ export class HtmlQuestionParserService {
       );
     }
 
-    if (questions.length === 0 && candidates.length > 0) {
+    if (skippedCount > 0) {
       warnings.push(
-        'Question containers were found, but usable question text could not be extracted.',
+        `${skippedCount} question record(s) could not be extracted completely. All source records were retained for manual review.`,
       );
     }
 
@@ -149,14 +146,27 @@ export class HtmlQuestionParserService {
           ? 'GENERIC_HTML'
           : 'UNKNOWN',
       totalCandidates: candidates.length,
-      extractedCount: questions.length,
-      skippedCount: Math.max(0, candidates.length - questions.length),
+      extractedCount,
+      skippedCount,
       questions,
       warnings,
     };
   }
 
   private findQuestionContainers($: CheerioAPI): any[] {
+    // Explicit source IDs and BDNiyog question cards are authoritative records.
+    // Return them as-is so nested helper elements cannot reduce the source count.
+    const explicit: any[] = [];
+    const explicitSeen = new Set<any>();
+
+    $('[data-question-id], .question-item').each((_, element) => {
+      if (explicitSeen.has(element)) return;
+      explicitSeen.add(element);
+      explicit.push(element);
+    });
+
+    if (explicit.length > 0) return explicit;
+
     const found: any[] = [];
     const seen = new Set<any>();
 
@@ -220,11 +230,8 @@ export class HtmlQuestionParserService {
   private extractQuestion(
     $: CheerioAPI,
     container: any,
-  ): HtmlImportedQuestion | null {
+  ): HtmlImportedQuestion {
     const questionText = this.extractQuestionText($, container);
-
-    if (!questionText || questionText.length < 3) return null;
-
     const options = this.extractOptions($, container);
     const containerCorrect = this.firstAttribute(
       container,
@@ -278,6 +285,12 @@ export class HtmlQuestionParserService {
     const imageReferences = this.extractImages($, container);
 
     const warnings: string[] = [];
+
+    if (questionText.trim().length < 3) {
+      warnings.push(
+        'Question text could not be extracted. This source record was retained for manual review.',
+      );
+    }
 
     if (options.length > 0 && !explicitCorrect && !containerCorrect) {
       warnings.push('Correct answer was not explicitly identified.');

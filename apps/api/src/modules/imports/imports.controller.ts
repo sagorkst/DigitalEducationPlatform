@@ -297,7 +297,7 @@ export class ImportsController {
       'optionB',
       'optionC',
       'optionD',
-      'optionE',
+      'correctAnswer',
       'explanation',
       'institution',
       'examName',
@@ -312,6 +312,7 @@ export class ImportsController {
       'examId',
       'postId',
       'sourceDocumentId',
+      'occurrences',
     ];
 
     const exampleRow = [
@@ -340,6 +341,7 @@ export class ImportsController {
       '',
       '',
       '',
+      '[{"institution":"Bangladesh Public Service Commission","examName":"Sample Examination","examYear":2025,"postName":"Assistant Director"},{"institution":"Bangladesh Public Service Commission","examName":"Another Sample Examination","examYear":2024,"postName":"Assistant Director"}]',
     ];
 
     const worksheet = XLSX.utils.aoa_to_sheet([
@@ -373,6 +375,7 @@ export class ImportsController {
       { wch: 38 },
       { wch: 38 },
       { wch: 38 },
+      { wch: 100 },
     ];
 
     const instructions = XLSX.utils.aoa_to_sheet([
@@ -380,19 +383,19 @@ export class ImportsController {
       ['IMPORTANT INSTRUCTIONS'],
       ['1. Each row represents one question.'],
       ['2. Enter the four choices in optionA, optionB, optionC and optionD.'],
-      ['3. In optionE, enter the correct answer letter: A, B, C or D.'],
-      ['4. The correctAnswer text is generated automatically from optionE.'],
+      ['3. In correctAnswer, enter the correct option letter (A, B, C or D) or exact answer text.'],
+      ['4. For MCQ, the correctAnswer value marks the matching option as correct.'],
       ['5. questionType: MCQ, TRUE_FALSE, FILL_IN_THE_BLANKS, WRITTEN.'],
       ['6. difficulty: EASY, MEDIUM, HARD.'],
       ['7. status: DRAFT, PUBLISHED, HIDDEN, ARCHIVED.'],
-      ['8. institution, examName and examYear are required.'],
+      ['8. Add at least one exam occurrence with institution, examName and examYear.'],
       ['9. examYear must be between 1900 and 2100.'],
       ['10. Optional IDs can be used to link existing records.'],
       ['11. Keep unused option columns blank.'],
       ['12. Do not rename or remove the column headers.'],
-      ['13. Keep one exam occurrence per question row in this template.'],
-      ['14. For multiple exam occurrences, import the question separately for each occurrence.'],
-      ['15. The sample question row can be replaced or deleted.'],
+      ['13. Use the occurrences column to attach one question to one or multiple exams.'],
+      ['14. occurrences must contain a JSON array. Each item can include institution, examName, examYear, postName, department, examId and institutionId.'],
+      ['15. The sample row demonstrates one question linked to two exams; replace or delete it.'],
     ]);
 
     instructions['!cols'] = [{ wch: 100 }];
@@ -508,6 +511,11 @@ export class ImportsController {
       examName?: unknown;
       examYear?: unknown;
       postName?: unknown;
+      department?: unknown;
+      occurrences?: unknown;
+      rowIds?: unknown;
+      applyTo?: unknown;
+      overwriteExisting?: unknown;
     },
   ) {
     return this.importsService.applyBatchMetadata(id, body);
@@ -553,7 +561,18 @@ export class ImportsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CommitImportDto,
   ) {
-    return this.importsService.commit(id, dto.rowIds);
+    if ((!dto.rowIds || dto.rowIds.length === 0) && dto.allRows !== true) {
+      throw new BadRequestException(
+        'Select at least one row or choose all rows.',
+      );
+    }
+
+    return this.importsService.commit(
+      id,
+      dto.rowIds,
+      dto.allRows === true,
+      dto.excludedRowIds,
+    );
   }
 
   @Put(':id/skip')
@@ -561,13 +580,18 @@ export class ImportsController {
     @Param('id', ParseUUIDPipe) id: string,
     @Body() dto: CommitImportDto,
   ) {
-    if (!dto.rowIds || dto.rowIds.length === 0) {
+    if ((!dto.rowIds || dto.rowIds.length === 0) && dto.allRows !== true) {
       throw new BadRequestException(
-        'At least one row ID is required.',
+        'Select at least one row or choose all rows.',
       );
     }
 
-    return this.importsService.skipRows(id, dto.rowIds);
+    return this.importsService.skipRows(
+      id,
+      dto.rowIds,
+      dto.allRows === true,
+      dto.excludedRowIds,
+    );
   }
 
   @Post(':id/rollback')

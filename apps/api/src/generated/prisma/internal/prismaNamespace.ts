@@ -2716,6 +2716,7 @@ export const ExamScalarFieldEnum = {
   slug: 'slug',
   examYear: 'examYear',
   examType: 'examType',
+  grade: 'grade',
   description: 'description',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'

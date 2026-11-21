@@ -415,8 +415,48 @@ export class QuestionsService {
       }
     }
 
+    const [
+      totalQuestions,
+      canonicalInstitutionCount,
+      canonicalExamCount,
+      canonicalSubjectCount,
+      legacySubjectRows,
+    ] = await Promise.all([
+      this.prisma.question.count({ where: { deletedAt: null } }),
+      this.prisma.institution.count(),
+      this.prisma.exam.count(),
+      this.prisma.subject.count(),
+      this.prisma.question.findMany({
+        where: { deletedAt: null },
+        select: { subject: true },
+        distinct: ['subject'],
+      }),
+    ]);
+
+    // Include legacy text-based records as well as canonical entities.
+    // This keeps dashboard totals accurate while older questions are being
+    // migrated to Institution / Exam / Subject relations.
+    const legacySubjectCount = new Set(
+      legacySubjectRows
+        .map((row) => row.subject?.trim())
+        .filter((name): name is string => Boolean(name)),
+    ).size;
+
+    const totalInstitutions = Math.max(
+      canonicalInstitutionCount,
+      institutions.size,
+    );
+    const totalExams = Math.max(canonicalExamCount, exams.size);
+    const totalSubjects = Math.max(canonicalSubjectCount, legacySubjectCount);
+
     return {
       success: true,
+      stats: {
+        totalQuestions,
+        totalInstitutions,
+        totalExams,
+        totalSubjects,
+      },
       data: {
         institutions: Array.from(institutions.values()).map(
           (institution) => ({

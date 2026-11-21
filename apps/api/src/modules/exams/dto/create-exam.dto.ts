@@ -40,6 +40,11 @@ export class CreateExamDto {
 
   @IsOptional()
   @IsString()
+  @MaxLength(100)
+  grade?: string;
+
+  @IsOptional()
+  @IsString()
   @MaxLength(5000)
   description?: string;
 }

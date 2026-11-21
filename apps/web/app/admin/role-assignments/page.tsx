@@ -52,6 +52,9 @@ export default function AdminRoleAssignmentsPage() {
   const [roles, setRoles] = useState<Role[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [search, setSearch] = useState("");
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalUsers, setTotalUsers] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState("");
   const [selectedRoleId, setSelectedRoleId] = useState("");
   const [loading, setLoading] = useState(false);
@@ -80,26 +83,34 @@ export default function AdminRoleAssignmentsPage() {
     );
   }, [request]);
 
-  const loadUsers = useCallback(async (query: string) => {
+  const loadUsers = useCallback(async (query: string, pageNumber = 1) => {
     setLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({ page: "1", limit: "30" });
+      const params = new URLSearchParams({ page: String(pageNumber), limit: "30" });
       if (query.trim()) params.set("search", query.trim());
-      const result = await request(`/api/admin/users?${params.toString()}`);
+      const response = await fetch(`/api/admin/users?${params.toString()}`, { cache: "no-store" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(getError(payload, "Could not load users."));
+      const result = unwrap(payload);
       const rows = Array.isArray(result)
         ? result
         : Array.isArray(result?.users) ? result.users : [];
+      const pagination = payload?.pagination ?? payload?.data?.pagination ?? result?.pagination;
       setUsers(rows);
+      setPage(Number(pagination?.page ?? pageNumber) || pageNumber);
+      setTotalPages(Math.max(1, Number(pagination?.totalPages ?? 1) || 1));
+      setTotalUsers(Number(pagination?.total ?? rows.length) || 0);
       setSelectedUserId((current) =>
         rows.some((user: User) => user.id === current) ? current : rows[0]?.id || ""
       );
     } catch (err) {
+      setUsers([]);
       setError(err instanceof Error ? err.message : "Could not load users.");
     } finally {
       setLoading(false);
     }
-  }, [request]);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -133,7 +144,7 @@ export default function AdminRoleAssignmentsPage() {
         body: JSON.stringify({ roleId: selectedRoleId }),
       });
       setNotice("Role assigned successfully.");
-      await loadUsers(search);
+      await loadUsers(search, page);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Role assignment failed.");
     }
@@ -171,16 +182,16 @@ export default function AdminRoleAssignmentsPage() {
 
       <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
         <h2 className="text-lg font-semibold text-slate-900">Find User</h2>
-        <form onSubmit={(event) => { event.preventDefault(); void loadUsers(search); }} className="mt-4 flex flex-col gap-3 sm:flex-row">
+        <form onSubmit={(event) => { event.preventDefault(); void loadUsers(search, 1); }} className="mt-4 flex flex-col gap-3 sm:flex-row">
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, email or phone" className="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <button disabled={loading} className="rounded-xl bg-slate-800 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">Search Users</button>
         </form>
-        <p className="mt-2 text-xs text-slate-500">Showing up to 30 matching users.</p>
+        <p className="mt-2 text-xs text-slate-500">Page {page} of {totalPages} · {totalUsers.toLocaleString("en-US")} matching users</p>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
         <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-semibold text-slate-900">Users ({users.length})</h2>
+          <h2 className="text-lg font-semibold text-slate-900">Users ({totalUsers.toLocaleString("en-US")})</h2>
           <div className="mt-4 max-h-[520px] space-y-2 overflow-y-auto">
             {users.map((user) => (
               <button key={user.id} onClick={() => setSelectedUserId(user.id)} className={`w-full rounded-xl border p-3 text-left ${selectedUserId === user.id ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"}`}>
@@ -190,6 +201,11 @@ export default function AdminRoleAssignmentsPage() {
               </button>
             ))}
             {!users.length && <p className="text-sm text-slate-500">No users found.</p>}
+          </div>
+          <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3">
+            <button type="button" onClick={() => void loadUsers(search, Math.max(1, page - 1))} disabled={loading || page <= 1} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:opacity-40">Previous</button>
+            <span className="text-xs text-slate-500">Page {page} / {totalPages}</span>
+            <button type="button" onClick={() => void loadUsers(search, Math.min(totalPages, page + 1))} disabled={loading || page >= totalPages} className="rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-600 disabled:opacity-40">Next</button>
           </div>
         </div>
 

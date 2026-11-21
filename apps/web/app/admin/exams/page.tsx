@@ -13,6 +13,7 @@ type Exam = {
   examYear: number;
   slug?: string | null;
   examType?: string | null;
+  grade?: string | null;
   description?: string | null;
   institutionId?: string | null;
   institution?: Institution | null;
@@ -24,6 +25,7 @@ type ExamForm = {
   examYear: string;
   slug: string;
   examType: string;
+  grade: string;
   description: string;
   institutionId: string;
 };
@@ -33,6 +35,7 @@ const emptyForm: ExamForm = {
   examYear: String(new Date().getFullYear()),
   slug: "",
   examType: "",
+  grade: "",
   description: "",
   institutionId: "",
 };
@@ -152,6 +155,7 @@ export default function AdminExamsPage() {
       examYear: String(exam.examYear ?? ""),
       slug: exam.slug || "",
       examType: exam.examType || "",
+      grade: exam.grade || "",
       description: exam.description || "",
       institutionId: exam.institutionId || exam.institution?.id || "",
     });
@@ -182,6 +186,7 @@ export default function AdminExamsPage() {
         examYear,
         slug: form.slug.trim() || undefined,
         examType: form.examType.trim() || undefined,
+        grade: form.grade.trim() || undefined,
         description: form.description.trim() || undefined,
         institutionId: form.institutionId || undefined,
       };
@@ -248,6 +253,7 @@ export default function AdminExamsPage() {
       String(exam.examYear ?? "").includes(term) ||
       exam.slug?.toLowerCase().includes(term) ||
       exam.examType?.toLowerCase().includes(term) ||
+      exam.grade?.toLowerCase().includes(term) ||
       exam.institution?.name?.toLowerCase().includes(term);
 
     const matchesInstitution =
@@ -385,6 +391,17 @@ export default function AdminExamsPage() {
               />
             </label>
 
+            <label className="text-sm font-medium text-slate-700">
+              Job Grade
+              <input
+                maxLength={100}
+                value={form.grade}
+                onChange={(event) => setForm({ ...form, grade: event.target.value })}
+                placeholder="e.g. 9th Grade / 10th Grade / Grade 9"
+                className="mt-1 w-full rounded-xl border border-slate-300 px-4 py-3 font-normal"
+              />
+            </label>
+
             <label className="text-sm font-medium text-slate-700 md:col-span-2">
               Description
               <textarea
@@ -482,6 +499,11 @@ export default function AdminExamsPage() {
                       {exam.institution?.name || "No institution assigned"}
                     </p>
                     <div className="mt-2 flex flex-wrap gap-2">
+                      {exam.grade && (
+                        <span className="rounded-lg bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">
+                          Grade: {exam.grade}
+                        </span>
+                      )}
                       {exam.examType && (
                         <span className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-800">
                           {exam.examType}
