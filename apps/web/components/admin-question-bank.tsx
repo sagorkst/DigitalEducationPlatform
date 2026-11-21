@@ -1615,10 +1615,10 @@ export default function QuestionBankPage() {
 
           {managementWorkspaceOpen && (
             <div className="mt-3 space-y-3">
+              <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
-                <section className="min-w-0 rounded-lg border border-slate-200 p-2" aria-label="Management Workspace">
-                  <h3 className="mb-1 text-left text-sm font-extrabold text-slate-900">▦ Management Workspace</h3>
-                  <div className="mx-auto grid w-full max-w-[560px] min-w-0 grid-cols-4 gap-2">
+                <div className="min-w-0">
+                  <div className="mx-auto grid w-full min-w-0 grid-cols-4 gap-2">
                     <button
                       type="button"
                       aria-pressed={viewMode === "single" && !filters.subject}
@@ -1660,16 +1660,14 @@ export default function QuestionBankPage() {
                       <strong className="text-sm font-black tabular-nums">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
                     </button>
                   </div>
-                </section>
+                </div>
 
-                <section className="min-w-0 rounded-lg border border-slate-200 p-2" aria-label="Selection">
-                  <div className="mb-1 flex min-w-0 items-center justify-between gap-2">
-                    <h3 className="text-left text-sm font-extrabold text-slate-900">☑ Selection</h3>
-                    <span className="text-center text-xs font-extrabold tabular-nums text-blue-800">
-                      {bulkSelectionCount.toLocaleString("bn-BD")} Selected
-                    </span>
+                <div className="flex min-w-0 flex-col justify-center gap-1">
+                  <div className="flex min-w-0 items-center justify-between gap-2">
+                    <span className="text-xs font-extrabold text-slate-700">☑ প্রশ্ন নির্বাচন</span>
+                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
                   </div>
-                  <div className="mx-auto grid w-full max-w-[560px] min-w-0 grid-cols-4 gap-2">
+                  <div className="grid min-w-0 grid-cols-4 gap-2">
                     <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                       <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
                     </Button>
@@ -1683,56 +1681,57 @@ export default function QuestionBankPage() {
                       <span className="text-lg leading-none" aria-hidden="true">✕</span><span className="text-[11px] font-extrabold leading-tight">Clear</span>
                     </Button>
                   </div>
-                </section>
+                </div>
               </div>
 
-              <div className="rounded-md border border-slate-200 p-2"><div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 sm:grid-cols-4 xl:grid-cols-8">
-                <div className="min-w-0">
-                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Institution</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className="min-w-0">
-                  <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Exam</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className="min-w-0">
-                  <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Post</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className="col-span-2 min-w-0">
-                  <div className="flex min-w-0 items-center gap-1">
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                      <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+              <div className="rounded-md bg-slate-50/70 p-2">
+                <div className="grid min-w-0 grid-cols-2 gap-x-2 gap-y-1.5 sm:grid-cols-4 xl:grid-cols-8">
+                  <div className="min-w-0">
+                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Institution</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                     </Select>
-                    <span className="shrink-0 text-xs text-slate-500">–</span>
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                      <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                  </div>
+                  <div className="min-w-0">
+                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Exam</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Post</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className="col-span-2 min-w-0">
+                    <div className="flex min-w-0 items-center gap-1">
+                      <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                        <option value="">Year From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                      </Select>
+                      <span className="shrink-0 text-xs text-slate-500">–</span>
+                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                        <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="min-w-0">
+                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Subject</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                    </Select>
+                  </div>
+                  <div className="min-w-0">
+                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
+                      <option value="">Status</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                     </Select>
                   </div>
                 </div>
-                <div className="min-w-0">
-                  <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Subject</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className="min-w-0">
-                  <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                  </Select>
-                </div>
-                <div className="min-w-0">
-                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center text-[13px] whitespace-nowrap overflow-x-auto">
-                    <option value="">Status</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                  </Select>
-                </div>
-              </div></div>
+              </div>
 
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
-                <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2" aria-label="Bulk Edit">
-                  <h3 className="mb-1 text-left text-sm font-extrabold text-slate-900">⚙ Bulk Edit</h3>
+                <div className="flex min-w-0 flex-col">
                   <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
                     <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-700">
                       Difficulty
@@ -1756,33 +1755,30 @@ export default function QuestionBankPage() {
                       ✓ Apply
                     </Button>
                   </div>
-                </section>
+                </div>
 
-                <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2" aria-label="Actions">
-                  <h3 className="mb-1 text-left text-sm font-extrabold text-slate-900">⚡ Actions</h3>
-                  <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
-                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-emerald-200 bg-emerald-50/50 px-1 text-center text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-100">
-                      <span className="text-lg leading-none">↗</span><span>Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
-                    </Button>
-                    <a href="/api/imports/export?format=json" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
-                      <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
-                    </a>
-                    <a href="/api/imports/export?format=csv" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
-                      <span className="text-lg leading-none">▤</span><span>CSV</span>
-                    </a>
-                    <a href="/api/imports/export?format=xlsx" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
-                      <span className="text-lg leading-none">▦</span><span>Excel</span>
-                    </a>
-                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-amber-300 px-1 text-center text-xs font-extrabold text-amber-800 hover:bg-amber-50">
-                      <span className="text-lg leading-none">🗑</span><span>Delete</span>
-                    </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-red-400 px-1 text-center text-xs font-extrabold text-red-700 hover:bg-red-50">
-                      <span className="text-lg leading-none">⚠</span><span>Permanent Delete</span>
-                    </Button>
-                  </div>
-                </section>
+                <div className="grid min-w-0 grid-cols-4 grid-rows-2 gap-1.5">
+                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-emerald-200 bg-emerald-50/50 px-1 text-center text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-100">
+                    <span className="text-lg leading-none">↗</span><span>Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
+                  </Button>
+                  <a href="/api/imports/export?format=json" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                    <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
+                  </a>
+                  <a href="/api/imports/export?format=csv" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                    <span className="text-lg leading-none">▤</span><span>CSV</span>
+                  </a>
+                  <a href="/api/imports/export?format=xlsx" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                    <span className="text-lg leading-none">▦</span><span>Excel</span>
+                  </a>
+                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-amber-300 px-1 text-center text-xs font-extrabold text-amber-800 hover:bg-amber-50">
+                    <span className="text-lg leading-none">🗑</span><span>Delete</span>
+                  </Button>
+                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-red-400 px-1 text-center text-xs font-extrabold text-red-700 hover:bg-red-50">
+                    <span className="text-lg leading-none">⚠</span><span>Permanent Delete</span>
+                  </Button>
+                </div>
               </div>
-
+            </div>
               {(bulkError || bulkSuccess) && (
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
                   {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
