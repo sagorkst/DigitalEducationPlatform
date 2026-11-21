@@ -1587,18 +1587,64 @@ export default function QuestionBankPage() {
         )}
 
         <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-2.5">
             <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control</h2>
-            <div className="w-[145px] shrink-0 sm:w-[165px]"><div className="flex h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"><span className="shrink-0 text-slate-500" aria-hidden="true">⌕</span><Input aria-label="Search questions" placeholder="Search ----" value={search} onChange={(e) => setSearch(e.target.value)} className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs shadow-none outline-none focus-visible:ring-0" /></div></div>
-            <div className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50/70 px-1.5 py-1">
-              <span className="shrink-0 px-1 text-[10px] font-extrabold text-slate-600">Selection</span>
-              <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Select</button>
-              <button type="button" disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className={`h-7 rounded border px-2 text-[10px] font-bold disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white" : "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"}`}>All</button>
-              <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Invert</button>
-              <button type="button" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Clear</button>
-              <span className="shrink-0 text-[10px] font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
+
+            <div className="min-w-[220px] flex-1">
+              <div className="flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                <span className="shrink-0 text-lg text-slate-500" aria-hidden="true">⌕</span>
+                <Input
+                  aria-label="Search questions"
+                  placeholder="Search questions by keyword..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none outline-none focus-visible:ring-0"
+                />
+              </div>
             </div>
-            <Button type="button" size="sm" variant="outline" onClick={() => setManagementWorkspaceOpen((open) => !open)} aria-expanded={managementWorkspaceOpen} aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"} className="h-8 w-8 shrink-0 p-0">{managementWorkspaceOpen ? "⌃" : "⌄"}</Button>
+
+            <div className="flex shrink-0 items-center gap-1.5">
+              <button
+                type="button"
+                disabled={loading || filteredQuestions.length === 0 || bulkSaving}
+                onClick={toggleCurrentPageSelection}
+                aria-label="Select current page"
+                aria-pressed={filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id))}
+                className={`flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${filteredQuestions.length > 0 && filteredQuestions.every((q) => selectedQuestionIds.includes(q.id)) ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800"}`}
+              >
+                <span aria-hidden="true">☑</span><span>Select</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading || totalQuestions === 0 || bulkSaving}
+                onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                aria-label="Select all filtered questions"
+                aria-pressed={allMatchingSelected}
+                className={`flex h-9 items-center gap-1.5 rounded-md border px-2.5 text-xs font-bold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-slate-200 bg-white text-slate-700 hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800"}`}
+              >
+                <span aria-hidden="true">▣</span><span>Select All</span>
+              </button>
+              <button
+                type="button"
+                disabled={loading || filteredQuestions.length === 0 || bulkSaving}
+                onClick={invertCurrentPageSelection}
+                aria-label="Invert current page selection"
+                className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-blue-400 hover:bg-blue-50 hover:text-blue-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span aria-hidden="true">⇄</span><span>Invert</span>
+              </button>
+              <button
+                type="button"
+                disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}
+                onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }}
+                aria-label="Clear selection"
+                className="flex h-9 items-center gap-1.5 rounded-md border border-slate-200 bg-white px-2.5 text-xs font-bold text-slate-700 transition-colors hover:border-red-300 hover:bg-red-50 hover:text-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-200 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span aria-hidden="true">✕</span><span>Clear</span>
+              </button>
+            </div>
+
+            <Button type="button" size="sm" variant="outline" onClick={() => setManagementWorkspaceOpen((open) => !open)} aria-expanded={managementWorkspaceOpen} aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"} className="h-9 w-9 shrink-0 rounded-md p-0">{managementWorkspaceOpen ? "⌃" : "⌄"}</Button>
           </div>
 
           {managementWorkspaceOpen && (
