@@ -1633,7 +1633,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "institution"}
                       onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">🏛️</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রতিষ্ঠান</span>
@@ -1643,7 +1643,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={viewMode === "exam"}
                       onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📋</span>
                       <span className="text-[11px] font-extrabold leading-tight">Exam</span>
@@ -1653,7 +1653,7 @@ export default function QuestionBankPage() {
                       type="button"
                       aria-pressed={Boolean(filters.subject)}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
-                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                      className={`flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">📖</span>
                       <span className="text-[11px] font-extrabold leading-tight">বিষয়</span>
@@ -1670,16 +1670,16 @@ export default function QuestionBankPage() {
                     </span>
                   </div>
                   <div className="grid min-w-0 grid-cols-4 gap-1.5">
-                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
                       <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
                     </Button>
-                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
                       <span className="text-lg leading-none" aria-hidden="true">▣</span><span className="text-[11px] font-extrabold leading-tight">All</span>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
                       <span className="text-lg leading-none" aria-hidden="true">⇄</span><span className="text-[11px] font-extrabold leading-tight">Invert</span>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                    <Button type="button" size="sm" variant="outline" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[58px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
                       <span className="text-lg leading-none" aria-hidden="true">✕</span><span className="text-[11px] font-extrabold leading-tight">Clear</span>
                     </Button>
                   </div>
