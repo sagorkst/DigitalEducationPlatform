@@ -1664,7 +1664,7 @@ export default function QuestionBankPage() {
 
                 <div className="flex min-w-0 flex-col justify-center gap-1">
                   <div className="flex min-w-0 items-center justify-between gap-2">
-                    <span className="text-xs font-extrabold text-slate-700">☑ প্রশ্ন নির্বাচন</span>
+                    
                     <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
                   </div>
                   <div className="grid min-w-0 grid-cols-4 gap-2">
