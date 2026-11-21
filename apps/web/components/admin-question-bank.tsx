@@ -1774,16 +1774,16 @@ export default function QuestionBankPage() {
                         <span className="flex h-8 w-full items-center justify-center overflow-hidden rounded-md border border-blue-200 bg-white px-1 text-center text-[10px] font-semibold">Coming soon</span>
                       </div>
                     ))}
-                    <Button type="button" size="sm" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                      ✓ Apply
-                    </Button>
+                    <button type="button" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                      <span className="text-lg leading-none" aria-hidden="true">✓</span><span className="text-[11px] font-extrabold leading-tight">Apply</span>
+                    </button>
                   </div>
                 </div>
 
                 <div className="grid min-w-0 grid-cols-4 auto-rows-[70px] gap-1.5">
-                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 whitespace-normal rounded-md border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">↗</span><span>Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
-                  </Button>
+                  <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">↗</span><span className="text-[11px] font-extrabold leading-tight">Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
+                  </button>
                   <a href="/api/imports/export?format=json" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                     <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
                   </a>
@@ -1793,12 +1793,12 @@ export default function QuestionBankPage() {
                   <a href="/api/imports/export?format=xlsx" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                     <span className="text-lg leading-none">▦</span><span>Excel</span>
                   </a>
-                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">🗑</span><span>Delete</span>
-                  </Button>
-                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">⚠</span><span>Permanent Delete</span>
-                  </Button>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">🗑</span><span className="text-[11px] font-extrabold leading-tight">Delete</span>
+                  </button>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
+                  </button>
                 </div>
               </div>
             </div>
