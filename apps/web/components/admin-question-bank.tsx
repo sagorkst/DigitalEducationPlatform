@@ -1585,10 +1585,11 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="shrink-0 text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control Center</h2>
-            <div className="min-w-[180px] flex-1">
+        <section className="min-w-0 bg-white">
+          <div className="flex min-w-0 flex-col items-center gap-2 text-center">
+            <h2 className="w-full text-center text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control Center</h2>
+            <div className="flex w-full min-w-0 flex-wrap items-center justify-center gap-2">
+            <div className="w-full max-w-xl min-w-0">
               <Input
                 aria-label="Search questions"
                 placeholder="প্রশ্ন / Keyword / Exam Search..."
@@ -1611,13 +1612,14 @@ export default function QuestionBankPage() {
             >
               {managementWorkspaceOpen ? "⌃" : "⌄"}
             </Button>
+            </div>
           </div>
 
           {managementWorkspaceOpen && (
             <div className="mt-3 space-y-3">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <section className="min-w-0 rounded-lg border border-slate-200 p-2.5" aria-label="Management Workspace">
-                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">▦ Management Workspace</h3>
+                  <h3 className="mb-2 text-center text-sm font-extrabold text-slate-900">▦ Management Workspace</h3>
                   <div className="grid min-w-0 grid-cols-4 gap-1.5">
                     <button
                       type="button"
@@ -1663,9 +1665,9 @@ export default function QuestionBankPage() {
                 </section>
 
                 <section className="min-w-0 rounded-lg border border-slate-200 p-2.5" aria-label="Selection">
-                  <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
-                    <h3 className="text-sm font-extrabold text-slate-900">☑ Selection</h3>
-                    <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold tabular-nums text-blue-800">
+                  <div className="mb-2 flex min-w-0 flex-col items-center justify-center gap-1 text-center">
+                    <h3 className="text-center text-sm font-extrabold text-slate-900">☑ Selection</h3>
+                    <span className="text-center text-xs font-extrabold tabular-nums text-blue-800">
                       {bulkSelectionCount.toLocaleString("bn-BD")} Selected
                     </span>
                   </div>
@@ -1686,51 +1688,51 @@ export default function QuestionBankPage() {
                 </section>
               </div>
 
-              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
-                <div className={`min-w-0 rounded-md border p-2 ${filters.institution ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Institution</label>
-                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+              <div className="grid min-w-0 grid-cols-2 gap-x-3 gap-y-2 sm:grid-cols-4 xl:grid-cols-8">
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Institution</label>
+                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.exam ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Exam</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Exam</label>
                   <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.post ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Post</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Post</label>
                   <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.from || filters.to ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Year</label>
+                <div className={`col-span-2 min-w-0 ${filters.from || filters.to ? "text-blue-800" : ""}`}>
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Year</label>
                   <div className="flex min-w-0 items-center gap-1">
-                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 w-full px-0.5 text-center text-[11px]">
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                       <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
                     </Select>
                     <span className="shrink-0 text-xs text-slate-500">–</span>
-                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 w-full px-0.5 text-center text-[11px]">
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 w-full text-center text-xs">
                       <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
                     </Select>
                   </div>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.subject ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Subject</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Subject</label>
                   <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.topic ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Topics</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Topics</label>
                   <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
                     <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
                   </Select>
                 </div>
-                <div className={`min-w-0 rounded-md border p-2 ${filters.status ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
-                  <label className="mb-1 block text-xs font-bold text-slate-700">Status</label>
+                <div className="min-w-0">
+                  <label className="mb-1 block text-center text-xs font-bold text-slate-700">Status</label>
                   <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
                     <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                   </Select>
@@ -1739,7 +1741,7 @@ export default function QuestionBankPage() {
 
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2.5" aria-label="Bulk Edit">
-                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">⚙ Bulk Edit</h3>
+                  <h3 className="mb-2 text-center text-sm font-extrabold text-slate-900">⚙ Bulk Edit</h3>
                   <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
                     <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-700">
                       Difficulty
@@ -1766,7 +1768,7 @@ export default function QuestionBankPage() {
                 </section>
 
                 <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2.5" aria-label="Actions">
-                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">⚡ Actions</h3>
+                  <h3 className="mb-2 text-center text-sm font-extrabold text-slate-900">⚡ Actions</h3>
                   <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
                     <Button type="button" size="sm" variant="outline" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-emerald-200 bg-emerald-50/50 px-1 text-center text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-100">
                       <span className="text-lg leading-none">↗</span><span>Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
@@ -1797,7 +1799,7 @@ export default function QuestionBankPage() {
                 </div>
               )}
 
-              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
+              <div className="flex flex-wrap items-center justify-center gap-2 pt-1 text-center text-sm font-semibold text-slate-700">
                 <p>পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
                 <p className="text-sm font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
