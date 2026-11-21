@@ -1703,10 +1703,9 @@ export default function QuestionBankPage() {
                     </Select>
                   </div>
                   <div className="min-w-0">
-                      <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
-                        <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
-                      </Select>
-                    </div>
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-10 w-full min-w-0 rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
+                      <option value="">Year To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                    </Select>
                   </div>
                   <div className="min-w-0">
                     <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-10 min-w-0 w-full rounded-md border border-slate-300 bg-white px-2 text-center [text-align-last:center] text-[13px] whitespace-nowrap">
