@@ -1617,13 +1617,14 @@ export default function QuestionBankPage() {
             <div className="mt-3 space-y-3">
               <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
-                <div className="min-w-0">
+                <div className="flex min-w-0 flex-col">
+                  <div className="mb-1 h-5" aria-hidden="true" />
                   <div className="mx-auto grid w-full min-w-0 grid-cols-4 gap-2">
                     <button
                       type="button"
                       aria-pressed={viewMode === "single" && !filters.subject}
                       onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
-                      className={`flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
+                      className={`flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-1.5 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-700 bg-blue-700 text-white shadow-sm" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}
                     >
                       <span className="text-lg leading-none" aria-hidden="true">▰</span>
                       <span className="text-[11px] font-extrabold leading-tight">প্রশ্ন</span>
@@ -1663,9 +1664,9 @@ export default function QuestionBankPage() {
                 </div>
 
                 <div className="flex min-w-0 flex-col justify-center gap-1">
-                  <div className="flex min-w-0 items-center justify-between gap-2">
+                  <div className="flex h-5 min-w-0 items-center justify-center gap-2">
                     
-                    <span className="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
+                    <span className="text-center text-xs font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
                   </div>
                   <div className="grid min-w-0 grid-cols-4 gap-2">
                     <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[52px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
@@ -1733,7 +1734,7 @@ export default function QuestionBankPage() {
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col">
                   <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
-                    <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-700">
+                    <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                       Difficulty
                       <Select aria-label="Bulk Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
                         <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
@@ -1746,12 +1747,12 @@ export default function QuestionBankPage() {
                       </Select>
                     </label>
                     {["Subject", "Topic", "Institution", "Exam", "Post"].map((field) => (
-                      <div key={field} aria-label={`Bulk ${field} (not available yet)`} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-500">
+                      <div key={field} aria-label={`Bulk ${field} (not available yet)`} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                         {field}
-                        <span className="flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1 text-[10px] font-medium">Coming soon</span>
+                        <span className="flex h-8 w-full items-center justify-center rounded-md border border-blue-200 bg-white px-1 text-center text-[10px] font-semibold">Coming soon</span>
                       </div>
                     ))}
-                    <Button type="button" size="sm" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="h-full min-h-[70px] min-w-0 whitespace-normal rounded-md px-1 text-xs font-extrabold">
+                    <Button type="button" size="sm" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                       ✓ Apply
                     </Button>
                   </div>
@@ -1770,10 +1771,10 @@ export default function QuestionBankPage() {
                   <a href="/api/imports/export?format=xlsx" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
                     <span className="text-lg leading-none">▦</span><span>Excel</span>
                   </a>
-                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-amber-300 px-1 text-center text-xs font-extrabold text-amber-800 hover:bg-amber-50">
+                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                     <span className="text-lg leading-none">🗑</span><span>Delete</span>
                   </Button>
-                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-red-400 px-1 text-center text-xs font-extrabold text-red-700 hover:bg-red-50">
+                  <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                     <span className="text-lg leading-none">⚠</span><span>Permanent Delete</span>
                   </Button>
                 </div>
