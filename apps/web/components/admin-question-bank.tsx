@@ -1588,23 +1588,28 @@ export default function QuestionBankPage() {
 
         <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2.5">
-            <h2 className="relative flex h-[60px] w-[180px] shrink-0 items-center justify-center pl-5 text-center text-base font-black leading-tight tracking-tight text-slate-950 sm:text-lg">
-              <span className="absolute left-0 top-1/2 -translate-y-1/2 text-xl" aria-hidden="true">▦</span>
-              <span className="flex flex-col items-center justify-center">
-                <span>Management &amp;</span>
-                <span>Control</span>
-              </span>
-            </h2>
+            <button
+              type="button"
+              onClick={() => setManagementWorkspaceOpen((open) => !open)}
+              aria-expanded={managementWorkspaceOpen}
+              aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"}
+              className="flex h-10 shrink-0 items-center gap-2 rounded-md px-1 text-left text-base font-black tracking-tight text-slate-950 transition-colors hover:bg-slate-50 focus-visible:outline-none sm:text-lg"
+            >
+              <span className="text-xl" aria-hidden="true">▦</span>
+              <span className="whitespace-nowrap">Management &amp; Control</span>
+              <span className="ml-1 text-sm text-slate-500" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
+            </button>
 
-            <div className="mx-4 min-w-[220px] flex-1">
-              <div className="flex h-10 items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-3 transition-all duration-150 focus-within:border-blue-700 focus-within:bg-blue-50/30 focus-within:shadow-[0_0_12px_rgba(37,99,235,0.3)]">
+            <div className="mx-[100px] min-w-[220px] flex-1">
+              <div className="box-border flex h-10 min-w-0 items-center gap-2 rounded-md border-2 border-slate-400 bg-white px-3 transition-[border-color,background-color,box-shadow] duration-150 focus-within:border-blue-700 focus-within:bg-blue-50/30 focus-within:shadow-[0_0_10px_rgba(37,99,235,0.28)]">
                 <span className="shrink-0 text-lg text-slate-500" aria-hidden="true">⌕</span>
-                <Input
+                <input
+                  type="search"
                   aria-label="Search questions"
                   placeholder="Search questions by keyword..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-sm shadow-none !outline-none !ring-0 focus:!outline-none focus:!ring-0 focus-visible:!outline-none focus-visible:!ring-0"
+                  className="h-full min-w-0 flex-1 appearance-none border-0 bg-transparent p-0 text-sm text-slate-900 shadow-none outline-none ring-0 placeholder:text-slate-400 focus:border-0 focus:outline-none focus:ring-0 focus-visible:outline-none focus-visible:ring-0"
                 />
               </div>
             </div>
@@ -1650,7 +1655,6 @@ export default function QuestionBankPage() {
               </button>
             </div>
 
-            <Button type="button" size="sm" variant="outline" onClick={() => setManagementWorkspaceOpen((open) => !open)} aria-expanded={managementWorkspaceOpen} aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"} className="h-9 w-9 shrink-0 rounded-md p-0">{managementWorkspaceOpen ? "⌃" : "⌄"}</Button>
           </div>
 
           {managementWorkspaceOpen && (
