@@ -1585,185 +1585,225 @@ export default function QuestionBankPage() {
           </Card>
         )}
 
-        <div className="grid min-w-0 grid-cols-1 items-stretch rounded-xl border border-slate-200 bg-white shadow-sm xl:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]">
-          <section className="h-full min-w-0 p-3 sm:p-4">
-            <button
+        <section className="min-w-0 rounded-xl border border-slate-200 bg-white p-3 shadow-sm sm:p-4">
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <h2 className="shrink-0 text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control Center</h2>
+            <div className="min-w-[180px] flex-1">
+              <Input
+                aria-label="Search questions"
+                placeholder="প্রশ্ন / Keyword / Exam Search..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-9 w-full text-sm"
+              />
+            </div>
+            <Button type="button" size="sm" variant="outline" onClick={resetFilters} className="h-9 shrink-0 px-3">
+              ↻ Reset
+            </Button>
+            <Button
               type="button"
+              size="sm"
+              variant="outline"
               onClick={() => setManagementWorkspaceOpen((open) => !open)}
               aria-expanded={managementWorkspaceOpen}
-              className="mb-3 inline-flex items-center gap-1 rounded-md px-1 py-1 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
+              aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"}
+              className="h-9 w-9 shrink-0 p-0"
             >
-              <span className="whitespace-nowrap text-base font-extrabold leading-tight text-slate-900"><span className="mr-1 text-lg text-blue-700">▦</span>Management Workspace</span>
-              <span className="text-sm font-bold text-slate-500" aria-hidden="true">{managementWorkspaceOpen ? "⌃" : "⌄"}</span>
-            </button>
+              {managementWorkspaceOpen ? "⌃" : "⌄"}
+            </Button>
+          </div>
 
-            {managementWorkspaceOpen && (
-              <>
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4">
-                  <button type="button" aria-pressed={viewMode === "single" && !filters.subject} onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
-                    className={`group flex h-14 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}>
-                    <span className="text-lg leading-none text-blue-700">▰</span><span className="truncate text-sm font-extrabold">All Questions</span><strong className="text-sm font-black tabular-nums">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
-                  </button>
-                  <button type="button" aria-pressed={viewMode === "institution"} onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                    className={`group flex h-14 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}>
-                    <span className="text-lg leading-none text-blue-700">🏛️</span><span className="truncate text-sm font-extrabold">Institutions</span><strong className="text-sm font-black tabular-nums">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong>
-                  </button>
-                  <button type="button" aria-pressed={viewMode === "exam"} onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
-                    className={`group flex h-14 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}>
-                    <span className="text-lg leading-none text-blue-700">📋</span><span className="truncate text-sm font-extrabold">Exams</span><strong className="text-sm font-black tabular-nums">{globalStats.totalExams.toLocaleString("bn-BD")}</strong>
-                  </button>
-                  <button type="button" aria-pressed={Boolean(filters.subject)} onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
-                    className={`group flex h-14 min-w-0 items-center justify-center gap-1.5 rounded-md border px-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/50 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}>
-                    <span className="text-lg leading-none text-blue-700">📖</span><span className="truncate text-sm font-extrabold">Subjects</span><strong className="text-sm font-black tabular-nums">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
-                  </button>
-                </div>
+          {managementWorkspaceOpen && (
+            <div className="mt-3 space-y-3">
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
+                <section className="min-w-0 rounded-lg border border-slate-200 p-2.5" aria-label="Management Workspace">
+                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">▦ Management Workspace</h3>
+                  <div className="grid min-w-0 grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "single" && !filters.subject}
+                      onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); }}
+                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "single" && !filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                    >
+                      <span className="text-lg leading-none" aria-hidden="true">▰</span>
+                      <span className="text-[11px] font-extrabold leading-tight">প্রশ্ন</span>
+                      <strong className="text-sm font-black tabular-nums">{globalStats.totalQuestions.toLocaleString("bn-BD")}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "institution"}
+                      onClick={() => { setViewMode("institution"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
+                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "institution" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                    >
+                      <span className="text-lg leading-none" aria-hidden="true">🏛️</span>
+                      <span className="text-[11px] font-extrabold leading-tight">প্রতিষ্ঠান</span>
+                      <strong className="text-sm font-black tabular-nums">{globalStats.totalInstitutions.toLocaleString("bn-BD")}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={viewMode === "exam"}
+                      onClick={() => { setViewMode("exam"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); void loadGroupOptions(); }}
+                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${viewMode === "exam" ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                    >
+                      <span className="text-lg leading-none" aria-hidden="true">📋</span>
+                      <span className="text-[11px] font-extrabold leading-tight">Exam</span>
+                      <strong className="text-sm font-black tabular-nums">{globalStats.totalExams.toLocaleString("bn-BD")}</strong>
+                    </button>
+                    <button
+                      type="button"
+                      aria-pressed={Boolean(filters.subject)}
+                      onClick={() => { setViewMode("single"); setSelectedExamGroup(null); setSelectedInstitutionKey(null); setSelected(null); setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setFilters({ ...initialFilters, subject: "" }); setSearch(""); }}
+                      className={`flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border px-1 py-2 text-center transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 ${filters.subject ? "border-blue-300 bg-blue-50 text-blue-800 shadow-sm" : "border-slate-200 bg-slate-50/60 text-slate-700 hover:border-blue-200 hover:bg-blue-50/60"}`}
+                    >
+                      <span className="text-lg leading-none" aria-hidden="true">📖</span>
+                      <span className="text-[11px] font-extrabold leading-tight">বিষয়</span>
+                      <strong className="text-sm font-black tabular-nums">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
+                    </button>
+                  </div>
+                </section>
 
-                <div className="mt-3 grid min-w-0 grid-cols-2 gap-2 border-t border-slate-100 pt-3 sm:grid-cols-4">
-                  <div className={`flex h-full min-h-[88px] min-w-0 flex-col items-center justify-center rounded-md border p-2 transition-all duration-150 ${search.trim() ? "border-blue-300 bg-blue-100/80" : "border-slate-200 bg-slate-100"} hover:border-blue-300 hover:bg-blue-50/80 focus-within:border-blue-400 focus-within:bg-blue-50/90`}>
-                    <div className="flex min-h-0 w-full flex-1 flex-col items-center justify-center gap-1">
-                      <span className="text-2xl leading-none text-slate-600" aria-hidden="true">⌕</span>
-                      <Input aria-label="Search questions" placeholder="search/খুঁজুন..." value={search} onChange={(e) => setSearch(e.target.value)} className="h-8 min-h-8 w-full rounded-none border-0 bg-transparent px-1 py-0 text-center text-sm font-semibold leading-normal text-slate-800 shadow-none outline-none placeholder:text-center placeholder:text-slate-600 focus:border-0 focus:bg-transparent focus:outline-none focus:ring-0 focus-visible:ring-0" />
-                    </div>
+                <section className="min-w-0 rounded-lg border border-slate-200 p-2.5" aria-label="Selection">
+                  <div className="mb-2 flex min-w-0 items-center justify-between gap-2">
+                    <h3 className="text-sm font-extrabold text-slate-900">☑ Selection</h3>
+                    <span className="shrink-0 rounded-md bg-blue-50 px-2 py-1 text-xs font-extrabold tabular-nums text-blue-800">
+                      {bulkSelectionCount.toLocaleString("bn-BD")} Selected
+                    </span>
                   </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.from || filters.to ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.from || filters.to ? "text-blue-800" : "text-slate-600"}`}>Year</label>
-                    <div className="flex min-w-0 items-center gap-1.5">
-                      <div className="min-w-0 flex-1">
-                        <select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className={`block h-11 min-h-11 min-w-0 w-full appearance-auto rounded-md border bg-white py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none outline-none focus:border-blue-300 focus:ring-0 ${filters.from ? "border-blue-300" : "border-slate-200"}`}>
-                          <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                      <span className="shrink-0 text-xs text-slate-400">–</span>
-                      <div className="min-w-0 flex-1">
-                        <select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className={`block h-11 min-h-11 min-w-0 w-full appearance-auto rounded-md border bg-white py-0 px-1 text-center text-xs leading-normal text-slate-800 shadow-none outline-none focus:border-blue-300 focus:ring-0 ${filters.to ? "border-blue-300" : "border-slate-200"}`}>
-                          <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((y) => <option key={y} value={y}>{y}</option>)}
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.institution ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.institution ? "text-blue-800" : "text-slate-600"}`}>Institution</label>
-                    <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.institution ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Institutions</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.exam ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.exam ? "text-blue-800" : "text-slate-600"}`}>Exam</label>
-                    <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.exam ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Exams</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.post ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.post ? "text-blue-800" : "text-slate-600"}`}>Post</label>
-                    <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.post ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Posts</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.subject ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.subject ? "text-blue-800" : "text-slate-600"}`}>Subject</label>
-                    <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.subject ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Subjects</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.topic ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.topic ? "text-blue-800" : "text-slate-600"}`}>Topic</label>
-                    <Select aria-label="Topic" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.topic ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Topics</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
-                    </Select>
-                  </div>
-                  <div className={`min-w-0 rounded-md border p-2 transition-colors ${filters.status ? "border-blue-300 bg-blue-50/80" : "border-slate-100 bg-slate-50/70"}`}>
-                    <label className={`mb-1.5 block text-center text-xs font-bold leading-4 ${filters.status ? "text-blue-800" : "text-slate-600"}`}>Status</label>
-                    <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className={`h-11 min-h-11 min-w-0 w-full rounded-md border py-0 px-2 text-center text-xs leading-normal text-slate-800 shadow-none focus:outline-none focus:ring-2 focus:ring-blue-100 ${filters.status ? "border-blue-400 bg-white" : "border-slate-200 bg-white"}`}>
-                      <option value="">All Statuses</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
-                    </Select>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="mt-3 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
-              <p><span>Found:</span> <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> <span>Questions</span></p>
-              <Button type="button" variant="outline" size="sm" onClick={resetFilters} className="h-9 rounded-lg border-slate-200 bg-white px-3 text-xs font-bold text-slate-700 shadow-none hover:border-blue-200 hover:bg-blue-50">↻ Reset Filters</Button>
-            </div>
-          </section>
-
-          <aside className="h-full min-w-0 border-t border-slate-100 p-3 sm:p-4 xl:border-l xl:border-t-0">
-            {!showTrash && (
-              <section className="flex h-full min-w-0 flex-col justify-between gap-3" aria-label="Question Control Center">
-                <div className="flex items-center justify-between gap-2">
-                  <h2 className="flex items-center gap-2 text-base font-extrabold text-slate-900">
-                    <span className="text-lg text-emerald-700" aria-hidden="true">⚡</span>
-                    Question Control Center
-                  </h2>
-                  <span className="shrink-0 rounded-lg bg-blue-50 px-2 py-1 text-xs font-extrabold tabular-nums text-blue-800">
-                    {bulkSelectionCount.toLocaleString("bn-BD")} Selected
-                  </span>
-                </div>
-
-                <div className="space-y-1.5">
-                  <p className="text-base font-extrabold leading-tight text-slate-800">☑ Selection</p>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={toggleCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
-                      <span aria-hidden="true">☑</span><span className="ml-1">Select</span>
+                  <div className="grid min-w-0 grid-cols-4 gap-1.5">
+                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                      <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
                     </Button>
-                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={loading || totalQuestions === 0 || bulkSaving}>
-                      <span aria-hidden="true">▣</span><span className="ml-1">Select All</span>
+                    <Button type="button" size="sm" variant={allMatchingSelected ? "primary" : "outline"} disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                      <span className="text-lg leading-none" aria-hidden="true">▣</span><span className="text-[11px] font-extrabold leading-tight">All</span>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={invertCurrentPageSelection} disabled={loading || filteredQuestions.length === 0 || bulkSaving}>
-                      ⇄ Invert
+                    <Button type="button" size="sm" variant="outline" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                      <span className="text-lg leading-none" aria-hidden="true">⇄</span><span className="text-[11px] font-extrabold leading-tight">Invert</span>
                     </Button>
-                    <Button type="button" size="sm" variant="ghost" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving}>
-                      ✕ Clear
+                    <Button type="button" size="sm" variant="outline" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex min-h-[78px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md px-1 py-2 text-center">
+                      <span className="text-lg leading-none" aria-hidden="true">✕</span><span className="text-[11px] font-extrabold leading-tight">Clear</span>
                     </Button>
                   </div>
-                </div>
+                </section>
+              </div>
 
-                <div className="space-y-1.5">
-                  <p className="text-base font-extrabold leading-tight text-slate-800">⚙ Bulk Edit &amp; Action</p>
-                  <div className="grid min-w-0 grid-cols-4 items-end gap-2">
-                    <label className="min-w-0 text-xs font-extrabold text-slate-700">
+              <div className="grid min-w-0 grid-cols-2 gap-1.5 sm:grid-cols-4 xl:grid-cols-7">
+                <div className={`min-w-0 rounded-md border p-2 ${filters.institution ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Institution</label>
+                  <Select aria-label="Institution" value={filters.institution} onChange={(e) => updateFilter("institution", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "institution")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.exam ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Exam</label>
+                  <Select aria-label="Exam" value={filters.exam} onChange={(e) => updateFilter("exam", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "exam")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.post ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Post</label>
+                  <Select aria-label="Post" value={filters.post} onChange={(e) => updateFilter("post", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "post")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.from || filters.to ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Year</label>
+                  <div className="flex min-w-0 items-center gap-1">
+                    <Select aria-label="Year From" value={filters.from} onChange={(e) => updateFilter("from", e.target.value)} className="h-9 min-w-0 w-full px-0.5 text-center text-[11px]">
+                      <option value="">From</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                    </Select>
+                    <span className="shrink-0 text-xs text-slate-500">–</span>
+                    <Select aria-label="Year To" value={filters.to} onChange={(e) => updateFilter("to", e.target.value)} className="h-9 min-w-0 w-full px-0.5 text-center text-[11px]">
+                      <option value="">To</option>{Array.from({ length: 27 }, (_, i) => 2000 + i).map((year) => <option key={year} value={year}>{year}</option>)}
+                    </Select>
+                  </div>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.subject ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Subject</label>
+                  <Select aria-label="Subject" value={filters.subject} onChange={(e) => updateFilter("subject", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "subject")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.topic ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Topics</label>
+                  <Select aria-label="Topics" value={filters.topic} onChange={(e) => updateFilter("topic", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option>{filterOptions.find((item) => item.key === "topic")?.options.map((option) => <option key={option} value={option}>{option}</option>)}
+                  </Select>
+                </div>
+                <div className={`min-w-0 rounded-md border p-2 ${filters.status ? "border-blue-300 bg-blue-50/80" : "border-slate-200 bg-slate-50/70"}`}>
+                  <label className="mb-1 block text-xs font-bold text-slate-700">Status</label>
+                  <Select aria-label="Status" value={filters.status} onChange={(e) => updateFilter("status", e.target.value)} className="h-9 min-w-0 w-full px-1 text-xs">
+                    <option value="">All</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
+                <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2.5" aria-label="Bulk Edit">
+                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">⚙ Bulk Edit</h3>
+                  <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
+                    <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-700">
                       Difficulty
-                      <Select aria-label="Set Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="mt-1 h-11 min-w-0 w-full rounded-lg px-1.5 py-1 text-xs font-semibold">
+                      <Select aria-label="Bulk Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
                         <option value="">No change</option><option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
                       </Select>
                     </label>
-                    <label className="min-w-0 text-xs font-extrabold text-slate-700">
+                    <label className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-700">
                       Status
-                      <Select aria-label="Set Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="mt-1 h-11 min-w-0 w-full rounded-lg px-1.5 py-1 text-xs font-semibold">
+                      <Select aria-label="Bulk Status" value={bulkStatus} onChange={(e) => setBulkStatus(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
                         <option value="">No change</option><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
                       </Select>
                     </label>
-                    <Button type="button" size="sm" variant="outline" className="h-11 min-w-0 whitespace-nowrap rounded-lg border-emerald-300 px-1.5 text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-50" onClick={() => void publishAllDrafts()} disabled={bulkSaving || draftCount === 0}>
-                      Publish All ({draftCount.toLocaleString("bn-BD")})
-                    </Button>
-                    <Button type="button" size="sm" className="h-11 min-w-0 rounded-lg px-1.5 text-xs font-extrabold" onClick={() => void applyBulkEdit()} disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)}>
-                      <span aria-hidden="true">✓</span><span className="ml-1">{bulkSaving ? "..." : "Apply"}</span>
+                    {["Subject", "Topic", "Institution", "Exam", "Post"].map((field) => (
+                      <div key={field} aria-label={`Bulk ${field} (not available yet)`} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50 p-1.5 text-center text-[11px] font-bold text-slate-500">
+                        {field}
+                        <span className="flex h-8 w-full items-center justify-center rounded-md border border-slate-200 bg-slate-100 px-1 text-[10px] font-medium">Coming soon</span>
+                      </div>
+                    ))}
+                    <Button type="button" size="sm" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="h-full min-h-[70px] min-w-0 whitespace-normal rounded-md px-1 text-xs font-extrabold">
+                      ✓ Apply
                     </Button>
                   </div>
-                </div>
+                </section>
 
-                <div className="space-y-1.5">
-                  <p className="text-base font-extrabold leading-tight text-slate-800">🗑 Delete Actions</p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <Button type="button" size="sm" variant="outline" className="h-11 rounded-lg border-amber-300 px-2 text-sm font-extrabold" onClick={() => void bulkDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
-                      🗑 Delete
+                <section className="flex h-full min-w-0 flex-col rounded-lg border border-slate-200 p-2.5" aria-label="Actions">
+                  <h3 className="mb-2 text-sm font-extrabold text-slate-900">⚡ Actions</h3>
+                  <div className="grid flex-1 grid-cols-4 grid-rows-2 gap-1.5">
+                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-emerald-200 bg-emerald-50/50 px-1 text-center text-[11px] font-extrabold text-emerald-800 hover:bg-emerald-100">
+                      <span className="text-lg leading-none">↗</span><span>Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
                     </Button>
-                    <Button type="button" size="sm" variant="outline" className="h-11 rounded-lg border-red-400 px-2 text-sm font-extrabold text-red-700 hover:bg-red-50" onClick={() => void bulkPermanentDeleteQuestions()} disabled={bulkSaving || bulkSelectionCount === 0}>
-                      ⚠ Permanent Delete
+                    <a href="/api/imports/export?format=json" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                      <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
+                    </a>
+                    <a href="/api/imports/export?format=csv" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                      <span className="text-lg leading-none">▤</span><span>CSV</span>
+                    </a>
+                    <a href="/api/imports/export?format=xlsx" className="flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 rounded-md border border-slate-200 bg-white px-1 text-center text-[11px] font-extrabold text-slate-700 hover:bg-slate-50">
+                      <span className="text-lg leading-none">▦</span><span>Excel</span>
+                    </a>
+                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-amber-300 px-1 text-center text-xs font-extrabold text-amber-800 hover:bg-amber-50">
+                      <span className="text-lg leading-none">🗑</span><span>Delete</span>
+                    </Button>
+                    <Button type="button" size="sm" variant="outline" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="col-span-2 flex min-h-[70px] min-w-0 flex-col items-center justify-center gap-1 whitespace-normal rounded-md border-red-400 px-1 text-center text-xs font-extrabold text-red-700 hover:bg-red-50">
+                      <span className="text-lg leading-none">⚠</span><span>Permanent Delete</span>
                     </Button>
                   </div>
-                </div>
+                </section>
+              </div>
 
-                {(bulkError || bulkSuccess) && (
-                  <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
-                    {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
-                    {bulkSuccess && <p role="status" className="text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
-                  </div>
-                )}
-              </section>
-            )}
-          </aside>
-        </div>
+              {(bulkError || bulkSuccess) && (
+                <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
+                  {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
+                  {bulkSuccess && <p role="status" className="text-xs font-medium text-emerald-800">{bulkSuccess}</p>}
+                </div>
+              )}
+
+              <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2 text-sm font-semibold text-slate-700">
+                <p>পাওয়া গেছে: <strong className="text-base font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
+                <p className="text-sm font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+              </div>
+            </div>
+          )}
+        </section>
 
         {viewMode !== "single" && (
           <Card>
