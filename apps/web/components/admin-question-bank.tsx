@@ -1809,10 +1809,10 @@ export default function QuestionBankPage() {
                 </div>
               )}
 
-              <div className="grid min-w-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 overflow-visible rounded-md border border-slate-200 bg-white px-5 py-2 text-base font-semibold text-slate-700 sm:grid-cols-[auto_auto_minmax(0,1fr)]">
-                <p className="whitespace-nowrap text-left text-sm font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
+              <div className="grid min-w-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 overflow-visible rounded-md border border-slate-200 bg-white px-[30px] py-2 text-base font-semibold text-slate-700 sm:grid-cols-3">
                 <p className="whitespace-nowrap text-left">পাওয়া গেছে: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
-                <p className="whitespace-nowrap text-left text-base font-bold text-slate-700 sm:text-right">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+                <p className="whitespace-nowrap text-center text-sm font-extrabold tabular-nums text-blue-800">Total Select Questions: {bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
+                <p className="whitespace-nowrap text-right text-base font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
             </div>
           )}
