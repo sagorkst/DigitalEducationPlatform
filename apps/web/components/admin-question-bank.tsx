@@ -1685,7 +1685,7 @@ export default function QuestionBankPage() {
                 <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
                   {filterOptions.slice(0, 3).map((item) => {
                     const value = filters[item.key as keyof typeof initialFilters];
-                    const display = value || item.label === "প্রতিষ্ঠান" ? (value || "Institution") : item.label === "পরীক্ষার নাম" ? (value || "Exam") : (value || "Post");
+                    const display = value || (item.key === "institution" ? "Institution" : item.key === "exam" ? "Exam" : "Post");
                     const long = display.length > 15;
                     return (
                       <div key={item.key} className="relative h-10 w-full min-w-0 overflow-hidden rounded-md border border-slate-300 bg-white">
