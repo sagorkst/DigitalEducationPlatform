@@ -1222,7 +1222,7 @@ export default function QuestionBankPage() {
   );
 
   return (
-    <main className="min-h-screen bg-[#f3f6fb] px-3 pb-3 pt-[6px] md:px-5 md:pb-5 md:pt-[6px]">
+    <main className="min-h-screen bg-[#f3f6fb] px-3 pb-3 pt-[3px] md:px-5 md:pb-5 md:pt-[3px]">
       <div className="mx-auto w-full max-w-none space-y-4">
         <section className="min-h-[76px] rounded-xl border border-slate-200 bg-white p-2 shadow-sm">
           <div className="grid min-w-0 gap-3 lg:grid-cols-[minmax(360px,0.82fr)_minmax(0,2.18fr)] lg:items-center lg:gap-4">
