@@ -1619,6 +1619,10 @@ export default function QuestionBankPage() {
               <div className="grid min-w-0 grid-cols-1 gap-2">
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col">
+                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
+                    <span className="whitespace-nowrap">Management Workspace</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
                   <div className="mx-auto grid w-full min-w-0 grid-cols-4 gap-2">
                     <button
                       type="button"
@@ -1663,7 +1667,11 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
 
-                <div className="flex min-w-0 flex-col justify-center">
+                <div className="flex min-w-0 flex-col">
+                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
+                    <span className="whitespace-nowrap">Selection</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
                   <div className="grid min-w-0 grid-cols-4 gap-2">
                     <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                       <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
@@ -1755,6 +1763,10 @@ export default function QuestionBankPage() {
 
               <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
                 <div className="flex min-w-0 flex-col">
+                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
+                    <span className="whitespace-nowrap">Bulk Edit</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
                   <div className="grid flex-1 grid-cols-4 auto-rows-[70px] gap-1.5">
                     <label className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                       Difficulty
@@ -1780,7 +1792,12 @@ export default function QuestionBankPage() {
                   </div>
                 </div>
 
-                <div className="grid min-w-0 grid-cols-4 auto-rows-[70px] gap-1.5">
+                <div className="flex min-w-0 flex-col">
+                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
+                    <span className="whitespace-nowrap">Actions</span>
+                    <span className="h-px flex-1 bg-slate-200" />
+                  </div>
+                  <div className="grid min-w-0 grid-cols-4 auto-rows-[70px] gap-1.5">
                   <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                     <span className="text-lg leading-none" aria-hidden="true">↗</span><span className="text-[11px] font-extrabold leading-tight">Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
                   </button>
@@ -1799,6 +1816,7 @@ export default function QuestionBankPage() {
                   <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                     <span className="text-lg leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
                   </button>
+                  </div>
                 </div>
               </div>
             </div>
