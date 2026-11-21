@@ -1588,37 +1588,23 @@ export default function QuestionBankPage() {
 
         <section className="min-w-0 rounded-lg border border-slate-200 bg-white p-2">
           <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control Center</h2>
-            <div className="min-w-[180px] flex-1">
-              <Input
-                aria-label="Search questions"
-                placeholder="প্রশ্ন / Keyword / Exam Search..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="h-9 w-full rounded-md text-sm"
-              />
+            <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control</h2>
+            <div className="w-[145px] shrink-0 sm:w-[165px]"><div className="flex h-8 items-center gap-1.5 rounded-md border border-slate-300 bg-white px-2 focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100"><span className="shrink-0 text-slate-500" aria-hidden="true">⌕</span><Input aria-label="Search questions" placeholder="Search ----" value={search} onChange={(e) => setSearch(e.target.value)} className="h-full min-w-0 flex-1 border-0 bg-transparent p-0 text-xs shadow-none outline-none focus-visible:ring-0" /></div></div>
+            <div className="flex min-w-0 flex-1 items-center justify-center gap-1 rounded-md border border-slate-200 bg-slate-50/70 px-1.5 py-1">
+              <span className="shrink-0 px-1 text-[10px] font-extrabold text-slate-600">Selection</span>
+              <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Select</button>
+              <button type="button" disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className={`h-7 rounded border px-2 text-[10px] font-bold disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white" : "border-blue-200 bg-blue-50 text-blue-800 hover:bg-blue-100"}`}>All</button>
+              <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Invert</button>
+              <button type="button" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="h-7 rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-bold text-blue-800 hover:bg-blue-100 disabled:opacity-50">Clear</button>
+              <span className="shrink-0 text-[10px] font-extrabold tabular-nums text-blue-800">{bulkSelectionCount.toLocaleString("bn-BD")} Selected</span>
             </div>
-            <Button type="button" size="sm" variant="outline" onClick={resetFilters} className="h-9 shrink-0 px-3">
-              ↻ Reset
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => setManagementWorkspaceOpen((open) => !open)}
-              aria-expanded={managementWorkspaceOpen}
-              aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"}
-              className="h-9 w-9 shrink-0 p-0"
-            >
-              {managementWorkspaceOpen ? "⌃" : "⌄"}
-            </Button>
+            <Button type="button" size="sm" variant="outline" onClick={() => setManagementWorkspaceOpen((open) => !open)} aria-expanded={managementWorkspaceOpen} aria-label={managementWorkspaceOpen ? "Hide Control Center" : "Show Control Center"} className="h-8 w-8 shrink-0 p-0">{managementWorkspaceOpen ? "⌃" : "⌄"}</Button>
           </div>
 
           {managementWorkspaceOpen && (
             <div className="mt-3 space-y-3">
               <div className="grid min-w-0 grid-cols-1 gap-2">
-              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
-                <div className="flex min-w-0 flex-col">
+              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2"><div className="flex min-w-0 flex-col">
                   <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
                     <span className="whitespace-nowrap">Management Workspace</span>
                     <span className="h-px flex-1 bg-slate-200" />
@@ -1665,32 +1651,27 @@ export default function QuestionBankPage() {
                       <strong className="text-sm font-black tabular-nums">{globalStats.totalSubjects.toLocaleString("bn-BD")}</strong>
                     </button>
                   </div>
-                </div>
-
-                <div className="flex min-w-0 flex-col">
-                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
-                    <span className="whitespace-nowrap">Selection</span>
-                    <span className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="grid min-w-0 grid-cols-4 gap-2">
-                    <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={toggleCurrentPageSelection} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                      <span className="text-lg leading-none" aria-hidden="true">☑</span><span className="text-[11px] font-extrabold leading-tight">Select</span>
-                    </button>
-                    <button type="button" disabled={loading || totalQuestions === 0 || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(true); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className={`flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border px-1 py-1.5 text-center transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${allMatchingSelected ? "border-blue-700 bg-blue-700 text-white" : "border-blue-200 bg-blue-50/60 text-blue-800 hover:border-blue-400 hover:bg-blue-100"}`}>
-                      <span className="text-lg leading-none" aria-hidden="true">▣</span><span className="text-[11px] font-extrabold leading-tight">All</span>
-                    </button>
-                    <button type="button" disabled={loading || filteredQuestions.length === 0 || bulkSaving} onClick={invertCurrentPageSelection} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                      <span className="text-lg leading-none" aria-hidden="true">⇄</span><span className="text-[11px] font-extrabold leading-tight">Invert</span>
-                    </button>
-                    <button type="button" disabled={(selectedQuestionIds.length === 0 && !allMatchingSelected) || bulkSaving} onClick={() => { setSelectedQuestionIds([]); setAllMatchingSelected(false); setExcludedQuestionIds([]); setBulkError(""); setBulkSuccess(""); }} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                      <span className="text-lg leading-none" aria-hidden="true">✕</span><span className="text-[11px] font-extrabold leading-tight">Clear</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
-                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-8">
+                </div><div className="flex min-w-0 flex-col"><div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Actions</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-6 auto-rows-[70px] gap-1">
+                  <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">↗</span><span className="text-[11px] font-extrabold leading-tight">Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
+                  </button>
+                  <a href="/api/imports/export?format=json" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
+                  </a>
+                  <a href="/api/imports/export?format=csv" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">▤</span><span>CSV</span>
+                  </a>
+                  <a href="/api/imports/export?format=xlsx" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
+                    <span className="text-lg leading-none">▦</span><span>Excel</span>
+                  </a>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">🗑</span><span className="text-[11px] font-extrabold leading-tight">Delete</span>
+                  </button>
+                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
+                    <span className="text-lg leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
+                  </button>
+                  </div></div></div><div className="rounded-md border border-slate-200 bg-slate-50/70 p-2">
+                <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-4 xl:grid-cols-[repeat(8,minmax(0,1fr))_36px]">
                   {filterOptions.slice(0, 3).map((item) => {
                     const value = filters[item.key as keyof typeof initialFilters];
                     const display = value || (item.key === "institution" ? "Institution" : item.key === "exam" ? "Exam" : "Post");
@@ -1758,16 +1739,11 @@ export default function QuestionBankPage() {
                     <span className="pointer-events-none absolute inset-0 flex items-center justify-center whitespace-nowrap text-[13px] font-medium text-slate-700">{filters.status ? ({ DRAFT: "Draft", PUBLISHED: "Published", HIDDEN: "Hidden", ARCHIVED: "Archived" } as Record<string, string>)[filters.status] : "Status"}</span>
                     <span className="pointer-events-none absolute right-2 top-1/2 z-20 -translate-y-1/2 text-[10px] text-slate-500">▾</span>
                   </div>
+                  <button type="button" onClick={resetFilters} aria-label="Reset all filters" title="Reset filters" className="flex h-10 w-full items-center justify-center rounded-md border border-amber-300 bg-amber-50 text-lg font-black text-amber-700 transition-colors hover:border-amber-400 hover:bg-amber-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-300">↻</button>
                 </div>
               </div>
 
-              <div className="grid min-w-0 grid-cols-1 items-stretch gap-3 xl:grid-cols-2">
-                <div className="flex min-w-0 flex-col">
-                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
-                    <span className="whitespace-nowrap">Bulk Edit</span>
-                    <span className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="grid flex-1 grid-cols-4 auto-rows-[70px] gap-1.5">
+              <div className="min-w-0"><div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500"><span className="whitespace-nowrap">Bulk Edit</span><span className="h-px flex-1 bg-slate-200" /></div><div className="grid min-w-0 grid-cols-2 sm:grid-cols-4 xl:grid-cols-8 auto-rows-[70px] gap-1.5">
                     <label className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 p-1.5 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
                       Difficulty
                       <Select aria-label="Bulk Difficulty" value={bulkDifficulty} onChange={(e) => setBulkDifficulty(e.target.value)} disabled={bulkSaving} className="h-8 min-h-8 w-full min-w-0 px-1 text-[11px]">
@@ -1789,37 +1765,7 @@ export default function QuestionBankPage() {
                     <button type="button" disabled={bulkSaving || bulkSelectionCount === 0 || (!bulkDifficulty && !bulkStatus)} onClick={() => void applyBulkEdit()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
                       <span className="text-lg leading-none" aria-hidden="true">✓</span><span className="text-[11px] font-extrabold leading-tight">Apply</span>
                     </button>
-                  </div>
-                </div>
-
-                <div className="flex min-w-0 flex-col">
-                  <div className="mb-2 flex items-center gap-2 px-0.5 text-[11px] font-bold tracking-wide text-slate-500">
-                    <span className="whitespace-nowrap">Actions</span>
-                    <span className="h-px flex-1 bg-slate-200" />
-                  </div>
-                  <div className="grid min-w-0 grid-cols-4 auto-rows-[70px] gap-1.5">
-                  <button type="button" disabled={bulkSaving || draftCount === 0} onClick={() => void publishAllDrafts()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                    <span className="text-lg leading-none" aria-hidden="true">↗</span><span className="text-[11px] font-extrabold leading-tight">Publish All Drafts ({draftCount.toLocaleString("bn-BD")})</span>
-                  </button>
-                  <a href="/api/imports/export?format=json" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">{"{ }"}</span><span>JSON</span>
-                  </a>
-                  <a href="/api/imports/export?format=csv" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">▤</span><span>CSV</span>
-                  </a>
-                  <a href="/api/imports/export?format=xlsx" className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 text-center text-[11px] font-extrabold text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100">
-                    <span className="text-lg leading-none">▦</span><span>Excel</span>
-                  </a>
-                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                    <span className="text-lg leading-none" aria-hidden="true">🗑</span><span className="text-[11px] font-extrabold leading-tight">Delete</span>
-                  </button>
-                  <button type="button" disabled={bulkSaving || bulkSelectionCount === 0} onClick={() => void bulkPermanentDeleteQuestions()} className="flex h-[70px] w-full min-w-0 flex-col items-center justify-center overflow-hidden gap-1 rounded-md border border-blue-200 bg-blue-50/60 px-1 py-1.5 text-center text-blue-800 transition-colors hover:border-blue-400 hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-50">
-                    <span className="text-lg leading-none" aria-hidden="true">⚠</span><span className="text-[11px] font-extrabold leading-tight">Permanent Delete</span>
-                  </button>
-                  </div>
-                </div>
-              </div>
-            </div>
+                  </div></div>
               {(bulkError || bulkSuccess) && (
                 <div className="rounded-md border border-slate-200 bg-slate-50 p-2">
                   {bulkError && <p role="alert" className="text-xs font-medium text-red-700">{bulkError}</p>}
