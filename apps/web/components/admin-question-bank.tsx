@@ -1590,8 +1590,8 @@ export default function QuestionBankPage() {
           <div className="flex min-w-0 flex-wrap items-center gap-2.5">
             <h2 className="shrink-0 text-left text-base font-black tracking-tight text-slate-950 sm:text-lg">▦ Management &amp; Control</h2>
 
-            <div className="min-w-[220px] flex-1">
-              <div className="flex h-10 items-center gap-2 rounded-md border border-slate-300 bg-white px-3 transition-colors focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+            <div className="mx-4 min-w-[220px] flex-1">
+              <div className="flex h-10 items-center gap-2 rounded-md border-2 border-slate-300 bg-white px-3 transition-all duration-150 focus-within:border-blue-600 focus-within:shadow-[0_0_0_2px_rgba(37,99,235,0.16),0_0_10px_rgba(59,130,246,0.18)]">
                 <span className="shrink-0 text-lg text-slate-500" aria-hidden="true">⌕</span>
                 <Input
                   aria-label="Search questions"
@@ -1818,10 +1818,10 @@ export default function QuestionBankPage() {
                 </div>
               )}
 
-              <div className="grid min-w-0 grid-cols-1 items-center gap-x-4 gap-y-1.5 overflow-visible rounded-md border border-slate-200 bg-white px-[30px] py-2 text-base font-semibold text-slate-700 sm:grid-cols-3">
-                <p className="whitespace-nowrap text-left">পাওয়া গেছে: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> টি প্রশ্ন</p>
-                <p className="whitespace-nowrap text-center text-sm font-extrabold tabular-nums text-blue-800">Total Select Questions: {bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
-                <p className="whitespace-nowrap text-right text-base font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
+              <div className="flex min-w-0 flex-wrap items-center justify-start gap-x-[100px] gap-y-2 overflow-visible rounded-md border border-slate-200 bg-white py-2 pl-[100px] pr-4 text-base font-semibold text-slate-700">
+                <p className="whitespace-nowrap text-left">Found: <strong className="text-lg font-extrabold text-blue-700">{totalQuestions.toLocaleString("bn-BD")}</strong> Questions</p>
+                <p className="whitespace-nowrap text-left text-sm font-extrabold tabular-nums text-blue-800">Total: {bulkSelectionCount.toLocaleString("bn-BD")} Selected</p>
+                <p className="whitespace-nowrap text-left text-base font-bold text-slate-700">📊 Operation Report: <span className="font-semibold">Success: — | Failed: —</span></p>
               </div>
             </div>
           )}
