@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -24,6 +25,7 @@ function getOptionalString(value: unknown): string | null | undefined {
 function getAuthenticatedUser(payload: unknown): AuthUser | null {
   const root = isRecord(payload) ? payload : {};
   const data = isRecord(root.data) ? root.data : {};
+
   const candidates = [
     data.user,
     data.account,
@@ -55,6 +57,7 @@ function getAuthenticatedUser(payload: unknown): AuthUser | null {
 function hasRole(payload: unknown, expectedRole: string): boolean {
   const root = isRecord(payload) ? payload : {};
   const data = isRecord(root.data) ? root.data : {};
+
   const candidates = [
     data.user,
     data.account,
@@ -83,6 +86,7 @@ function hasRole(payload: unknown, expectedRole: string): boolean {
 
   return false;
 }
+
 const API_ORIGIN = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 ).replace(/\/api\/?$/, "");
@@ -98,24 +102,61 @@ function getAvatarUrl(avatar?: string | null) {
 }
 
 const links = [
-  { label: "à¦¹à§‹à¦®", href: "/" },
-  { label: "à¦à¦•à¦¾à¦¡à§‡à¦®à¦¿à¦•", href: "/academic" },
-  { label: "à¦šà¦¾à¦•à¦°à¦¿ à¦ªà§à¦°à¦¸à§à¦¤à§à¦¤à¦¿", href: "/career" },
-  { label: "à¦­à¦°à§à¦¤à¦¿", href: "/admission" },
-  { label: "à¦¦à¦•à§à¦·à¦¤à¦¾ à¦‰à¦¨à§à¦¨à§Ÿà¦¨", href: "/skills" },
-  { label: "à¦•à§‹à¦°à§à¦¸", href: "/courses" },
-  { label: "à¦ªà§à¦°à¦¶à§à¦¨à¦¬à§à¦¯à¦¾à¦‚à¦•", href: "/question-bank" },
-  { label: "à¦ªà¦°à§€à¦•à§à¦·à¦¾", href: "/exams" },
-  { label: "à¦²à¦¾à¦‡à¦¬à§à¦°à§‡à¦°à¦¿", href: "/library" },
+  { label: "হোম", href: "/" },
+  { label: "একাডেমিক", href: "/academic" },
+  { label: "চাকরি প্রস্তুতি", href: "/career" },
+  { label: "ভর্তি", href: "/admission" },
+  { label: "দক্ষতা উন্নয়ন", href: "/skills" },
+  { label: "কোর্স", href: "/courses" },
+  { label: "প্রশ্নব্যাংক", href: "/question-bank" },
+  { label: "পরীক্ষা", href: "/exams" },
+  { label: "লাইব্রেরি", href: "/library" },
 ];
 
 export default function SiteHeader() {
   const router = useRouter();
+
+  // null keeps the first server and client render identical.
+  const [pathname, setPathname] = useState<string | null>(null);
+
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [logoutError, setLogoutError] = useState("");
+
+  useEffect(() => {
+    setPathname(window.location.pathname);
+
+    function handleDocumentClick(event: MouseEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Element)) return;
+
+      const anchor = target.closest("a[href]");
+
+      if (!(anchor instanceof HTMLAnchorElement)) return;
+      if (anchor.target === "_blank") return;
+
+      const destination = new URL(anchor.href, window.location.origin);
+
+      if (destination.origin === window.location.origin) {
+        setPathname(destination.pathname);
+      }
+    }
+
+    function handlePopState() {
+      setPathname(window.location.pathname);
+    }
+
+    document.addEventListener("click", handleDocumentClick);
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      document.removeEventListener("click", handleDocumentClick);
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -207,7 +248,10 @@ export default function SiteHeader() {
 
     return () => {
       active = false;
-      window.removeEventListener("shikhasetu:auth-changed", handleAuthChanged);
+      window.removeEventListener(
+        "shikhasetu:auth-changed",
+        handleAuthChanged,
+      );
     };
   }, []);
 
@@ -228,18 +272,22 @@ export default function SiteHeader() {
 
       if (!response.ok || !result?.success) {
         setLogoutError(
-          result?.message ?? "Logout à¦•à¦°à¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤ à¦†à¦¬à¦¾à¦° à¦šà§‡à¦·à§à¦Ÿà¦¾ à¦•à¦°à§à¦¨à¥¤",
+          result?.message ??
+            "লগআউট করা যায়নি। আবার চেষ্টা করুন।",
         );
         return;
       }
 
       setUser(null);
       setIsSuperAdmin(false);
+      setPathname("/");
 
       window.dispatchEvent(new Event("shikhasetu:auth-changed"));
       router.push("/");
     } catch {
-      setLogoutError("à¦¸à¦¾à¦°à§à¦­à¦¾à¦°à§‡à¦° à¦¸à¦™à§à¦—à§‡ à¦¸à¦‚à¦¯à§‹à¦— à¦•à¦°à¦¾ à¦¯à¦¾à¦šà§à¦›à§‡ à¦¨à¦¾à¥¤");
+      setLogoutError(
+        "সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না।",
+      );
     } finally {
       setLogoutLoading(false);
     }
@@ -247,42 +295,65 @@ export default function SiteHeader() {
 
   const avatarUrl = getAvatarUrl(user?.avatar);
 
+  function isActiveLink(href: string) {
+    if (!pathname) return false;
+    if (href === "/") return pathname === "/";
+
+    return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 sm:px-5">
+        {/* Logo */}
         <Link href="/" className="flex shrink-0 items-center gap-2">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-xl text-white">
-            ðŸŽ“
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-700 text-lg text-white">
+            🎓
           </span>
-          <span className="text-xl font-black tracking-tight text-slate-900">
-            à¦¶à¦¿à¦•à§à¦·à¦¾à¦¸à§‡à¦¤à§
+
+          <span className="whitespace-nowrap text-lg font-black tracking-tight text-slate-900">
+            শিক্ষাসেতু
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-5 xl:flex">
-          {links.map((link) => (
-            <a
-              key={link.href}
-              href={link.href}
-              className="whitespace-nowrap text-sm font-semibold text-slate-600 transition hover:text-blue-700"
-            >
-              {link.label}
-            </a>
-          ))}
+        {/* Desktop Navigation */}
+        <nav
+          className="hidden min-w-0 flex-1 items-center justify-center gap-x-2 xl:flex"
+          aria-label="প্রধান নেভিগেশন"
+        >
+          {links.map((link) => {
+            const active = isActiveLink(link.href);
+
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                aria-current={active ? "page" : undefined}
+                className={`whitespace-nowrap rounded-md px-2.5 py-2 text-[13px] font-semibold transition-colors duration-200 ${
+                  active
+                    ? "bg-blue-50 text-blue-800"
+                    : "text-slate-600 hover:bg-slate-100 hover:text-blue-700"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
-        <div className="flex shrink-0 items-center gap-3">
+        {/* Right Actions */}
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           {authChecked && user && isSuperAdmin && (
-            <a
+            <Link
               href="/admin"
-              className="hidden items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2.5 text-sm font-bold text-emerald-800 transition hover:bg-emerald-100 lg:inline-flex"
+              className="hidden items-center gap-1.5 whitespace-nowrap rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-800 transition hover:bg-emerald-100 lg:inline-flex"
             >
               <svg
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="1.8"
-                className="h-5 w-5"
+                className="h-4 w-4"
                 aria-hidden="true"
               >
                 <path d="M3 10.5 12 3l9 7.5" />
@@ -290,21 +361,28 @@ export default function SiteHeader() {
                 <path d="M9 20v-6h6v6" />
               </svg>
               Admin Panel
-            </a>
+            </Link>
           )}
 
           {!authChecked ? (
-            <div className="h-11 w-24 animate-pulse rounded-xl bg-slate-100" />
+            <div className="h-10 w-20 animate-pulse rounded-md bg-slate-100" />
           ) : user ? (
-            <div className="flex items-center overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-              <a
+            <div className="flex items-center overflow-hidden rounded-md border border-slate-200 bg-white shadow-sm">
+              <Link
                 href="/dashboard/profile"
-                className="flex items-center gap-2.5 px-3 py-2 transition hover:bg-blue-50 sm:px-4"
-                aria-label="à¦†à¦®à¦¾à¦° à¦ªà§à¦°à§‹à¦«à¦¾à¦‡à¦²"
+                className="flex items-center gap-2 px-2.5 py-2 transition-colors hover:bg-blue-50"
+                aria-label="আমার প্রোফাইল"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-blue-700">
                   {avatarUrl ? (
-                    <Image src={avatarUrl} alt="Profile" width={32} height={32} unoptimized className="h-full w-full object-cover" />
+                    <Image
+                      src={avatarUrl}
+                      alt="Profile"
+                      width={32}
+                      height={32}
+                      unoptimized
+                      className="h-full w-full object-cover"
+                    />
                   ) : (
                     <svg
                       viewBox="0 0 24 24"
@@ -320,80 +398,82 @@ export default function SiteHeader() {
                   )}
                 </span>
 
-                <span className="hidden text-sm font-bold text-slate-700 sm:inline">
-                  à¦ªà§à¦°à§‹à¦«à¦¾à¦‡à¦²
+                <span className="hidden whitespace-nowrap text-xs font-bold text-slate-700 sm:inline">
+                  প্রোফাইল
                 </span>
-              </a>
+              </Link>
 
-              <div className="h-8 w-px bg-slate-200" />
+              <div className="h-7 w-px bg-slate-200" />
 
               <button
                 type="button"
                 onClick={() => void handleLogout()}
                 disabled={logoutLoading}
-                className="flex items-center gap-2 px-3 py-3 text-sm font-bold text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 sm:px-4"
+                className="flex items-center gap-1.5 whitespace-nowrap px-2.5 py-2.5 text-xs font-bold text-red-600 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <svg
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.8"
-                  className="h-5 w-5"
+                  className="h-4 w-4"
                   aria-hidden="true"
                 >
                   <path d="M10 17l5-5-5-5" />
                   <path d="M15 12H3" />
                   <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
                 </svg>
+
                 <span className="hidden sm:inline">
-                  {logoutLoading ? "à¦…à¦ªà§‡à¦•à§à¦·à¦¾ à¦•à¦°à§à¦¨..." : "à¦²à¦—à¦†à¦‰à¦Ÿ"}
+                  {logoutLoading ? "অপেক্ষা করুন..." : "লগআউট"}
                 </span>
               </button>
             </div>
           ) : (
-            <a
+            <Link
               href="/login"
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-700 px-5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
+              className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-md bg-blue-700 px-4 py-2 text-xs font-bold text-white shadow-sm transition hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-100"
             >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                className="h-5 w-5"
-                aria-hidden="true"
-              >
-                <circle cx="12" cy="8" r="3.5" />
-                <path d="M5 20c.6-3.5 3.3-5.5 7-5.5s6.4 2 7 5.5" />
-              </svg>
-              à¦²à¦—à¦‡à¦¨
-            </a>
+              লগইন
+            </Link>
           )}
 
+          {/* Mobile Menu */}
           <details className="relative xl:hidden">
-            <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-              <span className="hidden sm:inline">à¦®à§‡à¦¨à§</span>
-              <span className="text-lg">â˜°</span>
+            <summary className="flex cursor-pointer list-none items-center rounded-md border border-slate-200 px-3 py-2 text-slate-700 transition-colors hover:bg-slate-50">
+              <span className="text-lg">☰</span>
             </summary>
 
-            <nav className="absolute right-0 top-14 z-50 max-h-[75vh] w-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">
-              {links.map((link) => (
-                <a
-                  key={link.href}
-                  href={link.href}
-                  className="block rounded-lg px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-blue-50 hover:text-blue-700"
-                >
-                  {link.label}
-                </a>
-              ))}
+            <nav
+              className="absolute right-0 top-12 z-50 max-h-[75vh] w-72 overflow-y-auto rounded-md border border-slate-200 bg-white p-2 shadow-xl"
+              aria-label="মোবাইল নেভিগেশন"
+            >
+              {links.map((link) => {
+                const active = isActiveLink(link.href);
+
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    aria-current={active ? "page" : undefined}
+                    className={`mb-1 block rounded-md px-4 py-3 text-sm font-semibold transition-colors duration-200 ${
+                      active
+                        ? "bg-blue-50 text-blue-800"
+                        : "text-slate-700 hover:bg-slate-100 hover:text-blue-700"
+                    }`}
+                  >
+                    {link.label}
+                  </Link>
+                );
+              })}
 
               {authChecked && user && isSuperAdmin && (
-                <a
+                <Link
                   href="/admin"
-                  className="mt-2 block rounded-lg bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800"
+                  className="mt-2 block rounded-md bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 transition-colors hover:bg-emerald-100"
                 >
                   Admin Panel
-                </a>
+                </Link>
               )}
             </nav>
           </details>
@@ -401,7 +481,10 @@ export default function SiteHeader() {
       </div>
 
       {logoutError && (
-        <div className="mx-auto max-w-7xl px-4 pb-2 text-right text-xs text-red-600" role="alert">
+        <div
+          className="mx-auto max-w-7xl px-4 pb-2 text-right text-xs text-red-600"
+          role="alert"
+        >
           {logoutError}
         </div>
       )}

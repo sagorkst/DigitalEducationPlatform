@@ -1,2 +1,0 @@
-﻿rowNumber,status,errors,rawData,questionId
-3,INVALID,"[""Topic is required."",""MCQ questions require options.""]","{""subject"":""General Knowledge"",""occurrences"":[{""examName"":""Test Exam"",""examYear"":2025,""institution"":""Test Institution""}],""questionText"":""Invalid Test Question""}",
