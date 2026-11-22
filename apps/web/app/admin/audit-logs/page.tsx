@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
@@ -14,10 +14,17 @@ type AuditLog = {
   [key: string]: unknown;
 };
 
-function extractRows(payload: any): AuditLog[] {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function extractRows(payload: unknown): AuditLog[] {
+  if (Array.isArray(payload)) return payload as AuditLog[];
+  if (!isRecord(payload)) return [];
+  if (Array.isArray(payload.data)) return payload.data as AuditLog[];
+  if (isRecord(payload.data) && Array.isArray(payload.data.data)) {
+    return payload.data.data as AuditLog[];
+  }
   return [];
 }
 
@@ -53,9 +60,7 @@ export default function AdminAuditLogsPage() {
         const payload = await response.json();
         const user = payload?.data?.user ?? payload?.data ?? payload?.user ?? payload;
         const roles = Array.isArray(user?.roles) ? user.roles : [];
-        const allowed = roles.some((role: any) =>
-          typeof role === "string" ? role === "SUPER_ADMIN" : role?.name === "SUPER_ADMIN",
-        );
+        const allowed = roles.some((role: unknown) => typeof role === "string" ? role === "SUPER_ADMIN" : isRecord(role) && role.name === "SUPER_ADMIN",)
 
         if (active) setAccess(allowed ? "allowed" : "denied");
       } catch {
@@ -111,9 +116,7 @@ export default function AdminAuditLogsPage() {
     }
   }, [page, action, entityType, from, to]);
 
-  useEffect(() => {
-    if (access === "allowed") loadLogs(page);
-  }, [access, page, loadLogs]);
+  useEffect(() => { if (access === "allowed") { void Promise.resolve().then(() => loadLogs(page)); } }, [access, page, loadLogs]);
 
   function applyFilters(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

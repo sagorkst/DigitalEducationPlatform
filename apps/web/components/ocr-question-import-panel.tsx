@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type OptionKey = "A" | "B" | "C" | "D";
 type SaveState = "NOT_SAVED" | "SAVED" | "FAILED" | "SKIPPED";
@@ -893,6 +893,9 @@ export default function OcrQuestionImportPanel({ embedded = false }: { embedded?
     }
   }
 
+  const saveOcrProgressRef = useRef(saveOcrProgress);
+  saveOcrProgressRef.current = saveOcrProgress;
+
   async function saveVerifiedQuestions() {
     setError("");
     setMessage("");
@@ -1106,7 +1109,7 @@ export default function OcrQuestionImportPanel({ embedded = false }: { embedded?
     }
 
     const timer = window.setTimeout(() => {
-      void saveOcrProgress();
+      void saveOcrProgressRef.current();
     }, 900);
 
     return () => window.clearTimeout(timer);
@@ -1122,6 +1125,7 @@ export default function OcrQuestionImportPanel({ embedded = false }: { embedded?
     progressDirty,
     loading,
     saving,
+    progressSaving,
   ]);
 
   useEffect(() => {

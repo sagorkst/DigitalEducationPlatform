@@ -1,6 +1,8 @@
 
 "use client";
 
+/* eslint-disable @next/next/no-html-link-for-pages -- Native anchors are required for API file downloads. */
+
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import {
@@ -429,7 +431,7 @@ export default function QuestionBankPage() {
   }, []);
 
   useEffect(() => {
-    void loadGroupOptions();
+    void Promise.resolve().then(() => loadGroupOptions());
   }, [loadGroupOptions]);
 
   useEffect(() => {
@@ -481,13 +483,22 @@ export default function QuestionBankPage() {
   }, []);
 
   useEffect(() => {
-    void refreshDraftCount();
+    void Promise.resolve().then(() => refreshDraftCount());
   }, [refreshDraftCount]);
 
   useEffect(() => {
-    setSelectedQuestionIds([]);
-    setAllMatchingSelected(false);
-    setExcludedQuestionIds([]);
+    let cancelled = false;
+
+    Promise.resolve().then(() => {
+      if (cancelled) return;
+      setSelectedQuestionIds([]);
+      setAllMatchingSelected(false);
+      setExcludedQuestionIds([]);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [search, filters]);
 
   const currentFilterPayload = () => ({
@@ -505,10 +516,7 @@ export default function QuestionBankPage() {
   const bulkSelectionCount = allMatchingSelected
     ? Math.max(0, totalQuestions - excludedQuestionIds.length)
     : selectedQuestionIds.length;
-  const bulkChangeSummary = [
-    bulkDifficulty ? `Difficulty: ${bulkDifficulty}` : "",
-    bulkStatus ? `Status: ${bulkStatus}` : "",
-  ].filter(Boolean).join(" · ");
+
 
   const toggleCurrentPageSelection = () => {
     setAllMatchingSelected(false);

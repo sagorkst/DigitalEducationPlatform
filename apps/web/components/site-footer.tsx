@@ -1,4 +1,6 @@
-﻿const footerLinks = [
+import Link from "next/link";
+
+const footerLinks = [
   { label: "একাডেমিক শিক্ষা", href: "/academic" },
   { label: "চাকরি প্রস্তুতি", href: "/career" },
   { label: "ভর্তি প্রস্তুতি", href: "/admission" },
@@ -14,7 +16,7 @@ export default function SiteFooter() {
     <footer className="mt-auto bg-[#101d3a] text-white">
       <div className="mx-auto grid max-w-7xl gap-10 px-5 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <a href="/" className="text-2xl font-black">🎓 শিক্ষাসেতু</a>
+          <Link href="/" className="text-2xl font-black">🎓 শিক্ষাসেতু</Link>
           <p className="mt-5 max-w-xs text-sm leading-7 text-slate-300">
             শিক্ষা, চাকরির প্রস্তুতি ও দক্ষতা উন্নয়নের জন্য একটি সমন্বিত ডিজিটাল প্ল্যাটফর্ম।
           </p>

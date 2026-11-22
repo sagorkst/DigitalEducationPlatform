@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
@@ -44,8 +44,12 @@ const EMPTY_PAGINATION: Pagination = {
   hasPreviousPage: false,
 };
 
-function getErrorMessage(payload: any, fallback: string) {
-  const message = payload?.message;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getErrorMessage(payload: unknown, fallback: string) {
+  const message = isRecord(payload) ? payload.message : undefined;
 
   if (Array.isArray(message)) return message.join(", ");
   if (typeof message === "string") return message;
@@ -217,7 +221,7 @@ export default function AdminUsersPage() {
 
   useEffect(() => {
     if (access === "allowed") {
-      loadUsers();
+      void Promise.resolve().then(() => loadUsers());
     }
   }, [access, loadUsers]);
 

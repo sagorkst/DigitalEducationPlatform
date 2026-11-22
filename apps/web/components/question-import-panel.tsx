@@ -27,6 +27,10 @@ type ImportRow = {
   errorMessages?: string[] | string;
 };
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 const PAGE_SIZE = 100;
 const MAX_FILE_SIZE = 10 * 1024 * 1024;
 
@@ -107,7 +111,7 @@ export default function QuestionImportPanel() {
     { examName: "", examYear: "", postName: "", department: "" },
   ]);
   const [editingRowId, setEditingRowId] = useState("");
-  const [editingData, setEditingData] = useState<Record<string, any> | null>(null);
+  const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
   const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
@@ -422,14 +426,23 @@ export default function QuestionImportPanel() {
   }
 
   function startManualImportEdit(row: ImportRow) {
-    const raw = JSON.parse(JSON.stringify(row.rawData ?? {}));
-    const occurrence = Array.isArray(raw.occurrences)
-      ? raw.occurrences[0] ?? {}
-      : {};
+    const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
 
     setEditingRowId(row.id);
     setEditingData(raw);
-    setEditingOptions(Array.isArray(raw.options) ? raw.options.map((option: any, index: number) => ({ label: String(option.label ?? String.fromCharCode(65 + index)), optionText: String(option.optionText ?? ""), isCorrect: Boolean(option.isCorrect), sortOrder: Number(option.sortOrder ?? index) })) : []);
+    setEditingOptions(
+      Array.isArray(raw.options)
+        ? raw.options.map((option: unknown, index: number) => {
+            const optionData = isRecord(option) ? option : {};
+            return {
+              label: String(optionData.label ?? String.fromCharCode(65 + index)),
+              optionText: String(optionData.optionText ?? ""),
+              isCorrect: Boolean(optionData.isCorrect),
+              sortOrder: Number(optionData.sortOrder ?? index),
+            };
+          })
+        : [],
+    );
     setError("");
     setMessage("");
   }

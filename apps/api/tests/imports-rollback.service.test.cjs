@@ -147,6 +147,7 @@ test('rollback selects only imported rows with non-null question IDs', async () 
   assert.deepEqual(query.include.rows.select, {
     id: true,
     questionId: true,
+    rawData: true,
   });
 });
 

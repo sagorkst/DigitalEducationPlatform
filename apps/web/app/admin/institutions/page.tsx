@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { FormEvent, useCallback, useEffect, useState } from "react";
 
@@ -32,14 +32,9 @@ const emptyForm: FormState = {
   isActive: true,
 };
 
-function unwrap(payload: any) {
-  return payload?.data ?? payload;
-}
+function unwrap(payload: unknown): unknown { if (typeof payload === "object" && payload !== null && "data" in payload) return payload.data; return payload; }
 
-function getMessage(payload: any, fallback: string) {
-  if (Array.isArray(payload?.message)) return payload.message.join(", ");
-  return typeof payload?.message === "string" ? payload.message : fallback;
-}
+function getMessage(payload: unknown, fallback: string) { const message = typeof payload === "object" && payload !== null && "message" in payload ? payload.message : undefined; if (Array.isArray(message)) return message.join(", "); return typeof message === "string" ? message : fallback; }
 
 export default function AdminInstitutionsPage() {
   const [access, setAccess] = useState<"checking" | "allowed" | "denied">("checking");
@@ -76,11 +71,7 @@ export default function AdminInstitutionsPage() {
         const user = payload?.data?.user ?? payload?.data ?? payload?.user ?? payload;
         const roles = Array.isArray(user?.roles) ? user.roles : [];
 
-        const allowed = roles.some((role: any) =>
-          typeof role === "string"
-            ? role === "SUPER_ADMIN"
-            : role?.name === "SUPER_ADMIN",
-        );
+        const allowed = roles.some((role: unknown) => typeof role === "string" ? role === "SUPER_ADMIN" : typeof role === "object" && role !== null && "name" in role && role.name === "SUPER_ADMIN");
 
         if (active) setAccess(allowed ? "allowed" : "denied");
       } catch {
@@ -130,9 +121,7 @@ export default function AdminInstitutionsPage() {
     }
   }, [page, search, typeFilter, activeFilter]);
 
-  useEffect(() => {
-    if (access === "allowed") loadInstitutions();
-  }, [access, loadInstitutions]);
+  useEffect(() => { if (access === "allowed") { void Promise.resolve().then(() => loadInstitutions()); } }, [access, loadInstitutions]);
 
   function applySearch(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

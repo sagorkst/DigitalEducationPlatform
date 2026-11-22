@@ -1,4 +1,6 @@
-﻿type SectionPageProps = {
+import Link from "next/link";
+
+type SectionPageProps = {
   title: string;
   subtitle: string;
   description: string;
@@ -17,9 +19,9 @@ export default function SectionPage({
     <main className="min-h-screen bg-[#f7f9fc] text-slate-800">
       <section className="bg-[#101d3a] px-5 py-20 text-white sm:py-28">
         <div className="mx-auto max-w-7xl">
-          <a href="/" className="text-sm font-semibold text-blue-300 hover:text-white">
+          <Link href="/" className="text-sm font-semibold text-blue-300 hover:text-white">
             ← হোম পেজে ফিরে যান
-          </a>
+          </Link>
 
           <div className="mt-12 max-w-3xl">
             <div className="mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10 text-4xl">
@@ -89,12 +91,12 @@ export default function SectionPage({
           <p className="mt-3 text-slate-600">
             শিক্ষাসেতুর সঙ্গে আপনার লক্ষ্য অর্জনের পথে এগিয়ে চলুন।
           </p>
-          <a
+          <Link
             href="/"
             className="mt-6 inline-flex font-bold text-blue-700 hover:text-blue-900"
           >
             হোম পেজে ফিরে যান →
-          </a>
+          </Link>
         </div>
       </section>
     </main>

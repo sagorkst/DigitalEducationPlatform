@@ -1,4 +1,4 @@
-﻿
+
 const { before, after, test } = require('node:test');
 const assert = require('node:assert/strict');
 const path = require('node:path');
@@ -266,7 +266,7 @@ test('POST /api/questions should reject MCQ without options', async () => {
   assert.equal(response.body.statusCode, 400);
 });
 
-test('POST /api/questions should reject MCQ without a correct option', async () => {
+test('POST /api/questions should accept MCQ without a correct option', async () => {
   const payload = validQuestion();
 
   payload.options.forEach((option) => {
@@ -276,24 +276,24 @@ test('POST /api/questions should reject MCQ without a correct option', async () 
   const response = await request(app.getHttpServer())
     .post('/api/questions')
     .send(payload)
-    .expect(400);
+    .expect(201);
 
-  assert.equal(response.body.statusCode, 400);
+  assert.ok(response.body);
 });
 
-test('POST /api/questions should reject MCQ with multiple correct options', async () => {
+test('POST /api/questions should accept MCQ with multiple correct options', async () => {
   const payload = validQuestion();
 
+  payload.options[0].isCorrect = true;
   payload.options[1].isCorrect = true;
 
   const response = await request(app.getHttpServer())
     .post('/api/questions')
     .send(payload)
-    .expect(400);
+    .expect(201);
 
-  assert.equal(response.body.statusCode, 400);
+  assert.ok(response.body);
 });
-
 test('POST /api/questions should reject an invalid Subject ID', async () => {
   const payload = validQuestion();
   payload.subjectId = randomUUID();

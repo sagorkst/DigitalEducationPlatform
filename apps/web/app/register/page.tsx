@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function RegisterPage() {
@@ -86,9 +87,9 @@ export default function RegisterPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#f5f7fc] px-5 py-12">
       <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl lg:grid-cols-2">
         <section className="hidden flex-col justify-between bg-[#101d3a] p-12 text-white lg:flex">
-          <a href="/" className="text-2xl font-black">
+          <Link href="/" className="text-2xl font-black">
             🎓 শিক্ষাসেতু
-          </a>
+          </Link>
 
           <div>
             <p className="text-sm font-bold tracking-widest text-blue-300">
@@ -111,12 +112,12 @@ export default function RegisterPage() {
 
         <section className="flex items-center justify-center p-7 sm:p-12">
           <div className="w-full max-w-md">
-            <a
+            <Link
               href="/"
               className="text-sm font-semibold text-blue-700 hover:text-blue-900"
             >
               ← হোম পেজে ফিরে যান
-            </a>
+            </Link>
 
             <div className="mt-8">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
@@ -235,8 +236,8 @@ export default function RegisterPage() {
                   className="mt-1 h-4 w-4 accent-blue-700"
                 />
                 <span>
-                  আমি <a href="/terms" className="font-semibold text-blue-700">Terms & Conditions</a> এবং
-                  <a href="/privacy" className="font-semibold text-blue-700"> Privacy Policy</a> মেনে নিচ্ছি।
+                  আমি <Link href="/terms" className="font-semibold text-blue-700">Terms & Conditions</Link> এবং
+                  <Link href="/privacy" className="font-semibold text-blue-700"> Privacy Policy</Link> মেনে নিচ্ছি।
                 </span>
               </label>
 
@@ -257,9 +258,9 @@ export default function RegisterPage() {
 
             <p className="mt-6 text-center text-sm text-slate-600">
               ইতোমধ্যে অ্যাকাউন্ট আছে?
-              <a href="/login" className="ml-1 font-bold text-blue-700 hover:text-blue-900">
+              <Link href="/login" className="ml-1 font-bold text-blue-700 hover:text-blue-900">
                 লগইন করুন
-              </a>
+              </Link>
             </p>
           </div>
         </section>

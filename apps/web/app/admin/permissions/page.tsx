@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -8,17 +8,22 @@ type Permission = {
   description?: string | null;
 };
 
-function unwrap(value: any): any {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function unwrap(value: unknown): unknown {
   let result = value;
-  for (let i = 0; i < 4 && result && !Array.isArray(result) && result.data !== undefined; i++) {
+  for (let i = 0; i < 4 && isRecord(result) && result.data !== undefined; i++) {
     result = result.data;
   }
   return result;
 }
 
-function getError(payload: any, fallback: string): string {
-  if (typeof payload?.message === "string") return payload.message;
-  if (Array.isArray(payload?.message)) return payload.message.join(", ");
+function getError(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) return fallback;
+  if (typeof payload.message === "string") return payload.message;
+  if (Array.isArray(payload.message)) return payload.message.join(", ");
   return fallback;
 }
 
@@ -48,7 +53,7 @@ export default function AdminPermissionsPage() {
     setError("");
     try {
       const result = await request("/api/admin/rbac/permissions");
-      const rows = Array.isArray(result) ? result : Array.isArray(result?.permissions) ? result.permissions : [];
+      const rows: Permission[] = Array.isArray(result) ? result as Permission[] : isRecord(result) && Array.isArray(result.permissions) ? result.permissions as Permission[] : [];
       setPermissions(rows);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not load permissions.");
@@ -64,9 +69,7 @@ export default function AdminPermissionsPage() {
       .then((payload) => {
         const user = payload?.data ?? payload;
         const roles = Array.isArray(user?.roles) ? user.roles : [];
-        const isSuperAdmin = roles.some((role: any) =>
-          (typeof role === "string" ? role : role?.name) === "SUPER_ADMIN"
-        );
+        const isSuperAdmin = roles.some((role: unknown) => (typeof role === "string" ? role : isRecord(role) ? role.name : undefined) === "SUPER_ADMIN");
         if (active) {
           setAllowed(isSuperAdmin);
           setChecking(false);

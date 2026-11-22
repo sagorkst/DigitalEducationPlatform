@@ -622,7 +622,7 @@ test('27 - skips selected rows successfully', async () => {
   const { service, prisma } = createService();
 
   let rowUpdateArgs;
-  let batchUpdateArgs;
+  const batchUpdateCalls = [];
 
   prisma.importRow.updateMany = async (args) => {
     rowUpdateArgs = args;
@@ -630,7 +630,7 @@ test('27 - skips selected rows successfully', async () => {
   };
 
   prisma.importBatch.update = async (args) => {
-    batchUpdateArgs = args;
+    batchUpdateCalls.push(args);
     return {};
   };
 
@@ -641,30 +641,26 @@ test('27 - skips selected rows successfully', async () => {
 
   assert.equal(result.success, true);
   assert.equal(result.data.skippedRows, 2);
-
-  assert.deepEqual(rowUpdateArgs.where.id.in, [
-    'row-001',
-    'row-002',
-  ]);
-
+  assert.deepEqual(rowUpdateArgs.where.id.in, ['row-001', 'row-002']);
   assert.equal(rowUpdateArgs.data.status, 'SKIPPED');
-  assert.deepEqual(
-    batchUpdateArgs.data.skippedRows,
-    { increment: 2 },
+
+  assert.equal(
+    batchUpdateCalls.some(
+      (args) => args.data.skippedRows?.increment === 2,
+    ),
+    true,
   );
 });
 
 test('28 - does not increment skipped count when no rows match', async () => {
   const { service, prisma } = createService();
 
-  let batchUpdated = false;
+  const batchUpdateCalls = [];
 
-  prisma.importRow.updateMany = async () => ({
-    count: 0,
-  });
+  prisma.importRow.updateMany = async () => ({ count: 0 });
 
-  prisma.importBatch.update = async () => {
-    batchUpdated = true;
+  prisma.importBatch.update = async (args) => {
+    batchUpdateCalls.push(args);
     return {};
   };
 
@@ -674,5 +670,11 @@ test('28 - does not increment skipped count when no rows match', async () => {
   );
 
   assert.equal(result.data.skippedRows, 0);
-  assert.equal(batchUpdated, false);
+
+  assert.equal(
+    batchUpdateCalls.some(
+      (args) => args.data.skippedRows?.increment !== undefined,
+    ),
+    false,
+  );
 });

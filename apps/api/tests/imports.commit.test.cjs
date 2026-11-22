@@ -95,6 +95,7 @@ function createHarness(options = {}) {
     },
 
     question: {
+      findFirst: async () => null,
       create: async (args) => {
         calls.questionCreate.push(args);
 
@@ -116,6 +117,40 @@ function createHarness(options = {}) {
 
     exam: {
       findUnique: async () => null,
+      findFirst: async () => ({
+        id: 'exam-created',
+        institutionId: 'institution-created',
+        postId: null,
+        name: 'BCS Preliminary',
+        examYear: 2024,
+      }),
+      create: async () => ({
+        id: 'exam-created',
+        institutionId: 'institution-created',
+        postId: null,
+        name: 'BCS Preliminary',
+        examYear: 2024,
+      }),
+    },
+
+    institution: {
+      findUnique: async () => null,
+      findFirst: async () => null,
+      create: async () => ({
+        id: 'institution-created',
+        name: 'বাংলাদেশ সরকারি কর্ম কমিশন',
+      }),
+    },
+
+    post: {
+      findUnique: async () => null,
+      findFirst: async () => null,
+      create: async () => ({ id: 'post-created', name: 'Test Post' }),
+    },
+
+    questionOccurrence: {
+      findFirst: async () => null,
+      create: async () => ({ id: 'occurrence-created' }),
     },
   };
 
@@ -147,7 +182,7 @@ function createHarness(options = {}) {
 test('commit imports valid question with options and occurrences', async () => {
   const { service, calls } = createHarness();
 
-  const result = await service.commit('batch-1');
+  const result = await service.commit('batch-1', undefined, true);
 
   assert.equal(result.success, true);
   assert.equal(result.data.importedRows, 1);
@@ -176,7 +211,7 @@ test('commit marks failed question row as INVALID', async () => {
     questionCreateError: new Error('Database creation failed'),
   });
 
-  const result = await service.commit('batch-1');
+  const result = await service.commit('batch-1', undefined, true);
 
   assert.equal(result.success, true);
   assert.equal(result.data.importedRows, 0);
@@ -201,7 +236,7 @@ test('commit keeps batch in REVIEW when valid rows remain', async () => {
     remainingValid: 2,
   });
 
-  const result = await service.commit('batch-1');
+  const result = await service.commit('batch-1', undefined, true);
 
   assert.equal(result.data.importedRows, 1);
   assert.equal(result.data.remainingValidRows, 2);
@@ -227,7 +262,7 @@ test('commit rejects batch that cannot be claimed', async () => {
   });
 
   await assert.rejects(
-    () => service.commit('batch-1'),
+    () => service.commit('batch-1', undefined, true),
     /not available for processing/i,
   );
 });
@@ -239,7 +274,7 @@ test('commit rejects missing batch', async () => {
   });
 
   await assert.rejects(
-    () => service.commit('batch-404'),
+    () => service.commit('batch-1', undefined, true),
     /Import batch not found/i,
   );
 });
@@ -250,15 +285,15 @@ test('commit rejects batch without valid rows', async () => {
   });
 
   await assert.rejects(
-    () => service.commit('batch-1'),
-    /No valid rows available/i,
+    () => service.commit('batch-1', undefined, true),
+    /No valid or duplicate rows available/i,
   );
 });
 
 test('commit records imported row and question ID', async () => {
   const { service, calls } = createHarness();
 
-  await service.commit('batch-1');
+  await service.commit('batch-1', undefined, true);
 
   const importedUpdate = calls.rowUpdate.find(
     (item) => item.data.status === 'IMPORTED',
@@ -274,7 +309,7 @@ test('commit rejects unexpected final batch update failure', async () => {
   });
 
   await assert.rejects(
-    () => service.commit('batch-1'),
+    () => service.commit('batch-1', undefined, true),
     /status changed unexpectedly/i,
   );
 });

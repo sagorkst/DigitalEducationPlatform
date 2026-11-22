@@ -95,6 +95,7 @@ function effectiveVisibility(
   overrides: Partial<VisibilitySettings> | undefined,
   mode: VisibilityMode,
 ): VisibilitySettings {
+  if (mode === "global") return global;
 
   return {
     options: overrides?.options ?? global.options,
@@ -680,19 +681,26 @@ export default function PublicQuestionBank({
   ]);
 
   useEffect(() => {
-    void loadInitial();
+    const timer = window.setTimeout(() => {
+      void loadInitial();
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [loadInitial]);
 
   useEffect(() => {
-    setPage(1);
+    const timer = window.setTimeout(() => setPage(1), 0);
+    return () => window.clearTimeout(timer);
   }, [queryString, view]);
 
   useEffect(() => {
-    if (view === "cards") {
-      void loadExams();
-    } else if (view === "all") {
-      void loadQuestions();
-    }
+    const timer = window.setTimeout(() => {
+      if (view === "cards") {
+        void loadExams();
+      } else if (view === "all") {
+        void loadQuestions();
+      }
+    }, 0);
+    return () => window.clearTimeout(timer);
   }, [view, loadExams, loadQuestions]);
 
   const filteredExams = useMemo(() => {
@@ -744,13 +752,7 @@ export default function PublicQuestionBank({
     setPage(1);
   };
 
-  const changeView = (next: ViewMode) => {
-    setView(next);
-    setActiveSummaryCard(next === "cards" ? "exam" : "all");
-    setPage(1);
-  };
-
-  const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "topic") => {
+const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "topic") => {
     setActiveSummaryCard(key);
     if (key === "exam") {
       setView("cards");
@@ -886,6 +888,7 @@ export default function PublicQuestionBank({
         <QuestionVisibilityControls
           visibility={questionVisibility}
           onChange={(key, value) => setQuestionVisibility(question.id, key, value)}
+          disabled={visibilityMode === "global"}
         />
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3">
@@ -1107,11 +1110,17 @@ export default function PublicQuestionBank({
       </div>
 
       {(view === "all" || view === "cards") && (
-        <div className="mb-3 flex flex-wrap items-center gap-2">
-          {view === "all" && (
+        <div className="mb-3 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white p-3">
+          <VisibilityModeSelector mode={visibilityMode} onChange={setVisibilityMode} />
+          {view === "all" && visibilityMode === "global" && (
             <div className="min-w-0 flex-1">
               <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
             </div>
+          )}
+          {view === "all" && visibilityMode === "individual" && (
+            <p className="text-xs text-slate-500">
+              প্রতিটি প্রশ্নের নিচে Options, Answer ও Explanation আলাদাভাবে নিয়ন্ত্রণ করুন।
+            </p>
           )}
         </div>
       )}

@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type UserProfile = {
@@ -59,7 +60,7 @@ export default function DashboardPage() {
   const [authLoading, setAuthLoading] = useState(true);
   const [authError, setAuthError] = useState("");
 
-  async function verifySession() {
+  const verifySession = useCallback(async () => {
     setAuthLoading(true);
     setAuthError("");
 
@@ -87,11 +88,11 @@ export default function DashboardPage() {
     } finally {
       setAuthLoading(false);
     }
-  }
+  }, [router]);
 
   useEffect(() => {
-    void verifySession();
-  }, []);
+    void Promise.resolve().then(() => verifySession());
+  }, [verifySession]);
 
   if (authLoading) {
     return (
@@ -149,9 +150,9 @@ export default function DashboardPage() {
             />
             <aside className="relative h-full w-72 max-w-[85%] overflow-y-auto bg-white p-5 shadow-xl">
               <div className="mb-8 flex items-center justify-between">
-                <a href="/" className="text-xl font-black text-blue-700">
+                <Link href="/" className="text-xl font-black text-blue-700">
                   🎓 শিক্ষাসেতু
-                </a>
+                </Link>
                 <button
                   type="button"
                   onClick={() => setMobileMenuOpen(false)}
@@ -167,7 +168,7 @@ export default function DashboardPage() {
 
               <nav className="space-y-2">
                 {menuItems.map((item) => (
-                  <a
+                  <Link
                     key={item.label}
                     href={item.href || "/dashboard"}
                     onClick={() => setMobileMenuOpen(false)}
@@ -179,27 +180,27 @@ export default function DashboardPage() {
                   >
                     <span>{item.icon}</span>
                     {item.label}
-                  </a>
+                  </Link>
                 ))}
               </nav>
 
-              <a
+              <Link
                 href="/"
                 className="mt-10 block text-sm font-semibold text-slate-500"
               >
                 ← মূল ওয়েবসাইটে ফিরুন
-              </a>
+              </Link>
             </aside>
           </div>
         )}
 
         <aside className="hidden min-h-screen w-64 shrink-0 border-r border-slate-200 bg-white p-5 lg:block">
-          <a
+          <Link
             href="/"
             className="mb-10 flex items-center gap-2 text-xl font-black text-blue-700"
           >
             🎓 শিক্ষাসেতু
-          </a>
+          </Link>
 
           <p className="mb-4 text-xs font-bold tracking-wider text-slate-400">
             MAIN MENU
@@ -207,7 +208,7 @@ export default function DashboardPage() {
 
           <nav className="space-y-2">
             {menuItems.map((item) => (
-              <a
+              <Link
                 key={item.label}
                 href={item.href || "/dashboard"}
                 className={`flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition ${
@@ -218,7 +219,7 @@ export default function DashboardPage() {
               >
                 <span>{item.icon}</span>
                 {item.label}
-              </a>
+              </Link>
             ))}
           </nav>
 
@@ -227,20 +228,20 @@ export default function DashboardPage() {
             <p className="mt-2 text-xs leading-6 text-slate-500">
               নিয়মিত অনুশীলন করুন এবং নিজের দক্ষতা বাড়ান।
             </p>
-            <a
+            <Link
               href="/courses"
               className="mt-3 inline-block text-sm font-bold text-blue-700"
             >
               কোর্স দেখুন →
-            </a>
+            </Link>
           </div>
 
-          <a
+          <Link
             href="/"
             className="mt-10 block text-sm font-semibold text-slate-500 hover:text-blue-700"
           >
             ← মূল ওয়েবসাইটে ফিরুন
-          </a>
+          </Link>
         </aside>
 
         <div className="min-w-0 flex-1 p-5 sm:p-8">
@@ -338,12 +339,12 @@ export default function DashboardPage() {
                     </div>
                   </div>
 
-                  <a
+                  <Link
                     href="/notices"
                     className="mt-2 block rounded-lg bg-blue-50 px-3 py-2 text-center text-sm font-bold text-blue-700 hover:bg-blue-100"
                   >
                     সব নোটিশ দেখুন →
-                  </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -380,12 +381,12 @@ export default function DashboardPage() {
                 নিয়মিত পড়াশোনা, অনুশীলন ও পরীক্ষার মাধ্যমে আপনার লক্ষ্যে
                 পৌঁছানোর প্রস্তুতি নিন।
               </p>
-              <a
+              <Link
                 href="/courses"
                 className="mt-6 inline-block rounded-xl bg-white px-5 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50"
               >
                 শেখা শুরু করুন →
-              </a>
+              </Link>
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -422,9 +423,9 @@ export default function DashboardPage() {
                   আপনার শেখার অগ্রগতি
                 </p>
               </div>
-              <a href="/courses" className="text-sm font-bold text-blue-700">
+              <Link href="/courses" className="text-sm font-bold text-blue-700">
                 সব কোর্স দেখুন →
-              </a>
+              </Link>
             </div>
 
             <div className="space-y-6">
@@ -464,9 +465,9 @@ export default function DashboardPage() {
                   আপনার সর্বশেষ অনুশীলনের ফলাফল
                 </p>
               </div>
-              <a href="/exams" className="text-sm font-bold text-blue-700">
+              <Link href="/exams" className="text-sm font-bold text-blue-700">
                 সব পরীক্ষা →
-              </a>
+              </Link>
             </div>
 
             <div className="overflow-x-auto">
@@ -510,30 +511,30 @@ export default function DashboardPage() {
                 দ্রুত প্রবেশ
               </h2>
               <div className="mt-5 grid grid-cols-2 gap-3">
-                <a
+                <Link
                   href="/question-bank"
                   className="rounded-xl bg-blue-50 p-4 text-sm font-bold text-blue-700 hover:bg-blue-100"
                 >
                   📖 প্রশ্নব্যাংক
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/exams"
                   className="rounded-xl bg-emerald-50 p-4 text-sm font-bold text-emerald-700 hover:bg-emerald-100"
                 >
                   📝 পরীক্ষা
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/library"
                   className="rounded-xl bg-amber-50 p-4 text-sm font-bold text-amber-700 hover:bg-amber-100"
                 >
                   📚 লাইব্রেরি
-                </a>
-                <a
+                </Link>
+                <Link
                   href="/notices"
                   className="rounded-xl bg-purple-50 p-4 text-sm font-bold text-purple-700 hover:bg-purple-100"
                 >
                   📢 নোটিশ
-                </a>
+                </Link>
               </div>
             </div>
 

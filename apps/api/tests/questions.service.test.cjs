@@ -541,11 +541,6 @@ test('19 - Reject invalid MCQ options during update', async () => {
           optionText: 'Option A',
           isCorrect: false,
         },
-        {
-          label: 'B',
-          optionText: 'Option B',
-          isCorrect: false,
-        },
       ],
     }),
     BadRequestException,

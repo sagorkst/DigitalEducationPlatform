@@ -3,6 +3,27 @@
 import { useState } from "react";
 import Link from "next/link";
 
+type ToggleProps = {
+  checked: boolean;
+  onChange: (value: boolean) => void;
+};
+
+function Toggle({ checked, onChange }: ToggleProps) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className={`relative h-6 w-11 rounded-full transition ${checked ? "bg-blue-600" : "bg-gray-300"}`}
+    >
+      <span
+        className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`}
+      />
+    </button>
+  );
+}
+
 export default function SettingsPage() {
   const [language, setLanguage] = useState("বাংলা");
   const [emailNotice, setEmailNotice] = useState(true);
@@ -11,17 +32,9 @@ export default function SettingsPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  const inputClass = "mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-blue-500";
+  const inputClass =
+    "mt-2 w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-700 outline-none focus:border-blue-500";
   const labelClass = "text-sm font-semibold text-gray-600";
-
-  function Toggle({ checked, onChange }: { checked: boolean; onChange: (value: boolean) => void }) {
-    return (
-      <button type="button" role="switch" aria-checked={checked} onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full transition ${checked ? "bg-blue-600" : "bg-gray-300"}`}>
-        <span className={`absolute top-1 h-4 w-4 rounded-full bg-white transition ${checked ? "left-6" : "left-1"}`} />
-      </button>
-    );
-  }
 
   return (
     <main className="min-h-screen bg-[#f5f7fb] px-4 py-8 sm:px-6 lg:px-8">

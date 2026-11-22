@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 export default function RegisterVerifyPage() {
@@ -17,6 +18,7 @@ export default function RegisterVerifyPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    void Promise.resolve().then(() => {
     const savedToken = sessionStorage.getItem(
       "shikhasetu_registration_token",
     );
@@ -32,6 +34,7 @@ export default function RegisterVerifyPage() {
     setToken(savedToken);
     setEmail(savedEmail ?? "");
     setReady(true);
+    });
   }, [router]);
 
   useEffect(() => {
@@ -138,9 +141,9 @@ export default function RegisterVerifyPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[#f5f7fc] px-5 py-12">
       <div className="w-full max-w-lg rounded-3xl bg-white p-7 shadow-xl sm:p-12">
-        <a href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">
+        <Link href="/" className="text-sm font-semibold text-blue-700 hover:text-blue-900">
           ← হোম পেজে ফিরে যান
-        </a>
+        </Link>
 
         <div className="mt-8 flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
           ✉️
@@ -154,12 +157,12 @@ export default function RegisterVerifyPage() {
             <p className="mt-3 leading-7 text-slate-600">
               আপনার অ্যাকাউন্ট সক্রিয় হয়েছে। এখন Login পৃষ্ঠায় নেওয়া হচ্ছে।
             </p>
-            <a
+            <Link
               href="/login"
               className="mt-7 inline-flex rounded-xl bg-blue-700 px-6 py-3 font-bold text-white hover:bg-blue-800"
             >
               লগইন করুন →
-            </a>
+            </Link>
           </div>
         ) : (
           <>

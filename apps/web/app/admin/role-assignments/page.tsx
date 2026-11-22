@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -17,17 +17,22 @@ type User = {
   userRoles?: Array<{ role?: Role }>;
 };
 
-function unwrap(value: any): any {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function unwrap(value: unknown): unknown {
   let result = value;
-  for (let i = 0; i < 4 && result && !Array.isArray(result) && result.data !== undefined; i++) {
+  for (let i = 0; i < 4 && isRecord(result) && result.data !== undefined; i++) {
     result = result.data;
   }
   return result;
 }
 
-function getError(payload: any, fallback: string): string {
-  if (typeof payload?.message === "string") return payload.message;
-  if (Array.isArray(payload?.message)) return payload.message.join(", ");
+function getError(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) return fallback;
+  if (typeof payload.message === "string") return payload.message;
+  if (Array.isArray(payload.message)) return payload.message.join(", ");
   return fallback;
 }
 
@@ -74,7 +79,7 @@ export default function AdminRoleAssignmentsPage() {
 
   const loadRoles = useCallback(async () => {
     const result = await request("/api/admin/rbac/roles");
-    const rows = Array.isArray(result) ? result : Array.isArray(result?.roles) ? result.roles : [];
+    const rows: Role[] = Array.isArray(result) ? result as Role[] : isRecord(result) && Array.isArray(result.roles) ? result.roles as Role[] : [];
     setRoles(rows.filter((role: Role) => role.name !== "SUPER_ADMIN"));
     setSelectedRoleId((current) =>
       rows.some((role: Role) => role.id === current && role.name !== "SUPER_ADMIN")
@@ -93,10 +98,12 @@ export default function AdminRoleAssignmentsPage() {
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(getError(payload, "Could not load users."));
       const result = unwrap(payload);
-      const rows = Array.isArray(result)
-        ? result
-        : Array.isArray(result?.users) ? result.users : [];
-      const pagination = payload?.pagination ?? payload?.data?.pagination ?? result?.pagination;
+      const rows: User[] = Array.isArray(result) ? result as User[] : isRecord(result) && Array.isArray(result.users) ? result.users as User[] : [];
+      const root = isRecord(payload) ? payload : {};
+      const data = isRecord(root.data) ? root.data : {};
+      const resultRecord = isRecord(result) ? result : {};
+      const paginationValue = root.pagination ?? data.pagination ?? resultRecord.pagination;
+      const pagination = isRecord(paginationValue) ? paginationValue : {};
       setUsers(rows);
       setPage(Number(pagination?.page ?? pageNumber) || pageNumber);
       setTotalPages(Math.max(1, Number(pagination?.totalPages ?? 1) || 1));
@@ -119,9 +126,7 @@ export default function AdminRoleAssignmentsPage() {
       .then(async (payload) => {
         const user = payload?.data ?? payload;
         const userRoles = Array.isArray(user?.roles) ? user.roles : [];
-        const isSuperAdmin = userRoles.some((role: any) =>
-          (typeof role === "string" ? role : role?.name) === "SUPER_ADMIN"
-        );
+        const isSuperAdmin = userRoles.some((role: unknown) => (typeof role === "string" ? role : isRecord(role) ? role.name : undefined) === "SUPER_ADMIN");
         if (active) {
           setAllowed(isSuperAdmin);
           setChecking(false);
@@ -186,7 +191,7 @@ export default function AdminRoleAssignmentsPage() {
           <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search by name, email or phone" className="min-w-0 flex-1 rounded-xl border border-slate-300 px-4 py-3 text-sm" />
           <button disabled={loading} className="rounded-xl bg-slate-800 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50">Search Users</button>
         </form>
-        <p className="mt-2 text-xs text-slate-500">Page {page} of {totalPages} · {totalUsers.toLocaleString("en-US")} matching users</p>
+        <p className="mt-2 text-xs text-slate-500">Page {page} of {totalPages} Â· {totalUsers.toLocaleString("en-US")} matching users</p>
       </section>
 
       <section className="grid gap-6 lg:grid-cols-[1fr_1fr]">
@@ -197,7 +202,7 @@ export default function AdminRoleAssignmentsPage() {
               <button key={user.id} onClick={() => setSelectedUserId(user.id)} className={`w-full rounded-xl border p-3 text-left ${selectedUserId === user.id ? "border-emerald-400 bg-emerald-50" : "border-slate-200 hover:bg-slate-50"}`}>
                 <span className="block text-sm font-semibold text-slate-900">{user.name || "Unnamed user"}</span>
                 <span className="mt-1 block break-all text-xs text-slate-500">{user.email || user.phone || user.id}</span>
-                <span className="mt-1 block text-xs text-slate-400">{user.status || "—"}</span>
+                <span className="mt-1 block text-xs text-slate-400">{user.status || "â€”"}</span>
               </button>
             ))}
             {!users.length && <p className="text-sm text-slate-500">No users found.</p>}
@@ -218,7 +223,7 @@ export default function AdminRoleAssignmentsPage() {
               <div className="mt-3 rounded-xl bg-slate-50 p-4">
                 <p className="font-semibold text-slate-900">{selectedUser.name || "Unnamed user"}</p>
                 <p className="mt-1 break-all text-sm text-slate-500">{selectedUser.email || "No email"}</p>
-                <p className="mt-1 text-xs text-slate-500">Status: {selectedUser.status || "—"}</p>
+                <p className="mt-1 text-xs text-slate-500">Status: {selectedUser.status || "â€”"}</p>
               </div>
 
               <div className="mt-4 flex flex-col gap-2 sm:flex-row">

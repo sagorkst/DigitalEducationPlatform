@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -75,6 +75,10 @@ function effectiveVisibility(
   overrides: Partial<VisibilitySettings> | undefined,
   mode: VisibilityMode,
 ): VisibilitySettings {
+
+  if (mode === "global") {
+    return global;
+  }
 
   return {
     options: overrides?.options ?? global.options,
@@ -551,13 +555,7 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
       }
     });
   }, [globalVisibility, visibilityMode, getEffectiveVisibility, loading, visibleQuestions, answers, loadingAnswers, loadAnswer]);
-
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [subjectFilter, topicFilter, difficultyFilter, sortOrder]);
-
-  function resetFilters() {
+function resetFilters() {
     setSubjectFilter("");
     setTopicFilter("");
     setDifficultyFilter("");
@@ -621,6 +619,7 @@ export default function PublicExamQuestions({ examId }: { examId: string }) {
               </div>
 
               <div className="flex flex-col items-end gap-3">
+                <VisibilityModeSelector mode={visibilityMode} onChange={setVisibilityMode} />
                 <GlobalVisibilityControls visibility={globalVisibility} onChange={setGlobalVisibility} />
               </div>
             </div>

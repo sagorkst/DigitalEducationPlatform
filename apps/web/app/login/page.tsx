@@ -1,6 +1,7 @@
-﻿"use client";
+"use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 
 type LoginApiResponse = {
@@ -65,9 +66,9 @@ export default function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-[#f5f7fc] px-5 py-12">
       <div className="grid w-full max-w-5xl overflow-hidden rounded-3xl bg-white shadow-xl lg:grid-cols-2">
         <section className="hidden flex-col justify-between bg-[#101d3a] p-12 text-white lg:flex">
-          <a href="/" className="text-2xl font-black">
+          <Link href="/" className="text-2xl font-black">
             🎓 শিক্ষাসেতু
-          </a>
+          </Link>
 
           <div>
             <p className="text-sm font-bold tracking-widest text-blue-300">
@@ -94,12 +95,12 @@ export default function LoginPage() {
 
         <section className="flex items-center justify-center p-7 sm:p-12">
           <div className="w-full max-w-md">
-            <a
+            <Link
               href="/"
               className="text-sm font-semibold text-blue-700 hover:text-blue-900"
             >
               ← হোম পেজে ফিরে যান
-            </a>
+            </Link>
 
             <div className="mt-10">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50 text-3xl">
@@ -186,12 +187,12 @@ export default function LoginPage() {
               <div className="h-px flex-1 bg-slate-200" />
             </div>
 
-            <a
+            <Link
               href="/register"
               className="block w-full rounded-xl border border-blue-200 px-5 py-3.5 text-center font-bold text-blue-700 transition hover:bg-blue-50"
             >
               নতুন অ্যাকাউন্ট তৈরি করুন
-            </a>
+            </Link>
 
             <p className="mt-8 text-center text-xs text-slate-400">
               শিক্ষাসেতু — শিক্ষা ও ক্যারিয়ারের বিশ্বস্ত সঙ্গী

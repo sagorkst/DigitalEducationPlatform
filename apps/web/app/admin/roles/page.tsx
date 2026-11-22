@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -19,17 +19,22 @@ type Role = {
   };
 };
 
-function unwrap(value: any): any {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function unwrap(value: unknown): unknown {
   let result = value;
-  for (let i = 0; i < 4 && result && !Array.isArray(result) && result.data !== undefined; i++) {
+  for (let i = 0; i < 4 && isRecord(result) && result.data !== undefined; i++) {
     result = result.data;
   }
   return result;
 }
 
-function getError(payload: any, fallback: string): string {
-  if (typeof payload?.message === "string") return payload.message;
-  if (Array.isArray(payload?.message)) return payload.message.join(", ");
+function getError(payload: unknown, fallback: string): string {
+  if (!isRecord(payload)) return fallback;
+  if (typeof payload.message === "string") return payload.message;
+  if (Array.isArray(payload.message)) return payload.message.join(", ");
   return fallback;
 }
 
@@ -69,12 +74,12 @@ export default function AdminRolesPage() {
         request("/api/admin/rbac/permissions"),
       ]);
 
-      const roleRows = Array.isArray(roleResult)
-        ? roleResult
-        : Array.isArray(roleResult?.roles) ? roleResult.roles : [];
-      const permissionRows = Array.isArray(permissionResult)
-        ? permissionResult
-        : Array.isArray(permissionResult?.permissions) ? permissionResult.permissions : [];
+      const roleRows: Role[] = Array.isArray(roleResult)
+        ? roleResult as Role[]
+        : isRecord(roleResult) && Array.isArray(roleResult.roles) ? roleResult.roles as Role[] : [];
+      const permissionRows: Permission[] = Array.isArray(permissionResult)
+        ? permissionResult as Permission[]
+        : isRecord(permissionResult) && Array.isArray(permissionResult.permissions) ? permissionResult.permissions as Permission[] : [];
 
       setRoles(roleRows);
       setPermissions(permissionRows);
@@ -97,9 +102,7 @@ export default function AdminRolesPage() {
       .then((payload) => {
         const user = payload?.data ?? payload;
         const userRoles = Array.isArray(user?.roles) ? user.roles : [];
-        const isSuperAdmin = userRoles.some((role: any) =>
-          (typeof role === "string" ? role : role?.name) === "SUPER_ADMIN"
-        );
+        const isSuperAdmin = userRoles.some((role: unknown) => (typeof role === "string" ? role : isRecord(role) ? role.name : undefined) === "SUPER_ADMIN");
         if (active) {
           setAllowed(isSuperAdmin);
           setChecking(false);

@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import {
   useCallback,
@@ -6,7 +6,9 @@ import {
   useRef,
   useState,
 } from "react";
+import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type UserProfile = {
   id: string;
@@ -40,6 +42,7 @@ function getAvatarUrl(avatar: string | null) {
 }
 
 export default function ProfilePage() {
+  const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
 
   const [name, setName] = useState("");
@@ -77,7 +80,7 @@ export default function ProfilePage() {
 
       if (!response.ok || !result.success || !result.data) {
         if (response.status === 401 || response.status === 403) {
-          window.location.assign("/login");
+          router.replace("/login");
           return;
         }
 
@@ -99,10 +102,10 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
-    void loadProfile();
+    void Promise.resolve().then(() => loadProfile());
   }, [loadProfile]);
 
   useEffect(() => {
@@ -374,9 +377,12 @@ export default function ProfilePage() {
             <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center shadow-sm">
               <div className="relative mx-auto h-28 w-28">
                 {previewUrl || avatarUrl ? (
-                  <img
+                  <Image
                     src={previewUrl || avatarUrl || ""}
                     alt="Profile Photo"
+                    width={112}
+                    height={112}
+                    unoptimized
                     className="h-28 w-28 rounded-full border-4 border-blue-50 object-cover"
                   />
                 ) : (

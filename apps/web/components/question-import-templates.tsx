@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import Link from "next/link";
 
 export default function QuestionImportTemplates() {
   const menuRef = useRef<HTMLDetailsElement>(null);
@@ -55,7 +56,7 @@ export default function QuestionImportTemplates() {
           <p className="mt-0.5 text-[10px] text-slate-500">আপনার প্রয়োজনীয় ফরম্যাট বেছে নিন।</p>
         </div>
 
-        <a
+        <Link
           href="/api/imports/template?format=xlsx"
           onClick={closeMenu}
           className="flex items-center gap-2.5 rounded-lg p-2 transition hover:bg-emerald-50"
@@ -68,9 +69,9 @@ export default function QuestionImportTemplates() {
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-emerald-600">
             <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v3h14v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </a>
+        </Link>
 
-        <a
+        <Link
           href="/api/imports/template?format=csv"
           onClick={closeMenu}
           className="flex items-center gap-2.5 rounded-lg p-2 transition hover:bg-blue-50"
@@ -83,7 +84,7 @@ export default function QuestionImportTemplates() {
           <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 text-blue-600">
             <path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v3h14v-3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
-        </a>
+        </Link>
       </div>
     </details>
   );

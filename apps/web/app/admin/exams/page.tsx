@@ -40,15 +40,23 @@ const emptyForm: ExamForm = {
   institutionId: "",
 };
 
-function getMessage(payload: any, fallback: string) {
-  if (Array.isArray(payload?.message)) return payload.message.join(", ");
-  return typeof payload?.message === "string" ? payload.message : fallback;
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function getRows(payload: any): Exam[] {
-  if (Array.isArray(payload)) return payload;
-  if (Array.isArray(payload?.data)) return payload.data;
-  if (Array.isArray(payload?.data?.data)) return payload.data.data;
+function getMessage(payload: unknown, fallback: string) {
+  const message = isRecord(payload) ? payload.message : undefined;
+  if (Array.isArray(message)) return message.join(", ");
+  return typeof message === "string" ? message : fallback;
+}
+
+function getRows(payload: unknown): Exam[] {
+  if (Array.isArray(payload)) return payload as Exam[];
+  if (!isRecord(payload)) return [];
+  if (Array.isArray(payload.data)) return payload.data as Exam[];
+  if (isRecord(payload.data) && Array.isArray(payload.data.data)) {
+    return payload.data.data as Exam[];
+  }
   return [];
 }
 
@@ -85,10 +93,10 @@ export default function AdminExamsPage() {
         const user = payload?.data?.user ?? payload?.data ?? payload?.user ?? payload;
         const roles = Array.isArray(user?.roles) ? user.roles : [];
 
-        const allowed = roles.some((role: any) =>
+        const allowed = roles.some((role: unknown) =>
           typeof role === "string"
             ? role === "SUPER_ADMIN"
-            : role?.name === "SUPER_ADMIN",
+            : isRecord(role) && role.name === "SUPER_ADMIN",
         );
 
         if (active) setAccess(allowed ? "allowed" : "denied");
@@ -134,7 +142,9 @@ export default function AdminExamsPage() {
   }, []);
 
   useEffect(() => {
-    if (access === "allowed") loadData();
+    if (access === "allowed") {
+      void Promise.resolve().then(() => loadData());
+    }
   }, [access, loadData]);
 
   function startCreate() {

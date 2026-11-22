@@ -1,6 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 type AuthUser = {
   id?: string;
@@ -10,26 +13,38 @@ type AuthUser = {
   avatar?: string | null;
 };
 
-function getAuthenticatedUser(payload: any): AuthUser | null {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function getOptionalString(value: unknown): string | null | undefined {
+  return typeof value === "string" || value === null ? value : undefined;
+}
+
+function getAuthenticatedUser(payload: unknown): AuthUser | null {
+  const root = isRecord(payload) ? payload : {};
+  const data = isRecord(root.data) ? root.data : {};
   const candidates = [
-    payload?.data?.user,
-    payload?.data?.account,
-    payload?.user,
-    payload?.account,
-    payload?.data,
-  ].filter(Boolean);
+    data.user,
+    data.account,
+    root.user,
+    root.account,
+    root.data,
+  ].filter(isRecord);
 
   for (const item of candidates) {
-    if (
-      typeof item === "object" &&
-      (item.id || item.name || item.email || item.phone)
-    ) {
+    const id = getOptionalString(item.id);
+    const name = getOptionalString(item.name);
+    const email = getOptionalString(item.email);
+    const phone = getOptionalString(item.phone);
+
+    if (id || name || email || phone) {
       return {
-        id: item.id,
-        name: item.name,
-        email: item.email,
-        phone: item.phone,
-        avatar: item.avatar ?? null,
+        id: id ?? undefined,
+        name: name ?? undefined,
+        email,
+        phone,
+        avatar: getOptionalString(item.avatar) ?? null,
       };
     }
   }
@@ -37,36 +52,37 @@ function getAuthenticatedUser(payload: any): AuthUser | null {
   return null;
 }
 
-function hasRole(payload: any, expectedRole: string): boolean {
+function hasRole(payload: unknown, expectedRole: string): boolean {
+  const root = isRecord(payload) ? payload : {};
+  const data = isRecord(root.data) ? root.data : {};
   const candidates = [
-    payload?.data?.user,
-    payload?.data?.account,
-    payload?.data,
-    payload?.user,
-    payload?.account,
-  ].filter(Boolean);
+    data.user,
+    data.account,
+    root.data,
+    root.user,
+    root.account,
+  ].filter(isRecord);
 
   for (const item of candidates) {
-    const roles = [
+    const roleValues: unknown[] = [
       item.role,
       ...(Array.isArray(item.roles) ? item.roles : []),
-    ]
-      .map((role: any) =>
-        typeof role === "string"
-          ? role
-          : role?.name ?? role?.code ?? role?.role,
-      )
-      .filter(Boolean)
-      .map((role: string) => role.toUpperCase());
+    ];
 
-    if (roles.includes(expectedRole)) {
-      return true;
-    }
+    const roles = roleValues
+      .map((role) => {
+        if (typeof role === "string") return role;
+        if (!isRecord(role)) return null;
+        return role.name ?? role.code ?? role.role;
+      })
+      .filter((role): role is string => typeof role === "string")
+      .map((role) => role.toUpperCase());
+
+    if (roles.includes(expectedRole)) return true;
   }
 
   return false;
 }
-
 const API_ORIGIN = (
   process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000"
 ).replace(/\/api\/?$/, "");
@@ -82,18 +98,19 @@ function getAvatarUrl(avatar?: string | null) {
 }
 
 const links = [
-  { label: "হোম", href: "/" },
-  { label: "একাডেমিক", href: "/academic" },
-  { label: "চাকরি প্রস্তুতি", href: "/career" },
-  { label: "ভর্তি", href: "/admission" },
-  { label: "দক্ষতা উন্নয়ন", href: "/skills" },
-  { label: "কোর্স", href: "/courses" },
-  { label: "প্রশ্নব্যাংক", href: "/question-bank" },
-  { label: "পরীক্ষা", href: "/exams" },
-  { label: "লাইব্রেরি", href: "/library" },
+  { label: "à¦¹à§‹à¦®", href: "/" },
+  { label: "à¦à¦•à¦¾à¦¡à§‡à¦®à¦¿à¦•", href: "/academic" },
+  { label: "à¦šà¦¾à¦•à¦°à¦¿ à¦ªà§à¦°à¦¸à§à¦¤à§à¦¤à¦¿", href: "/career" },
+  { label: "à¦­à¦°à§à¦¤à¦¿", href: "/admission" },
+  { label: "à¦¦à¦•à§à¦·à¦¤à¦¾ à¦‰à¦¨à§à¦¨à§Ÿà¦¨", href: "/skills" },
+  { label: "à¦•à§‹à¦°à§à¦¸", href: "/courses" },
+  { label: "à¦ªà§à¦°à¦¶à§à¦¨à¦¬à§à¦¯à¦¾à¦‚à¦•", href: "/question-bank" },
+  { label: "à¦ªà¦°à§€à¦•à§à¦·à¦¾", href: "/exams" },
+  { label: "à¦²à¦¾à¦‡à¦¬à§à¦°à§‡à¦°à¦¿", href: "/library" },
 ];
 
 export default function SiteHeader() {
+  const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
@@ -211,7 +228,7 @@ export default function SiteHeader() {
 
       if (!response.ok || !result?.success) {
         setLogoutError(
-          result?.message ?? "Logout করা যায়নি। আবার চেষ্টা করুন।",
+          result?.message ?? "Logout à¦•à¦°à¦¾ à¦¯à¦¾à§Ÿà¦¨à¦¿à¥¤ à¦†à¦¬à¦¾à¦° à¦šà§‡à¦·à§à¦Ÿà¦¾ à¦•à¦°à§à¦¨à¥¤",
         );
         return;
       }
@@ -220,9 +237,9 @@ export default function SiteHeader() {
       setIsSuperAdmin(false);
 
       window.dispatchEvent(new Event("shikhasetu:auth-changed"));
-      window.location.assign("/");
+      router.push("/");
     } catch {
-      setLogoutError("সার্ভারের সঙ্গে সংযোগ করা যাচ্ছে না।");
+      setLogoutError("à¦¸à¦¾à¦°à§à¦­à¦¾à¦°à§‡à¦° à¦¸à¦™à§à¦—à§‡ à¦¸à¦‚à¦¯à§‹à¦— à¦•à¦°à¦¾ à¦¯à¦¾à¦šà§à¦›à§‡ à¦¨à¦¾à¥¤");
     } finally {
       setLogoutLoading(false);
     }
@@ -233,14 +250,14 @@ export default function SiteHeader() {
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between gap-3 px-4 py-3 sm:px-5 sm:py-4">
-        <a href="/" className="flex shrink-0 items-center gap-2">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-700 text-xl text-white">
-            🎓
+            ðŸŽ“
           </span>
           <span className="text-xl font-black tracking-tight text-slate-900">
-            শিক্ষাসেতু
+            à¦¶à¦¿à¦•à§à¦·à¦¾à¦¸à§‡à¦¤à§
           </span>
-        </a>
+        </Link>
 
         <nav className="hidden items-center gap-5 xl:flex">
           {links.map((link) => (
@@ -283,15 +300,11 @@ export default function SiteHeader() {
               <a
                 href="/dashboard/profile"
                 className="flex items-center gap-2.5 px-3 py-2 transition hover:bg-blue-50 sm:px-4"
-                aria-label="আমার প্রোফাইল"
+                aria-label="à¦†à¦®à¦¾à¦° à¦ªà§à¦°à§‹à¦«à¦¾à¦‡à¦²"
               >
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full bg-blue-100 text-blue-700">
                   {avatarUrl ? (
-                    <img
-                      src={avatarUrl}
-                      alt="Profile"
-                      className="h-full w-full object-cover"
-                    />
+                    <Image src={avatarUrl} alt="Profile" width={32} height={32} unoptimized className="h-full w-full object-cover" />
                   ) : (
                     <svg
                       viewBox="0 0 24 24"
@@ -308,7 +321,7 @@ export default function SiteHeader() {
                 </span>
 
                 <span className="hidden text-sm font-bold text-slate-700 sm:inline">
-                  প্রোফাইল
+                  à¦ªà§à¦°à§‹à¦«à¦¾à¦‡à¦²
                 </span>
               </a>
 
@@ -333,7 +346,7 @@ export default function SiteHeader() {
                   <path d="M12 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-6" />
                 </svg>
                 <span className="hidden sm:inline">
-                  {logoutLoading ? "অপেক্ষা করুন..." : "লগআউট"}
+                  {logoutLoading ? "à¦…à¦ªà§‡à¦•à§à¦·à¦¾ à¦•à¦°à§à¦¨..." : "à¦²à¦—à¦†à¦‰à¦Ÿ"}
                 </span>
               </button>
             </div>
@@ -353,14 +366,14 @@ export default function SiteHeader() {
                 <circle cx="12" cy="8" r="3.5" />
                 <path d="M5 20c.6-3.5 3.3-5.5 7-5.5s6.4 2 7 5.5" />
               </svg>
-              লগইন
+              à¦²à¦—à¦‡à¦¨
             </a>
           )}
 
           <details className="relative xl:hidden">
             <summary className="flex cursor-pointer list-none items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-bold text-slate-700 transition hover:bg-slate-50">
-              <span className="hidden sm:inline">মেনু</span>
-              <span className="text-lg">☰</span>
+              <span className="hidden sm:inline">à¦®à§‡à¦¨à§</span>
+              <span className="text-lg">â˜°</span>
             </summary>
 
             <nav className="absolute right-0 top-14 z-50 max-h-[75vh] w-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-3 shadow-xl">

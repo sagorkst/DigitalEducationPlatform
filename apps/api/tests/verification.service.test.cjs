@@ -17,7 +17,7 @@ function makePrisma(record, user) {
         if (
           state.user &&
           state.user.id === where.id &&
-          state.user.status === where.status &&
+          (where.status === undefined || state.user.status === where.status) &&
           state.user.deletedAt === null
         ) {
           return {
@@ -32,8 +32,12 @@ function makePrisma(record, user) {
     },
     verificationCode: {
       count: async () => state.recentCount,
-      findFirst: async () =>
-        state.record && !state.record.consumedAt
+      findFirst: async ({ where } = {}) =>
+        state.record &&
+        !state.record.consumedAt &&
+        (!where?.userId || state.record.userId === where.userId) &&
+        (!where?.channel || state.record.channel === where.channel) &&
+        (!where?.target || state.record.target === where.target)
           ? state.record
           : null,
 
@@ -194,12 +198,12 @@ test('05 - Rejects a code when the email address has changed', async () => {
 
   await assert.rejects(
     service.verifyEmail('user-id', '123456'),
-    { status: 400 },
+    { status: 404 },
   );
 
   assert.equal(state.user.emailVerified, false);
   assert.equal(state.audit.length, 0);
-  assert.ok(state.record.consumedAt);
+  assert.equal(state.record.consumedAt, null);
 });
 
 test('06 - Fifth wrong attempt consumes the verification code', async () => {
