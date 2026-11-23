@@ -448,7 +448,7 @@ export default function QuestionImportPanel() {
     setMessage("");
   }
 
-  async function applyBatchMetadataNow() {
+  async function applyBatchMetadataNow(setAsPrimary = false) {
     if (!batchId) return;
 
     const occurrences = batchOccurrences
@@ -469,7 +469,13 @@ export default function QuestionImportPanel() {
       rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
       applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
       overwriteExisting: batchOverwriteExisting,
+      setAsPrimary,
     };
+
+    if (setAsPrimary && !body.examName && !body.occurrences?.length) {
+      setError("Primary Occurrence নির্ধারণের জন্য Exam Name দিন।");
+      return;
+    }
 
     if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
@@ -500,7 +506,9 @@ export default function QuestionImportPanel() {
         current ? { ...current, ...counts } : current,
       );
       await loadRows(batchId, page);
-      setMessage(`Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
+      setMessage(setAsPrimary
+        ? `Primary Occurrence ${payload.updatedRows ?? 0}টি প্রশ্নের জন্য নির্ধারণ করা হয়েছে। অন্য Exam Occurrence অক্ষত আছে।`
+        : `Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
     } finally {
@@ -885,6 +893,14 @@ export default function QuestionImportPanel() {
                       className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                     >
                       {batchOverwriteExisting ? "Replace Existing Metadata & Revalidate" : "Apply to Missing Fields & Revalidate"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => applyBatchMetadataNow(true)}
+                      disabled={loading || (!batchMetadata.examName.trim() && !batchOccurrences.some((item) => item.examName.trim()))}
+                      className="mt-2 ml-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
+                    >
+                      Apply as Primary Occurrence to All / Selected
                     </button>
                   </section>
 
