@@ -643,7 +643,7 @@ export class ImportsService {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
       const year = resolved.examYear;
       const identityIsComplete = Boolean(
-        resolved.institution && resolved.examName && resolved.postName && year !== null,
+        resolved.institution && resolved.examName && year !== null,
       );
       if (identityIsComplete) {
         const existing = await tx.questionOccurrence.findMany({
@@ -654,7 +654,7 @@ export class ImportsService {
           item.examYear !== null &&
           this.normalizeText(item.institution ?? '') === this.normalizeText(resolved.institution ?? '') &&
           this.normalizeText(item.examName ?? '') === this.normalizeText(resolved.examName ?? '') &&
-          this.normalizeText(item.postName ?? '') === this.normalizeText(resolved.postName ?? '') &&
+          (!resolved.postName || this.normalizeText(item.postName ?? '') === this.normalizeText(resolved.postName)) &&
           item.examYear === year,
         );
         if (resolved.isPrimary) {
