@@ -421,6 +421,43 @@ test('15 - rejects duplicate occurrence', async () => {
   );
 });
 
+test('15b - detects duplicate identity despite case and whitespace differences', async () => {
+  const { service, prisma } = createService();
+
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({
+      id: 'normalized-duplicate',
+      institution: '  bangladesh   public service commission ',
+      examName: 'bcs   PRELIMINARY',
+      postName: ' assistant   director ',
+    }),
+  ];
+
+  await assert.rejects(
+    service.create(QUESTION_ID, legacyDto),
+    ConflictException,
+  );
+});
+
+test('15c - allows a new occurrence when Exam Year differs', async () => {
+  const { service, prisma } = createService();
+
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'different-year', examYear: 2024 }),
+  ];
+
+  let createCalled = false;
+  prisma.questionOccurrence.create = async ({ data }) => {
+    createCalled = true;
+    return createOccurrence(data);
+  };
+
+  const result = await service.create(QUESTION_ID, legacyDto);
+
+  assert.equal(result.success, true);
+  assert.equal(createCalled, true);
+});
+
 test('16 - converts Prisma P2002 into ConflictException', async () => {
   const { service, prisma } = createService();
 
