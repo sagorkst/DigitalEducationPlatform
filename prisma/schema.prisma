@@ -332,8 +332,8 @@ model Question {
   optionC       String?
   optionD       String?
   correctAnswer String?
-  subject       String
-  topic         String
+  subject       String         @default("")
+  topic         String         @default("")
 
   explanation   String?
   difficulty    Difficulty     @default(MEDIUM)
@@ -385,9 +385,9 @@ model QuestionOccurrence {
   questionId String @db.Uuid
 
   // Legacy text fields retained for existing data format
-  institution    String
-  examName       String
-  examYear       Int
+  institution    String?
+  examName       String?
+  examYear       Int?
   postName       String?
   department     String?
   questionNumber Int?
