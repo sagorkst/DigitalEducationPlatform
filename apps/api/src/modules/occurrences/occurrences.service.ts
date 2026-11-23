@@ -49,9 +49,9 @@ export class OccurrencesService {
 
   private async resolveReferences(
     data: {
-      institution?: string;
-      examName?: string;
-      examYear?: number;
+      institution?: string | null;
+      examName?: string | null;
+      examYear?: number | null;
       postName?: string | null;
       source?: string | null;
       institutionId?: string | null;
@@ -188,21 +188,18 @@ export class OccurrencesService {
     // REQUIRED FIELD VALIDATION
     // ==========================================
 
-    if (!institution?.trim() || !examName?.trim()) {
-      throw new BadRequestException(
-        'Institution এবং Exam Name আবশ্যক।',
-      );
+    if (institution !== undefined && institution !== null && !institution.trim()) {
+      institution = null;
     }
 
-    if (
-      examYear === undefined ||
-      !Number.isInteger(examYear) ||
-      examYear < 1900 ||
-      examYear > 2100
-    ) {
-      throw new BadRequestException(
-        'সঠিক Exam Year প্রদান করতে হবে।',
-      );
+    if (examName !== undefined && examName !== null && !examName.trim()) {
+      examName = null;
+    }
+
+    if (examYear !== undefined && examYear !== null && (
+      !Number.isInteger(examYear) || examYear < 1900 || examYear > 2100
+    )) {
+      throw new BadRequestException('সঠিক Exam Year প্রদান করতে হবে।');
     }
 
     return {
@@ -253,9 +250,9 @@ export class OccurrencesService {
     data: {
       questionId: string;
       examId?: string | null;
-      examName: string;
-      institution: string;
-      examYear: number;
+      examName?: string | null;
+      institution?: string | null;
+      examYear?: number | null;
       postId?: string | null;
       postName?: string | null;
       questionNumber?: number | null;
@@ -263,20 +260,36 @@ export class OccurrencesService {
     excludeId?: string,
     db: any = this.prisma,
   ) {
+    // Incomplete occurrence metadata must never be merged as a duplicate.
+    const hasCompleteIdentity = Boolean(
+      data.institution?.trim() &&
+      data.examName?.trim() &&
+      data.postName?.trim() &&
+      data.examYear !== undefined &&
+      data.examYear !== null
+    );
+
+    if (!data.examId && !hasCompleteIdentity) {
+      return;
+    }
+
     const where: any = {
       questionId: data.questionId,
-      examYear: data.examYear,
       questionNumber: data.questionNumber ?? null,
     };
 
     if (data.examId) {
       where.examId = data.examId;
+      if (data.examYear !== undefined && data.examYear !== null) {
+        where.examYear = data.examYear;
+      }
       where.postId = data.postId ?? null;
     } else {
       where.examId = null;
       where.institution = data.institution;
       where.examName = data.examName;
-      where.postName = data.postName ?? null;
+      where.examYear = data.examYear;
+      where.postName = data.postName;
       where.postId = data.postId ?? null;
     }
 
@@ -555,10 +568,14 @@ export class OccurrencesService {
           const references = await this.resolveReferences(
             {
               institution:
-                dto.institution ?? existing.institution,
+                dto.institution !== undefined
+                  ? dto.institution
+                  : existing.institution,
 
               examName:
-                dto.examName ?? existing.examName,
+                dto.examName !== undefined
+                  ? dto.examName
+                  : existing.examName,
 
               examYear: requestedExamYear,
 
