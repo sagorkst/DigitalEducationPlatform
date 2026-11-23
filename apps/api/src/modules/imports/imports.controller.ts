@@ -516,6 +516,7 @@ export class ImportsController {
       rowIds?: unknown;
       applyTo?: unknown;
       overwriteExisting?: unknown;
+      setAsPrimary?: unknown;
     },
   ) {
     return this.importsService.applyBatchMetadata(id, body);
