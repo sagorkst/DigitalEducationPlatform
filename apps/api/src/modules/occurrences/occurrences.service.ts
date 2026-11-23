@@ -249,59 +249,62 @@ export class OccurrencesService {
   private async ensureNoDuplicate(
     data: {
       questionId: string;
-      examId?: string | null;
       examName?: string | null;
       institution?: string | null;
       examYear?: number | null;
-      postId?: string | null;
       postName?: string | null;
-      questionNumber?: number | null;
     },
     excludeId?: string,
     db: any = this.prisma,
   ) {
-    // Incomplete occurrence metadata must never be merged as a duplicate.
-    const hasCompleteIdentity = Boolean(
-      data.institution?.trim() &&
-      data.examName?.trim() &&
-      data.postName?.trim() &&
-      data.examYear !== undefined &&
-      data.examYear !== null
-    );
+    const normalizeIdentityText = (value: string | null | undefined) =>
+      (value ?? '').trim().replace(/\\s+/g, ' ').toLocaleLowerCase();
 
-    if (!data.examId && !hasCompleteIdentity) {
+    // Incomplete metadata is allowed, but cannot establish duplicate identity.
+    const institution = normalizeIdentityText(data.institution);
+    const examName = normalizeIdentityText(data.examName);
+    const postName = normalizeIdentityText(data.postName);
+    const examYear = data.examYear;
+
+    if (
+      !institution ||
+      !examName ||
+      !postName ||
+      examYear === undefined ||
+      examYear === null
+    ) {
       return;
     }
 
-    const where: any = {
-      questionId: data.questionId,
-      questionNumber: data.questionNumber ?? null,
-    };
+    // Compare all four identity fields in application code so legacy values
+    // with different casing or repeated whitespace are treated consistently.
+    const existingOccurrences = await db.questionOccurrence.findMany({
+      where: { questionId: data.questionId },
+      select: {
+        id: true,
+        institution: true,
+        examName: true,
+        postName: true,
+        examYear: true,
+      },
+    });
 
-    if (data.examId) {
-      where.examId = data.examId;
-      if (data.examYear !== undefined && data.examYear !== null) {
-        where.examYear = data.examYear;
-      }
-      where.postId = data.postId ?? null;
-    } else {
-      where.examId = null;
-      where.institution = data.institution;
-      where.examName = data.examName;
-      where.examYear = data.examYear;
-      where.postName = data.postName;
-      where.postId = data.postId ?? null;
-    }
+    const duplicate = existingOccurrences.some((occurrence: {
+      id: string;
+      institution: string | null;
+      examName: string | null;
+      postName: string | null;
+      examYear: number | null;
+    }) => {
+      if (excludeId && occurrence.id === excludeId) return false;
 
-    if (excludeId) {
-      where.id = { not: excludeId };
-    }
-
-    const duplicate =
-      await db.questionOccurrence.findFirst({
-        where,
-        select: { id: true },
-      });
+      return (
+        normalizeIdentityText(occurrence.institution) === institution &&
+        normalizeIdentityText(occurrence.examName) === examName &&
+        normalizeIdentityText(occurrence.postName) === postName &&
+        occurrence.examYear === examYear
+      );
+    });
 
     if (duplicate) {
       throw new ConflictException(
