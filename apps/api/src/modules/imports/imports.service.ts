@@ -352,8 +352,8 @@ export class ImportsService {
       if (!Array.isArray(options)) {
         errors.push('Options must be an array.');
       } else {
-        if (options.length < 2 || options.length > 4) {
-          errors.push('MCQ options must contain 2 to 4 items.');
+        if (options.length > 4) {
+          errors.push('A maximum of 4 options is allowed.');
         }
 
         const labels = new Set<string>();
@@ -537,9 +537,7 @@ export class ImportsService {
     const institutionName = String(occurrence.institution ?? '').trim();
     const examName = String(occurrence.examName ?? '').trim();
     const rawYear = occurrence.examYear;
-    const examYear = rawYear === undefined || rawYear === null || rawYear === ('' as unknown)
-      ? null
-      : Number(rawYear);
+    const examYear = String(rawYear ?? '').trim() === '' ? null : Number(rawYear);
 
     let institution: { id: string; name: string } | null = null;
     if (occurrence.institutionId) {
@@ -674,15 +672,6 @@ export class ImportsService {
   ) {
     const questionType = dto.questionType ?? 'MCQ';
 
-    if (
-      questionType === 'MCQ' &&
-      (!dto.options || dto.options.length < 2 || dto.options.length > 4)
-    ) {
-      throw new BadRequestException(
-        'MCQ questions must have 2 to 4 options.',
-      );
-    }
-
     const questionCode =
       `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
 
@@ -762,11 +751,23 @@ export class ImportsService {
     }
 
     // Resolve all occurrence references inside the same transaction.
-    const resolvedOccurrences = await Promise.all(
-      (dto.occurrences ?? []).map((occurrence) =>
-        this.resolveOccurrenceForImport(tx, occurrence),
-      ),
-    );
+    const resolvedOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    const occurrenceKeys = new Set<string>();
+    for (const occurrence of dto.occurrences ?? []) {
+      const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
+      const year = resolved.examYear;
+      if (resolved.institution && resolved.examName && resolved.postName && year !== null) {
+        const key = [
+          resolved.institution,
+          resolved.examName,
+          resolved.postName,
+          String(year),
+        ].map((value) => this.normalizeText(value)).join('|');
+        if (occurrenceKeys.has(key)) continue;
+        occurrenceKeys.add(key);
+      }
+      resolvedOccurrences.push(resolved);
+    }
 
     return tx.question.create({
       data: {
