@@ -392,7 +392,7 @@ export class QuestionsService {
         ? `exam:${occurrence.examId}`
         : `legacy:${JSON.stringify([
             institutionName.trim().toLowerCase(),
-            examName.trim().toLowerCase(),
+            (examName ?? '').trim().toLowerCase(),
             examYear,
             occurrence.postName ?? null,
             occurrence.department ?? null,
