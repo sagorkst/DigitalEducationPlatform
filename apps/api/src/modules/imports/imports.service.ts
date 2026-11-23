@@ -1330,7 +1330,12 @@ export class ImportsService {
           }
         } else {
           if (existingOccurrences.length === 0) existingOccurrences.push({});
-          const target = existingOccurrences[0];
+          const target = setAsPrimary && common.examName
+            ? (existingOccurrences.find((item) =>
+                this.normalizeText(String(item.examName ?? '')) === this.normalizeText(common.examName ?? '') &&
+                (common.examYear === undefined || Number(item.examYear) === common.examYear),
+              ) ?? existingOccurrences[0])
+            : existingOccurrences[0];
           for (const [field, value] of Object.entries(common)) assignValue(target, field, value);
         }
 
