@@ -532,7 +532,7 @@ export class ImportsService {
    */
   private async resolveOccurrenceForImport(
     tx: Prisma.TransactionClient,
-    occurrence: NonNullable<CreateQuestionDto['occurrences']>[number],
+    occurrence: NonNullable<CreateQuestionDto['occurrences']>[number] & { isPrimary?: boolean },
   ) {
     const institutionName = String(occurrence.institution ?? '').trim();
     const examName = String(occurrence.examName ?? '').trim();
@@ -622,6 +622,7 @@ export class ImportsService {
       examId: exam?.id ?? null,
       postId: exam?.postId ?? post?.id ?? null,
       sourceDocumentId: occurrence.sourceDocumentId ?? null,
+      isPrimary: occurrence.isPrimary === true,
     };
   }
   /**
@@ -647,7 +648,7 @@ export class ImportsService {
       if (identityIsComplete) {
         const existing = await tx.questionOccurrence.findMany({
           where: { questionId },
-          select: { id: true, institution: true, examName: true, postName: true, examYear: true },
+          select: { id: true, institution: true, examName: true, postName: true, examYear: true, isPrimary: true },
         });
         const same = existing.find((item) =>
           item.examYear !== null &&
@@ -656,7 +657,26 @@ export class ImportsService {
           this.normalizeText(item.postName ?? '') === this.normalizeText(resolved.postName ?? '') &&
           item.examYear === year,
         );
-        if (same) continue;
+        if (resolved.isPrimary) {
+          await tx.questionOccurrence.updateMany({
+            where: { questionId, isPrimary: true },
+            data: { isPrimary: false },
+          });
+        }
+        if (same) {
+          if (resolved.isPrimary) {
+            await tx.questionOccurrence.update({
+              where: { id: same.id },
+              data: { isPrimary: true },
+            });
+          }
+          continue;
+        }
+      } else if (resolved.isPrimary) {
+        await tx.questionOccurrence.updateMany({
+          where: { questionId, isPrimary: true },
+          data: { isPrimary: false },
+        });
       }
       const created = await tx.questionOccurrence.create({
         data: { questionId, ...resolved },
@@ -1137,6 +1157,7 @@ export class ImportsService {
   async applyBatchMetadata(
     batchId: string,
     metadata: {
+      setAsPrimary?: unknown;
       institution?: unknown;
       examName?: unknown;
       examYear?: unknown;
@@ -1171,6 +1192,11 @@ export class ImportsService {
       if (!Number.isInteger(common.examYear) || common.examYear < 1900 || common.examYear > 2100) {
         throw new BadRequestException('Exam year must be between 1900 and 2100.');
       }
+    }
+
+    const setAsPrimary = metadata.setAsPrimary === true;
+    if (metadata.setAsPrimary !== undefined && typeof metadata.setAsPrimary !== 'boolean') {
+      throw new BadRequestException('setAsPrimary must be a boolean.');
     }
 
     const suppliedOccurrences = metadata.occurrences;
@@ -1227,6 +1253,9 @@ export class ImportsService {
     const hasCommonMetadata = Object.values(common).some((value) => value !== undefined);
     if (!hasCommonMetadata && cleanOccurrences.length === 0) {
       throw new BadRequestException('Provide at least one metadata field or exam occurrence.');
+    }
+    if (setAsPrimary && !common.examName && !cleanOccurrences.some((item) => cleanText(item.examName))) {
+      throw new BadRequestException('Exam name is required to set a primary occurrence.');
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -1303,6 +1332,25 @@ export class ImportsService {
           if (existingOccurrences.length === 0) existingOccurrences.push({});
           const target = existingOccurrences[0];
           for (const [field, value] of Object.entries(common)) assignValue(target, field, value);
+        }
+
+        if (setAsPrimary) {
+          const primaryCandidate = cleanOccurrences.length > 0
+            ? ({ ...common, ...cleanOccurrences[0] } as Record<string, unknown>)
+            : ({ ...common } as Record<string, unknown>);
+          const identityFields = ['institution', 'examName', 'postName', 'examYear']
+            .filter((field) => primaryCandidate[field] !== undefined && primaryCandidate[field] !== null && String(primaryCandidate[field]).trim() !== '');
+          const primaryIndex = existingOccurrences.findIndex((item) =>
+            identityFields.length > 0 && identityFields.every((field) => {
+              const left = primaryCandidate[field];
+              const right = item[field];
+              if (field === 'examYear') return Number(left) === Number(right);
+              return this.normalizeText(String(left ?? '')) === this.normalizeText(String(right ?? ''));
+            }),
+          );
+          if (primaryIndex < 0) existingOccurrences.push(primaryCandidate);
+          const resolvedPrimaryIndex = primaryIndex >= 0 ? primaryIndex : existingOccurrences.length - 1;
+          existingOccurrences.forEach((item, index) => { item.isPrimary = index === resolvedPrimaryIndex; });
         }
 
         data.occurrences = existingOccurrences;
