@@ -1204,12 +1204,6 @@ export class ImportsService {
             cleaned[key] = number;
           }
         }
-        if (!cleaned.examId && !cleaned.examName) {
-          throw new BadRequestException(`Occurrence ${index + 1} requires examName or examId.`);
-        }
-        if (!cleaned.institution && !cleaned.institutionId && !common.institution) {
-          throw new BadRequestException(`Occurrence ${index + 1} requires institution or institutionId.`);
-        }
         if (cleaned.examYear === undefined && common.examYear !== undefined) {
           cleaned.examYear = common.examYear;
         }
@@ -1284,12 +1278,20 @@ export class ImportsService {
         if (cleanOccurrences.length > 0) {
           for (const addition of cleanOccurrences) {
             const next = { ...common, ...addition } as Record<string, unknown>;
-            const keyFor = (item: Record<string, unknown>) =>
-              item.examId
-                ? `id:${String(item.examId).toLowerCase()}`
-                : `name:${String(item.examName ?? '').trim().toLowerCase()}|${String(item.examYear ?? '')}|${String(item.institutionId ?? item.institution ?? '').trim().toLowerCase()}`;
+            const keyFor = (item: Record<string, unknown>): string | null => {
+              const institution = String(item.institution ?? '').trim();
+              const examName = String(item.examName ?? '').trim();
+              const postName = String(item.postName ?? '').trim();
+              const year = Number(item.examYear);
+              if (!institution || !examName || !postName || !Number.isInteger(year)) return null;
+              return [institution, examName, postName, String(year)]
+                .map((value) => this.normalizeText(value))
+                .join('|');
+            };
             const key = keyFor(next);
-            const existing = existingOccurrences.find((item) => keyFor(item) === key);
+            const existing = key
+              ? existingOccurrences.find((item) => keyFor(item) === key)
+              : undefined;
             if (existing) {
               for (const [field, value] of Object.entries(next)) assignValue(existing, field, value);
             } else {
