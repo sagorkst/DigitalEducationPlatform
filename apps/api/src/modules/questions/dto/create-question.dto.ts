@@ -59,20 +59,21 @@ export class QuestionOptionDto {
 }
 
 export class QuestionOccurrenceDto {
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  institution!: string;
+  institution?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  examName!: string;
+  examName?: string;
 
+  @IsOptional()
   @IsInt()
   @Min(1900)
   @Max(2100)
-  examYear!: number;
+  examYear?: number;
 
   @IsOptional()
   @IsString()
@@ -132,15 +133,15 @@ export class CreateQuestionDto {
   questionType?: QuestionType;
 
   // Legacy text fields: retained for backward compatibility.
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  subject!: string;
+  subject?: string;
 
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  topic!: string;
+  topic?: string;
 
   // Master Subject and Topic relations.
   @IsOptional()
@@ -171,15 +172,14 @@ export class CreateQuestionDto {
 
   @IsOptional()
   @IsArray()
-  @ArrayMinSize(2)
   @ArrayMaxSize(4)
   @ValidateNested({ each: true })
   @Type(() => QuestionOptionDto)
   options?: QuestionOptionDto[];
 
+  @IsOptional()
   @IsArray()
-  @ArrayMinSize(1)
   @ValidateNested({ each: true })
   @Type(() => QuestionOccurrenceDto)
-  occurrences!: QuestionOccurrenceDto[];
+  occurrences?: QuestionOccurrenceDto[];
 }
