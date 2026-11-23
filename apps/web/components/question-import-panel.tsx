@@ -110,6 +110,7 @@ export default function QuestionImportPanel() {
   const [batchOccurrences, setBatchOccurrences] = useState([
     { examName: "", examYear: "", postName: "", department: "" },
   ]);
+  const [batchOverwriteExisting, setBatchOverwriteExisting] = useState(false);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
   const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
@@ -467,7 +468,7 @@ export default function QuestionImportPanel() {
       occurrences: occurrences.length ? occurrences : undefined,
       rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
       applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
-      overwriteExisting: false,
+      overwriteExisting: batchOverwriteExisting,
     };
 
     if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
@@ -513,8 +514,8 @@ export default function QuestionImportPanel() {
     const normalizedOptions = editingOptions
       .filter((option) => option.optionText.trim())
       .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
-    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.length > 4)) {
-      setError("MCQ-এর জন্য ২ থেকে ৪টি Option দিতে হবে। সঠিক উত্তর একাধিক বা অনির্ধারিত থাকতে পারে।");
+    if (normalizedOptions.length > 4) {
+      setError("সর্বোচ্চ ৪টি Option দেওয়া যাবে। Option ও Correct Answer ফাঁকা রাখা যাবে।");
       return;
     }
     const rawData = { ...editingData, options: normalizedOptions };
@@ -869,6 +870,10 @@ export default function QuestionImportPanel() {
                         ))}
                       </div>
                     </div>
+                    <label className="mt-3 flex items-start gap-2 text-xs text-slate-700">
+                      <input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="mt-0.5 rounded border-slate-300" />
+                      <span><strong>Replace existing values</strong> — ভুল Institution / Exam / Post / Year থাকলে নির্বাচিত Bulk Metadata দিয়ে প্রতিস্থাপন করবে। বন্ধ থাকলে শুধু ফাঁকা ঘর পূরণ হবে।</span>
+                    </label>
                     <p className="mt-3 text-xs text-slate-500">
                       Apply target: {selectAllBatch ? "সব import row" : selectedIds.length ? `${selectedIds.length}টি selected row` : "সব import row"}।
                     </p>
@@ -879,7 +884,7 @@ export default function QuestionImportPanel() {
                       disabled={loading}
                       className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
                     >
-                      Apply to Missing Fields & Revalidate
+                      {batchOverwriteExisting ? "Replace Existing Metadata & Revalidate" : "Apply to Missing Fields & Revalidate"}
                     </button>
                   </section>
 
@@ -925,6 +930,25 @@ export default function QuestionImportPanel() {
                           <input value={String(editingData.subject ?? "")} onChange={(e) => updateEditingField("subject", e.target.value)} placeholder="Subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                           <input value={String(editingData.topic ?? "")} onChange={(e) => updateEditingField("topic", e.target.value)} placeholder="Topic" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                         </div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <select value={String(editingData.questionType ?? "MCQ")} onChange={(e) => updateEditingField("questionType", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the Blanks</option><option value="WRITTEN">Written</option>
+                          </select>
+                          <select value={String(editingData.difficulty ?? "MEDIUM")} onChange={(e) => updateEditingField("difficulty", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                          </select>
+                          <select value={String(editingData.status ?? "DRAFT")} onChange={(e) => updateEditingField("status", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                          </select>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <p className="mb-2 text-sm font-semibold text-slate-700">Primary / Source Metadata</p>
+                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {(["institution","examName","examYear","postName","department","source","sourcePage","sourceUrl"] as const).map((field) => (
+                              <input key={field} value={String(editingData[field] ?? "")} onChange={(e) => updateEditingField(field, e.target.value)} placeholder={field} inputMode={field === "examYear" || field === "sourcePage" ? "numeric" : undefined} className="min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                            ))}
+                          </div>
+                        </div>
                         <div className="rounded-lg border border-slate-200 p-3">
                           <div className="mb-3 flex items-center justify-between gap-2">
                             <p className="text-sm font-semibold text-slate-700">Exam Occurrences</p>
@@ -936,6 +960,12 @@ export default function QuestionImportPanel() {
                                 <input value={String(occurrence.institution ?? "")} onChange={(e) => updateEditingOccurrence(index, "institution", e.target.value)} placeholder="Institution" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                 <input value={String(occurrence.examName ?? "")} onChange={(e) => updateEditingOccurrence(index, "examName", e.target.value)} placeholder="Exam Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                 <input value={String(occurrence.examYear ?? "")} onChange={(e) => updateEditingOccurrence(index, "examYear", e.target.value)} placeholder="Exam Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.department ?? "")} onChange={(e) => updateEditingOccurrence(index, "department", e.target.value)} placeholder="Department" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.questionNumber ?? "")} onChange={(e) => updateEditingOccurrence(index, "questionNumber", e.target.value)} placeholder="Question Number" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.source ?? "")} onChange={(e) => updateEditingOccurrence(index, "source", e.target.value)} placeholder="Source" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.sourcePage ?? "")} onChange={(e) => updateEditingOccurrence(index, "sourcePage", e.target.value)} placeholder="Source Page" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.sourceUrl ?? "")} onChange={(e) => updateEditingOccurrence(index, "sourceUrl", e.target.value)} placeholder="Source URL" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm sm:col-span-2" />
                                 <div className="flex gap-2">
                                   <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                   <button type="button" onClick={() => removeEditingOccurrence(index)} aria-label="Remove exam occurrence" className="rounded-md border border-red-200 px-2 text-red-600">×</button>
