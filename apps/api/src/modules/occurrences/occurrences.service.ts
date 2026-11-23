@@ -258,7 +258,7 @@ export class OccurrencesService {
     db: any = this.prisma,
   ) {
     const normalizeIdentityText = (value: string | null | undefined) =>
-      (value ?? '').trim().replace(/\\s+/g, ' ').toLocaleLowerCase();
+      (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
 
     // Incomplete metadata is allowed, but cannot establish duplicate identity.
     const institution = normalizeIdentityText(data.institution);
