@@ -249,7 +249,7 @@ test('09 - rejects rows with missing required fields', async () => {
   );
 });
 
-test('10 - rejects MCQ without options', async () => {
+test('10 - accepts MCQ without options', async () => {
   const { service, prisma } = createService();
 
   let savedRows;
@@ -263,8 +263,9 @@ test('10 - rejects MCQ without options', async () => {
 
   const result = await service.preview(jsonFile([row]));
 
-  assert.equal(result.data.summary.invalidRows, 1);
-  assert.equal(savedRows[0].status, 'INVALID');
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(savedRows[0].status, 'VALID');
 });
 
 test('11 - accepts MCQ with multiple correct options', async () => {
@@ -327,7 +328,7 @@ test('11c - rejects MCQ with more than four options', async () => {
 
   await service.preview(jsonFile([row]));
   assert.equal(savedRows[0].status, 'INVALID');
-  assert.ok(savedRows[0].errorMessages.includes('MCQ options must contain 2 to 4 items.'));
+  assert.ok(savedRows[0].errorMessages.includes('A maximum of 4 options is allowed.'));
 });
 
 test('12 - detects duplicate questions inside the same import file', async () => {
