@@ -302,15 +302,15 @@ export class ImportsService {
       errors.push('Question text cannot exceed 1000 characters.');
     }
 
-    if (typeof subject !== 'string' || !subject.trim()) {
-      errors.push('Subject is required.');
-    } else if (subject.length > 200) {
+    if (subject !== undefined && subject !== null && typeof subject !== 'string') {
+      errors.push('Subject must be text.');
+    } else if (typeof subject === 'string' && subject.length > 200) {
       errors.push('Subject cannot exceed 200 characters.');
     }
 
-    if (typeof topic !== 'string' || !topic.trim()) {
-      errors.push('Topic is required.');
-    } else if (topic.length > 200) {
+    if (topic !== undefined && topic !== null && typeof topic !== 'string') {
+      errors.push('Topic must be text.');
+    } else if (typeof topic === 'string' && topic.length > 200) {
       errors.push('Topic cannot exceed 200 characters.');
     }
 
@@ -403,98 +403,33 @@ export class ImportsService {
 
         });
       }
-    } else if (questionType === 'MCQ') {
-      errors.push('MCQ questions require options.');
     }
 
     const occurrences = data.occurrences;
-
-    if (!Array.isArray(occurrences) || occurrences.length < 1) {
-      errors.push('At least one occurrence is required.');
-    } else {
+    if (occurrences !== undefined && occurrences !== null && !Array.isArray(occurrences)) {
+      errors.push('Occurrences must be an array.');
+    } else if (Array.isArray(occurrences)) {
       occurrences.forEach((occurrence, index) => {
-        if (
-          typeof occurrence !== 'object' ||
-          occurrence === null ||
-          Array.isArray(occurrence)
-        ) {
+        if (!occurrence || typeof occurrence !== 'object' || Array.isArray(occurrence)) {
           errors.push(`Occurrence ${index + 1} is invalid.`);
           return;
         }
-
         const item = occurrence as ImportData;
-        const hasExamId =
-          typeof item.examId === 'string' && item.examId.trim() !== '';
-
-        if (
-          typeof item.institution !== 'string' ||
-          !item.institution.trim()
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: institution is required.`,
-          );
-        }
-
-        // Exam-linked occurrences get examName and examYear
-        // directly from the Exam record.
-        if (!hasExamId) {
-          if (
-            typeof item.examName !== 'string' ||
-            !item.examName.trim()
-          ) {
-            errors.push(
-              `Occurrence ${index + 1}: exam name is required.`,
-            );
+        for (const [field, label] of [['institution', 'Institution'], ['examName', 'Exam name'], ['postName', 'Post name']] as const) {
+          if (item[field] !== undefined && item[field] !== null && typeof item[field] !== 'string') {
+            errors.push(`Occurrence ${index + 1}: ${label} must be text.`);
           }
-
+        }
+        if (item.examYear !== undefined && item.examYear !== null && String(item.examYear).trim() !== '') {
           const year = Number(item.examYear);
-
-          if (
-            !Number.isInteger(year) ||
-            year < 1900 ||
-            year > 2100
-          ) {
-            errors.push(
-              `Occurrence ${index + 1}: exam year must be between 1900 and 2100.`,
-            );
+          if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+            errors.push(`Occurrence ${index + 1}: exam year must be between 1900 and 2100.`);
           }
-        } else if (!this.isValidUuid(item.examId)) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Exam ID.`,
-          );
         }
-
-        if (
-          item.institutionId !== undefined &&
-          item.institutionId !== null &&
-          item.institutionId !== '' &&
-          !this.isValidUuid(item.institutionId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Institution ID.`,
-          );
-        }
-
-        if (
-          item.postId !== undefined &&
-          item.postId !== null &&
-          item.postId !== '' &&
-          !this.isValidUuid(item.postId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Post ID.`,
-          );
-        }
-
-        if (
-          item.sourceDocumentId !== undefined &&
-          item.sourceDocumentId !== null &&
-          item.sourceDocumentId !== '' &&
-          !this.isValidUuid(item.sourceDocumentId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Source Document ID.`,
-          );
+        for (const [field, label] of [['examId', 'Exam ID'], ['institutionId', 'Institution ID'], ['postId', 'Post ID'], ['sourceDocumentId', 'Source Document ID']] as const) {
+          if (item[field] !== undefined && item[field] !== null && item[field] !== '' && !this.isValidUuid(item[field])) {
+            errors.push(`Occurrence ${index + 1}: invalid ${label}.`);
+          }
         }
       });
     }
@@ -597,134 +532,98 @@ export class ImportsService {
    */
   private async resolveOccurrenceForImport(
     tx: Prisma.TransactionClient,
-    occurrence: CreateQuestionDto['occurrences'][number],
+    occurrence: NonNullable<CreateQuestionDto['occurrences']>[number],
   ) {
     const institutionName = String(occurrence.institution ?? '').trim();
     const examName = String(occurrence.examName ?? '').trim();
-    const examYear = Number(occurrence.examYear);
+    const rawYear = occurrence.examYear;
+    const examYear = rawYear === undefined || rawYear === null || rawYear === ('' as unknown)
+      ? null
+      : Number(rawYear);
 
-    let institution = occurrence.institutionId
-      ? await tx.institution.findUnique({
-          where: { id: occurrence.institutionId },
-          select: { id: true, name: true },
-        })
-      : null;
-
-    if (occurrence.institutionId && !institution) {
-      throw new BadRequestException('Selected Institution does not exist.');
-    }
-
-    if (!institution) {
+    let institution: { id: string; name: string } | null = null;
+    if (occurrence.institutionId) {
+      institution = await tx.institution.findUnique({
+        where: { id: occurrence.institutionId },
+        select: { id: true, name: true },
+      });
+      if (!institution) throw new BadRequestException('Selected Institution does not exist.');
+    } else if (institutionName) {
       institution = await tx.institution.findFirst({
         where: { name: { equals: institutionName, mode: 'insensitive' } },
         select: { id: true, name: true },
       });
-    }
-
-    if (!institution) {
-      const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
-      institution = await tx.institution.create({
-        data: {
-          name: institutionName,
-          slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          isActive: true,
-        },
-        select: { id: true, name: true },
-      });
-    }
-
-    let post: { id: string; name: string } | null = null;
-
-    if (occurrence.postId) {
-      post = await tx.post.findUnique({
-        where: { id: occurrence.postId },
-        select: { id: true, name: true },
-      });
-      if (!post) throw new BadRequestException('Selected Post does not exist.');
-    } else if (occurrence.postName?.trim()) {
-      const postName = occurrence.postName.trim();
-      post = await tx.post.findFirst({
-        where: { name: { equals: postName, mode: 'insensitive' } },
-        select: { id: true, name: true },
-      });
-
-      if (!post) {
-        const slug = this.normalizeText(postName).replace(/\s+/g, '-').slice(0, 50) || 'post';
-        post = await tx.post.create({
-          data: {
-            name: postName,
-            slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          },
+      if (!institution) {
+        const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
+        institution = await tx.institution.create({
+          data: { name: institutionName, slug: `${slug}-${randomBytes(4).toString('hex')}`, isActive: true },
           select: { id: true, name: true },
         });
       }
     }
 
-    let exam: {
-      id: string;
-      institutionId: string | null;
-      postId: string | null;
-      name: string;
-      examYear: number;
-    } | null = null;
+    let post: { id: string; name: string } | null = null;
+    if (occurrence.postId) {
+      post = await tx.post.findUnique({ where: { id: occurrence.postId }, select: { id: true, name: true } });
+      if (!post) throw new BadRequestException('Selected Post does not exist.');
+    } else if (occurrence.postName?.trim()) {
+      const postName = occurrence.postName.trim();
+      post = await tx.post.findFirst({ where: { name: { equals: postName, mode: 'insensitive' } }, select: { id: true, name: true } });
+      if (!post) {
+        const slug = this.normalizeText(postName).replace(/\s+/g, '-').slice(0, 50) || 'post';
+        post = await tx.post.create({ data: { name: postName, slug: `${slug}-${randomBytes(4).toString('hex')}` }, select: { id: true, name: true } });
+      }
+    }
 
+    let exam: { id: string; institutionId: string | null; postId: string | null; name: string; examYear: number } | null = null;
     if (occurrence.examId) {
       exam = await tx.exam.findUnique({
         where: { id: occurrence.examId },
         select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
       });
-
       if (!exam) throw new BadRequestException('Selected Exam does not exist.');
-      if (exam.institutionId && exam.institutionId !== institution.id) {
+      if (institution && exam.institutionId && exam.institutionId !== institution.id) {
         throw new BadRequestException('Institution does not match the selected Exam.');
       }
-      if (exam.postId && post && exam.postId !== post.id) {
+      if (post && exam.postId && exam.postId !== post.id) {
         throw new BadRequestException('Post does not match the selected Exam.');
       }
-    } else {
-      if (!examName || !Number.isInteger(examYear) || examYear < 1900 || examYear > 2100) {
-        throw new BadRequestException('A valid Exam Name and Exam Year are required.');
+      if (!institution && exam.institutionId) {
+        institution = await tx.institution.findUnique({ where: { id: exam.institutionId }, select: { id: true, name: true } });
       }
-
+    } else if (examName && examYear !== null && Number.isInteger(examYear) && examYear >= 1900 && examYear <= 2100) {
       exam = await tx.exam.findFirst({
         where: {
-          institutionId: institution.id,
+          institutionId: institution?.id ?? null,
           postId: post?.id ?? null,
           examYear,
           name: { equals: examName, mode: 'insensitive' },
         },
         select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
       });
-
       if (!exam) {
         const slug = this.normalizeText(`${examName}-${examYear}`).replace(/\s+/g, '-').slice(0, 50) || 'exam';
         exam = await tx.exam.create({
-          data: {
-            institutionId: institution.id,
-            postId: post?.id ?? null,
-            name: examName,
-            examYear,
-            slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          },
+          data: { institutionId: institution?.id ?? null, postId: post?.id ?? null, name: examName, examYear, slug: `${slug}-${randomBytes(4).toString('hex')}` },
           select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
         });
       }
     }
 
     return {
-      institution: institution.name,
-      examName: exam.name,
-      examYear: exam.examYear,
-      postName: post?.name ?? occurrence.postName,
-      department: occurrence.department,
-      questionNumber: occurrence.questionNumber,
-      source: occurrence.source,
-      sourcePage: occurrence.sourcePage,
-      sourceUrl: occurrence.sourceUrl,
-      institutionId: institution.id,
-      examId: exam.id,
-      postId: exam.postId ?? post?.id ?? null,
-      sourceDocumentId: occurrence.sourceDocumentId,
+      institution: institution?.name ?? (institutionName || null),
+      examName: exam?.name ?? (examName || null),
+      examYear: exam?.examYear ?? (examYear !== null && Number.isInteger(examYear) ? examYear : null),
+      postName: post?.name ?? (occurrence.postName?.trim() || null),
+      department: occurrence.department ?? null,
+      questionNumber: occurrence.questionNumber ?? null,
+      source: occurrence.source ?? null,
+      sourcePage: occurrence.sourcePage ?? null,
+      sourceUrl: occurrence.sourceUrl ?? null,
+      institutionId: institution?.id ?? null,
+      examId: exam?.id ?? null,
+      postId: exam?.postId ?? post?.id ?? null,
+      sourceDocumentId: occurrence.sourceDocumentId ?? null,
     };
   }
   /**
@@ -741,40 +640,34 @@ export class ImportsService {
     dto: CreateQuestionDto,
   ): Promise<string[]> {
     const occurrenceIds: string[] = [];
-
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
-
-      const existingOccurrence = await tx.questionOccurrence.findFirst({
-        where: {
-          questionId,
-          examId: resolved.examId,
-        },
-        select: {
-          id: true,
-        },
-      });
-
-      if (existingOccurrence) {
-        continue;
+      const year = resolved.examYear;
+      const identityIsComplete = Boolean(
+        resolved.institution && resolved.examName && resolved.postName && year !== null,
+      );
+      if (identityIsComplete) {
+        const existing = await tx.questionOccurrence.findMany({
+          where: { questionId },
+          select: { id: true, institution: true, examName: true, postName: true, examYear: true },
+        });
+        const same = existing.find((item) =>
+          item.examYear !== null &&
+          this.normalizeText(item.institution ?? '') === this.normalizeText(resolved.institution ?? '') &&
+          this.normalizeText(item.examName ?? '') === this.normalizeText(resolved.examName ?? '') &&
+          this.normalizeText(item.postName ?? '') === this.normalizeText(resolved.postName ?? '') &&
+          item.examYear === year,
+        );
+        if (same) continue;
       }
-
-      const createdOccurrence = await tx.questionOccurrence.create({
-        data: {
-          questionId,
-          ...resolved,
-        },
-        select: {
-          id: true,
-        },
+      const created = await tx.questionOccurrence.create({
+        data: { questionId, ...resolved },
+        select: { id: true },
       });
-
-      occurrenceIds.push(createdOccurrence.id);
+      occurrenceIds.push(created.id);
     }
-
     return occurrenceIds;
   }
-
   private async createQuestionInTransaction(
     tx: Prisma.TransactionClient,
     dto: CreateQuestionDto,
@@ -870,7 +763,7 @@ export class ImportsService {
 
     // Resolve all occurrence references inside the same transaction.
     const resolvedOccurrences = await Promise.all(
-      dto.occurrences.map((occurrence) =>
+      (dto.occurrences ?? []).map((occurrence) =>
         this.resolveOccurrenceForImport(tx, occurrence),
       ),
     );
@@ -880,8 +773,8 @@ export class ImportsService {
         questionCode,
         questionText: dto.questionText,
         questionType,
-        subject: selectedSubject?.name ?? dto.subject,
-        topic: selectedTopic?.name ?? dto.topic,
+        subject: selectedSubject?.name ?? dto.subject ?? '',
+        topic: selectedTopic?.name ?? dto.topic ?? '',
         ...(selectedSubject
           ? { subjectRef: { connect: { id: selectedSubject.id } } }
           : {}),
