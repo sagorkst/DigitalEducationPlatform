@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import OcrQuestionImportPanel from "./ocr-question-import-panel";
 
 type ImportSummary = {
@@ -97,6 +97,7 @@ export default function QuestionImportPanel() {
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [showAllDetails, setShowAllDetails] = useState(false);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -116,6 +117,9 @@ export default function QuestionImportPanel() {
   const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
+  useEffect(() => {
+    if (editingData) document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [editingData]);
 
   function validateFile(selectedFile: File | null) {
     if (!selectedFile) return;
@@ -145,23 +149,25 @@ export default function QuestionImportPanel() {
     setSelectAllBatch(false);
   }
 
-  async function loadRows(id: string, pageNumber = 1) {
-    const response = await fetch(
-      `/api/imports/${id}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`,
-      { cache: "no-store" },
-    );
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Import rows load failed.");
+  async function loadRows(id: string, _pageNumber = 1) {
+    const firstResponse = await fetch(`/api/imports/${id}/rows?page=1&limit=${PAGE_SIZE}`, { cache: "no-store" });
+    const firstResult = await firstResponse.json();
+    if (!firstResponse.ok || !firstResult.success) throw new Error(firstResult.message || "Import rows load failed.");
+    const allRows: ImportRow[] = Array.isArray(firstResult.data) ? firstResult.data : [];
+    const pageCount = Math.max(1, Number(firstResult.pagination?.totalPages) || 1);
+    if (pageCount > 1) {
+      const remainingPages = await Promise.all(Array.from({ length: pageCount - 1 }, async (_, index) => {
+        const pageNumber = index + 2;
+        const response = await fetch(`/api/imports/${id}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`, { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || `Import rows page ${pageNumber} load failed.`);
+        return Array.isArray(result.data) ? result.data as ImportRow[] : [];
+      }));
+      allRows.push(...remainingPages.flat());
     }
-
-    setRows(Array.isArray(result.data) ? result.data : []);
-    setPage(pageNumber);
-
-    const pages = Number(result.pagination?.totalPages);
-    setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
+    setRows(allRows);
+    setPage(1);
+    setTotalPages(1);
   }
 
   async function previewImport() {
@@ -606,7 +612,7 @@ export default function QuestionImportPanel() {
 
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm sm:p-5">
-          <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl">
+          <div className={`flex w-full flex-col overflow-hidden bg-slate-50 shadow-2xl ${summary ? "max-h-[96vh] max-w-[98vw] rounded-xl" : "max-h-[95vh] max-w-6xl rounded-2xl"}`}>
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -635,7 +641,7 @@ export default function QuestionImportPanel() {
               </button>
             </div>
 
-            <div className="overflow-y-auto p-4 sm:p-7">
+            <div className={`min-h-0 overflow-y-auto ${summary ? "p-2 sm:p-3" : "p-4 sm:p-7"}`}>
               <div className="mb-6 grid gap-3 sm:grid-cols-3">
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
@@ -843,10 +849,7 @@ export default function QuestionImportPanel() {
 
               {summary && (
                 <div className="mb-6 space-y-5">
-                  <section className="rounded-xl border border-blue-200 bg-white p-4 sm:p-5">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Batch Metadata — Apply to Missing Information
-                    </h3>
+                  <details className="rounded-lg border border-blue-200 bg-white p-2.5"><summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900"><span>Batch Metadata — Apply to Missing Information</span><span className="text-[10px] text-blue-700">Show / Hide</span></summary><div className="pt-2">
                     <p className="mt-1 text-xs text-slate-500">
                       একই পরীক্ষার Institution, Exam, Year ও Post একবার লিখুন।
                       আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
@@ -902,9 +905,9 @@ export default function QuestionImportPanel() {
                     >
                       Apply as Primary Occurrence to All / Selected
                     </button>
-                  </section>
+                  </div></details>
 
-                  <section id="manual-question-edit-form" className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
+                  <section id="manual-question-edit-form" className={`rounded-lg border border-amber-200 bg-white p-3 ${editingData ? "" : "hidden"}`}>
                     <h3 className="text-base font-bold text-slate-900">
                       Manual Question Edit
                     </h3>
@@ -1067,7 +1070,7 @@ export default function QuestionImportPanel() {
                     </span>
                   </div>
 
-                  <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  <div className="mb-2 grid grid-cols-4 gap-1.5 lg:grid-cols-5">
                     {[
                       {
                         label: "Total Questions",
@@ -1182,7 +1185,7 @@ export default function QuestionImportPanel() {
                     </div>
                   </div>
 
-                  <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
+                  <div className="sticky bottom-0 z-20 mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
                     <span className="mr-auto text-xs font-semibold text-slate-600">
                       {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
                     </span>
@@ -1218,9 +1221,9 @@ export default function QuestionImportPanel() {
                     </a>
                   </div>
 
-                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5"><span className="mr-auto text-[11px] font-semibold text-slate-600">Details:</span><button type="button" onClick={() => setShowAllDetails(false)} className="rounded px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-100">Collapse All</button><button type="button" onClick={() => setShowAllDetails(true)} className="rounded bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700">Expand All</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[760px] text-left text-sm">
+                      <table className="w-full min-w-[1120px] text-left text-xs">
                         <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                           <tr>
                             <th className="w-12 p-3">Select</th>
@@ -1247,7 +1250,7 @@ export default function QuestionImportPanel() {
                                 key={row.id}
                                 className="align-top transition hover:bg-slate-50"
                               >
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
                                   <input
                                     type="checkbox"
                                     checked={
@@ -1267,11 +1270,11 @@ export default function QuestionImportPanel() {
                                   />
                                 </td>
 
-                                <td className="p-3 font-semibold text-slate-500">
+                                <td className="px-2 py-1.5 font-semibold text-slate-500">
                                   {row.rowNumber}
                                 </td>
 
-                                <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
+                                <td className="whitespace-normal px-2 py-1.5 font-medium text-slate-800">
                                   {Boolean(raw.htmlImportMetadata) &&
                                     typeof raw.htmlImportMetadata === "object" &&
                                     typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
@@ -1281,7 +1284,7 @@ export default function QuestionImportPanel() {
                                     )}
                                   {String(raw.questionText ?? "â€”")}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
-                                    <div className="mt-3 space-y-1.5">
+                                    <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
                                       {raw.options.map((option: { label?: string; optionText?: string; text?: string; isCorrect?: boolean }, index: number) => (
                                         <div
                                           key={`${option.label ?? index}-${index}`}
@@ -1304,26 +1307,42 @@ export default function QuestionImportPanel() {
                                   )}
 
                                   {raw.correctAnswer != null && (
-                                    <p className="mt-3 text-xs font-semibold text-emerald-700">
+                                    <p className="mt-1 text-[11px] font-semibold text-emerald-700">
                                       Correct Answer: {String(raw.correctAnswer)}
                                     </p>
                                   )}
 
-                                  {raw.explanation != null && String(raw.explanation).trim() !== "" && (
-                                    <p className="mt-2 whitespace-pre-wrap text-xs text-slate-600">
-                                      Explanation: {String(raw.explanation)}
-                                    </p>
-                                  )}
+                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">
+                                    {raw.questionType != null && <span>Type: <strong>{String(raw.questionType)}</strong></span>}
+                                    {raw.difficulty != null && <span>Difficulty: <strong>{String(raw.difficulty)}</strong></span>}
+                                    {raw.examName != null && <span>Exam: <strong>{String(raw.examName)}</strong></span>}
+                                    {raw.examYear != null && <span>Year: <strong>{String(raw.examYear)}</strong></span>}
+                                    {raw.institution != null && <span>Institution: <strong>{String(raw.institution)}</strong></span>}
+                                    {raw.postName != null && <span>Post: <strong>{String(raw.postName)}</strong></span>}
+                                    {raw.department != null && <span>Department: <strong>{String(raw.department)}</strong></span>}
+                                  </div>
+                                  <details open={showAllDetails} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Additional details · explanation · source · occurrences · other fields</summary>
+                                    <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
+                                      {raw.explanation != null && String(raw.explanation).trim() !== "" && <p className="whitespace-pre-wrap text-[11px]"><strong>Explanation:</strong> {String(raw.explanation)}</p>}
+                                      {raw.source != null && <p className="text-[11px]"><strong>Source:</strong> {String(raw.source)}</p>}
+                                      {raw.sourcePage != null && <p className="text-[11px]"><strong>Source Page:</strong> {String(raw.sourcePage)}</p>}
+                                      {raw.sourceUrl != null && <p className="break-all text-[11px]"><strong>Source URL:</strong> {String(raw.sourceUrl)}</p>}
+                                      {raw.repeatGroupId != null && <p className="text-[11px]"><strong>Repeat Group:</strong> {String(raw.repeatGroupId)}</p>}
+                                      {Array.isArray(raw.occurrences) && raw.occurrences.map((occurrence: unknown, index: number) => { const item = isRecord(occurrence) ? occurrence : {}; return <p key={index} className="text-[11px]"><strong>{String(item.examName ?? "Exam")}:</strong> {[item.examYear, item.postName, item.department, item.isPrimary ? "Primary" : "Additional"].filter(Boolean).map(String).join(" · ")}</p>; })}
+                                      {Object.entries(raw).filter(([key, value]) => !["questionText","options","correctAnswer","explanation","subject","topic","questionType","difficulty","status","institution","examName","examYear","postName","department","source","sourcePage","sourceUrl","occurrences","repeatGroupId","htmlImportMetadata"].includes(key) && value !== null && value !== undefined && value !== "").map(([key,value]) => <p key={key} className="break-words text-[11px]"><strong>{key}:</strong> {typeof value === "object" ? JSON.stringify(value) : String(value)}</p>)}
+                                    </div>
+                                  </details>
                                 </td>
 
-                                <td className="p-3 text-slate-700">
+                                <td className="px-2 py-1.5 text-slate-700">
                                   {String(raw.subject ?? "â€”")}
                                   <p className="mt-1 text-xs text-slate-400">
                                     {String(raw.topic ?? "â€”")}
                                   </p>
                                 </td>
 
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
                                   <span
                                     className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${statusStyle(row.status)}`}
                                   >
@@ -1337,7 +1356,7 @@ export default function QuestionImportPanel() {
                                     </ul>
                                   )}
                                 </td>
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -1369,29 +1388,7 @@ export default function QuestionImportPanel() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-slate-500">
-                      Page {page} of {totalPages}
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={page <= 1 || loading}
-                        onClick={() => loadRows(batchId, page - 1)}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        disabled={page >= totalPages || loading}
-                        onClick={() => loadRows(batchId, page + 1)}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  <div className="mt-2 text-center text-[10px] text-slate-500">Showing all {rows.length.toLocaleString("en-US")} import rows in this workspace · no pagination</div>
                 </>
               )}
             </div>
