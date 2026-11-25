@@ -25,6 +25,7 @@ import * as XLSX from 'xlsx';
 import { simpleParser } from 'mailparser';
 
 import { ImportsService } from './imports.service';
+import { LocalStorageService } from '../users/local-storage.service';
 import { ImportsExportService } from './imports-export.service';
 import { ImportsRollbackService } from './imports-rollback.service';
 import { ImportsErrorReportService } from './imports-error-report.service';
@@ -48,7 +49,36 @@ export class ImportsController {
     private readonly ocrService: OcrService,
     private readonly ocrHistoryService: OcrHistoryService,
     private readonly htmlQuestionParserService: HtmlQuestionParserService,
+    private readonly storage: LocalStorageService,
   ) {}
+
+  private async persistEmbeddedImages(html: string): Promise<string> {
+    const pattern = /data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\\r\\n]+)/gi;
+    const matches = Array.from(html.matchAll(pattern));
+    const stored = new Map<string, string>();
+    const apiOrigin = new URL(
+      process.env.API_BASE_URL ?? 'http://localhost:4000/api',
+    ).origin;
+
+    for (const match of matches) {
+      const dataUrl = match[0];
+      if (stored.has(dataUrl)) continue;
+
+      const mime = match[1].toLowerCase() === 'jpg'
+        ? 'jpeg'
+        : match[1].toLowerCase();
+      const buffer = Buffer.from(match[2].replace(/[\\r\\n]/g, ''), 'base64');
+      const publicPath = await this.storage.saveQuestionImage(buffer);
+      stored.set(dataUrl, new URL(publicPath, apiOrigin).toString());
+      void mime;
+    }
+
+    let result = html;
+    for (const [dataUrl, publicUrl] of stored) {
+      result = result.split(dataUrl).join(publicUrl);
+    }
+    return result;
+  }
 
   @Post('preview')
   @UseInterceptors(
@@ -129,6 +159,10 @@ export class ImportsController {
         'The uploaded HTML file is empty.',
       );
     }
+
+    // Convert embedded HTML data-URI images and MHTML CID attachments into
+    // permanent optimized files. Import rows then store stable URLs, not base64 blobs.
+    html = await this.persistEmbeddedImages(html);
 
     const parsed = this.htmlQuestionParserService.parse(
       html,
