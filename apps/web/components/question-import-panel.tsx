@@ -352,6 +352,57 @@ export default function QuestionImportPanel() {
     }
   }
 
+  async function reviewDuplicateRows(rowIds: string[], action: "PASS" | "RECHECK") {
+    if (!batchId || rowIds.length === 0) return;
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/imports/${batchId}/duplicate-review`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIds, action }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "Duplicate review update করা যায়নি।");
+      }
+
+      const payload = result.data ?? result;
+      if (payload.summary) {
+        setSummary((current) => current ? { ...current, ...payload.summary } : current);
+      }
+      await loadRows(batchId, page);
+      setSelectedIds([]);
+      setSelectAllBatch(false);
+      setExcludedIds([]);
+      setMessage(action === "PASS"
+        ? `${payload.updatedRows ?? rowIds.length}টি Duplicate Row ম্যানুয়ালি Pass করা হয়েছে। Commit করলে বিদ্যমান প্রশ্নের সঙ্গে Occurrence যুক্ত হবে।`
+        : `${payload.updatedRows ?? rowIds.length}টি Row আবার Duplicate Check-এর আওতায় আনা হয়েছে।`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Duplicate review failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function passSelectedDuplicates() {
+    const ids = rows
+      .filter((row) =>
+        row.status === "DUPLICATE" &&
+        (selectAllBatch ? !excludedIds.includes(row.id) : selectedIds.includes(row.id)),
+      )
+      .map((row) => row.id);
+    if (ids.length === 0) {
+      setError("Pass করার জন্য অন্তত একটি Duplicate Row নির্বাচন করুন।");
+      return;
+    }
+    void reviewDuplicateRows(ids, "PASS");
+  }
+
   function updateEditingField(field: string, value: string) {
     setEditingData((current) =>
       current ? { ...current, [field]: value } : current,
@@ -869,6 +920,7 @@ export default function QuestionImportPanel() {
                       </div>
                       <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
                         <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
+                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="flex-1 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 disabled:opacity-40">✓ Pass Selected Duplicates</button>
                         <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
                         <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
                         <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="flex-1 rounded border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
@@ -1161,6 +1213,26 @@ export default function QuestionImportPanel() {
                                   )}
                                 </td>
                                 <td className="px-2 py-1.5">
+                                  {row.status === "DUPLICATE" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void reviewDuplicateRows([row.id], "PASS")}
+                                      disabled={loading}
+                                      className="mb-1 inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+                                    >
+                                      Pass Anyway
+                                    </button>
+                                  )}
+                                  {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void reviewDuplicateRows([row.id], "RECHECK")}
+                                      disabled={loading}
+                                      className="mb-1 inline-flex items-center rounded-lg border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                                    >
+                                      Undo Pass
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
