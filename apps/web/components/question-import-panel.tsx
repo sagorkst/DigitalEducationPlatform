@@ -303,7 +303,7 @@ export default function QuestionImportPanel() {
           .map((row) => row.id);
       }
 
-      if (!batchId || actionIds.length === 0) {
+      if (!batchId || (actionIds.length === 0 && !(action === "skip" && selectAllBatch))) {
         throw new Error("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
       }
 
@@ -1214,7 +1214,7 @@ export default function QuestionImportPanel() {
                                     </div>
                                   )}
 
-                                  <details open={detailOverrides[row.id] ?? showAllDetails} onToggle={(event) => setDetailOverrides((current) => ({ ...current, [row.id]: event.currentTarget.open }))} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                  <details open={detailOverrides[row.id] ?? showAllDetails} onToggle={(event) => { const isOpen = event.currentTarget.open; setDetailOverrides((current) => ({ ...current, [row.id]: isOpen })); }} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
                                     <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</summary>
                                     <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
                                       {raw.correctAnswer != null && <p className="text-[11px] font-semibold text-emerald-700"><strong>Correct Answer:</strong> {String(raw.correctAnswer)}</p>}
