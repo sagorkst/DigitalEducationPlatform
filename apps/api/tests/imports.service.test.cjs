@@ -724,3 +724,61 @@ test('28 - does not increment skipped count when no rows match', async () => {
     false,
   );
 });
+
+
+test('image-only questions and image-only options validate without blank-text duplicates', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  let imageLookups = 0;
+
+  prisma.importBatch.create = async () => ({ id: BATCH_ID });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+  prisma.question.findFirst = async ({ where }) => {
+    imageLookups++;
+    assert.ok(where.imageReferences);
+    return null;
+  };
+
+  const imageOnlyRow = {
+    questionText: '',
+    imageReferences: ['https://cdn.example.test/question-diagram.png'],
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    questionType: 'MCQ',
+    difficulty: 'MEDIUM',
+    status: 'DRAFT',
+    options: [
+      {
+        label: 'A',
+        optionText: '',
+        imageReferences: ['https://cdn.example.test/option-a.png'],
+        isCorrect: true,
+      },
+      {
+        label: 'B',
+        optionText: 'Text and image option',
+        imageReferences: ['https://cdn.example.test/option-b.png'],
+        isCorrect: false,
+      },
+    ],
+    occurrences: [],
+  };
+
+  const result = await service.previewParsedRows(
+    [imageOnlyRow, { ...imageOnlyRow, occurrences: [] }],
+    'image-only-import.html',
+  );
+
+  assert.equal(result.data.summary.totalRows, 2);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.duplicateRows, 1);
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(savedRows.length, 2);
+  assert.equal(savedRows[0].status, 'VALID');
+  assert.equal(savedRows[1].status, 'DUPLICATE');
+  assert.equal(imageLookups, 1);
+});
