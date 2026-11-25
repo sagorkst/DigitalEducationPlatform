@@ -64,13 +64,9 @@ export class ImportsController {
       const dataUrl = match[0];
       if (stored.has(dataUrl)) continue;
 
-      const mime = match[1].toLowerCase() === 'jpg'
-        ? 'jpeg'
-        : match[1].toLowerCase();
       const buffer = Buffer.from(match[2].replace(/[\\r\\n]/g, ''), 'base64');
       const publicPath = await this.storage.saveQuestionImage(buffer);
       stored.set(dataUrl, new URL(publicPath, apiOrigin).toString());
-      void mime;
     }
 
     let result = html;
