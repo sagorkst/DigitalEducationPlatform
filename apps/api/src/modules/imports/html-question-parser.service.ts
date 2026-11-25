@@ -616,6 +616,12 @@ export class HtmlQuestionParserService {
       '.correct-check-icon',
       '.share-btn',
       '.bookmark-btn',
+      '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.question-meta',
+      '.metadata',
     ].join(', ')).remove();
 
     return this.normalize(clone.text());
