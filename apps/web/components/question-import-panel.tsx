@@ -795,9 +795,15 @@ export default function QuestionImportPanel() {
               )}
 
               {error && (
-                <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                  <span className="font-bold">!</span>
-                  <p>{error}</p>
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4" role="alertdialog" aria-modal="true" aria-labelledby="import-error-title">
+                  <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
+                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-xl font-bold text-red-700">!</div>
+                    <h3 id="import-error-title" className="text-center text-base font-bold text-slate-900">সতর্কতা</h3>
+                    <p className="mt-2 text-center text-sm leading-6 text-slate-600">{error}</p>
+                    <div className="mt-5 flex justify-center">
+                      <button type="button" onClick={() => setError("")} className="min-w-24 rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">OK</button>
+                    </div>
+                  </div>
                 </div>
               )}
 
