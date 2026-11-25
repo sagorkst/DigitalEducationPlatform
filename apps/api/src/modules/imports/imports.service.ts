@@ -1693,26 +1693,40 @@ export class ImportsService {
         const normalizedText = this.normalizeText(
           String(dto.questionText ?? ''),
         );
+        const imageReferences = Array.isArray(dto.imageReferences)
+          ? dto.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          : [];
+        const imageFingerprint = imageReferences.length > 0
+          ? imageReferences.map((item) => item.trim()).sort().join('|')
+          : '';
+        const identityKey = normalizedText || (imageFingerprint ? `image:${imageFingerprint}` : '');
 
         let processedQuestionId = '';
 
         await this.prisma.$transaction(async (tx) => {
-          let questionId = questionIdsByText.get(normalizedText) ?? null;
+          let questionId = identityKey ? questionIdsByText.get(identityKey) ?? null : null;
           let action: 'CREATED_QUESTION' | 'LINKED_OCCURRENCE' =
             'LINKED_OCCURRENCE';
           let occurrenceIds: string[] = [];
 
           if (!questionId) {
-            const existingQuestion = await tx.question.findFirst({
-              where: {
-                deletedAt: null,
-                questionText: {
-                  equals: dto.questionText,
-                  mode: 'insensitive',
-                },
-              },
-              select: { id: true },
-            });
+            const existingQuestion = normalizedText
+              ? await tx.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    questionText: { equals: dto.questionText, mode: 'insensitive' },
+                  },
+                  select: { id: true },
+                })
+              : imageReferences.length > 0
+                ? await tx.question.findFirst({
+                    where: {
+                      deletedAt: null,
+                      imageReferences: { equals: imageReferences as Prisma.InputJsonValue },
+                    },
+                    select: { id: true },
+                  })
+                : null;
 
             questionId = existingQuestion?.id ?? null;
           }
@@ -1780,8 +1794,8 @@ export class ImportsService {
           processedQuestionId = questionId;
         });
 
-        if (processedQuestionId) {
-          questionIdsByText.set(normalizedText, processedQuestionId);
+        if (processedQuestionId && identityKey) {
+          questionIdsByText.set(identityKey, processedQuestionId);
         }
 
         importedRows++;
