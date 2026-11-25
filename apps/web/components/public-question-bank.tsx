@@ -17,13 +17,14 @@ type Exam = {
 type Question = {
   id: string;
   questionText: string;
+  imageReferences: string[];
   questionType: string;
   subject: string | null;
   topic: string | null;
   difficulty: string | null;
   isRepeated: boolean;
   occurrenceCount: number;
-  options: { id: string; label: string; optionText: string }[];
+  options: { id: string; label: string; optionText: string; imageReferences?: string[] }[];
   occurrences: {
     institution: string;
     examName: string;
@@ -39,6 +40,7 @@ type AnswerData = {
     id: string;
     label: string;
     optionText: string;
+    imageReferences?: string[];
     isCorrect: boolean;
   }[];
 };
@@ -831,8 +833,15 @@ const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "to
         </div>
 
         <h3 className="whitespace-pre-wrap text-base font-semibold leading-7 text-slate-800">
-          {question.questionText}
+          {question.questionText || "চিত্রভিত্তিক প্রশ্ন"}
         </h3>
+        {question.imageReferences?.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {question.imageReferences.map((source, imageIndex) => (
+              <img key={imageIndex} src={source} alt={`প্রশ্নের ছবি ${imageIndex + 1}`} loading="lazy" className="max-h-64 max-w-full rounded-lg border border-slate-200 object-contain" />
+            ))}
+          </div>
+        )}
 
         {questionVisibility.options && (
           <div className="mt-4 grid gap-2 sm:grid-cols-2">
@@ -852,6 +861,13 @@ const selectSummaryCard = (key: "all" | "exam" | "institution" | "subject" | "to
                 >
                   <span className="mr-2 font-semibold">{option.label}.</span>
                   {option.optionText}
+                  {option.imageReferences?.length ? (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {option.imageReferences.map((source, imageIndex) => (
+                        <img key={imageIndex} src={source} alt={`Option ${option.label} image ${imageIndex + 1}`} loading="lazy" className="max-h-40 max-w-full rounded border border-slate-200 object-contain" />
+                      ))}
+                    </div>
+                  ) : null}
                   {revealedOption?.isCorrect && (
                     <span className="ml-2 font-bold">✓ সঠিক উত্তর</span>
                   )}
