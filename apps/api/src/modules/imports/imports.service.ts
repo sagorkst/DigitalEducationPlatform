@@ -1099,33 +1099,46 @@ export class ImportsService {
         rowStatus = 'INVALID';
         invalidRows++;
       } else {
-        const questionText = String(data.questionText);
-        const normalized = this.normalizeText(questionText);
+        const reviewOverride =
+          data._importReviewOverride &&
+          typeof data._importReviewOverride === 'object' &&
+          !Array.isArray(data._importReviewOverride)
+            ? (data._importReviewOverride as Record<string, unknown>)
+            : undefined;
 
-        if (seenQuestions.has(normalized)) {
-          rowStatus = 'DUPLICATE';
-          errors.push('Duplicate question found within this import file.');
-          duplicateRows++;
+        if (reviewOverride?.duplicate === 'PASS') {
+          // Manual approval lets the row proceed; commit still links an exact
+          // match to the canonical question instead of creating a duplicate.
+          validRows++;
         } else {
-          seenQuestions.add(normalized);
+          const questionText = String(data.questionText);
+          const normalized = this.normalizeText(questionText);
 
-          const existing = await tx.question.findFirst({
-            where: {
-              deletedAt: null,
-              questionText: {
-                equals: questionText,
-                mode: 'insensitive',
-              },
-            },
-            select: { id: true },
-          });
-
-          if (existing) {
+          if (seenQuestions.has(normalized)) {
             rowStatus = 'DUPLICATE';
-            errors.push('An identical question already exists in the question bank.');
+            errors.push('Duplicate question found within this import file.');
             duplicateRows++;
           } else {
-            validRows++;
+            seenQuestions.add(normalized);
+
+            const existing = await tx.question.findFirst({
+              where: {
+                deletedAt: null,
+                questionText: {
+                  equals: questionText,
+                  mode: 'insensitive',
+                },
+              },
+              select: { id: true },
+            });
+
+            if (existing) {
+              rowStatus = 'DUPLICATE';
+              errors.push('An identical question already exists in the question bank.');
+              duplicateRows++;
+            } else {
+              validRows++;
+            }
           }
         }
       }
@@ -1369,6 +1382,77 @@ export class ImportsService {
       return {
         success: true,
         message: 'Batch metadata applied successfully.',
+        data: { batchId, updatedRows: rows.length, summary },
+      };
+    });
+  }
+
+  async reviewDuplicates(
+    batchId: string,
+    rowIds: string[],
+    action: 'PASS' | 'RECHECK',
+  ) {
+    if (!Array.isArray(rowIds) || rowIds.length === 0) {
+      throw new BadRequestException('Select at least one duplicate row.');
+    }
+
+    const uniqueRowIds = [...new Set(rowIds.filter((id) => typeof id === 'string'))];
+    if (uniqueRowIds.length === 0 || uniqueRowIds.length > 10000) {
+      throw new BadRequestException('Invalid duplicate row selection.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const batch = await tx.importBatch.findUnique({
+        where: { id: batchId },
+        select: { id: true, status: true },
+      });
+
+      if (!batch) throw new NotFoundException('Import batch not found.');
+      if (batch.status !== 'REVIEW') {
+        throw new BadRequestException('Duplicate review is only available while the batch is in REVIEW status.');
+      }
+
+      const rows = await tx.importRow.findMany({
+        where: {
+          batchId,
+          id: { in: uniqueRowIds },
+          status: { in: ['DUPLICATE', 'VALID'] },
+        },
+        select: { id: true, rawData: true },
+      });
+
+      if (rows.length === 0) {
+        throw new NotFoundException('No reviewable duplicate rows were found.');
+      }
+
+      for (const row of rows) {
+        const data =
+          row.rawData && typeof row.rawData === 'object' && !Array.isArray(row.rawData)
+            ? { ...(row.rawData as Record<string, unknown>) }
+            : {};
+
+        if (action === 'PASS') {
+          data._importReviewOverride = {
+            duplicate: 'PASS',
+            reviewedAt: new Date().toISOString(),
+          };
+        } else {
+          delete data._importReviewOverride;
+        }
+
+        await tx.importRow.update({
+          where: { id: row.id },
+          data: { rawData: data as Prisma.InputJsonValue },
+        });
+      }
+
+      const summary = await this.revalidateBatchRows(tx, batchId);
+
+      return {
+        success: true,
+        message: action === 'PASS'
+          ? 'Selected duplicate rows were manually approved.'
+          : 'Selected rows were returned to automatic duplicate checking.',
         data: { batchId, updatedRows: rows.length, summary },
       };
     });
