@@ -833,25 +833,46 @@ export default function QuestionImportPanel() {
 
               {summary && (
                 <div className="mb-6 space-y-5">
-                  <section className="mb-3 rounded-md border border-blue-200 bg-white p-2">
-                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h4 className="text-xs font-bold text-slate-800">Batch Metadata</h4><span className="text-[10px] text-slate-500">Suggestions from values in this batch</span></div>
-                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
-                      <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-                      <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-                      <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
-                      <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+                  <section className="mb-3 grid grid-cols-1 gap-2 rounded-md border border-slate-200 bg-white p-2 lg:grid-cols-5">
+                    <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 p-2 lg:col-span-2">
+                      <div className="grid flex-1 grid-cols-2 gap-2">
+                        <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                      </div>
+                      <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName").map((value) => <option key={value} value={value} />)}</datalist>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                        <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
+                        <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
+                        <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
+                      </div>
                     </div>
-                    <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution").map((value) => <option key={value} value={value} />)}</datalist>
-                    <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName").map((value) => <option key={value} value={value} />)}</datalist>
-                    <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear").map((value) => <option key={value} value={value} />)}</datalist>
-                    <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName").map((value) => <option key={value} value={value} />)}</datalist>
-                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-                      <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span><strong>Replace existing values</strong> · off = fill blanks only; on = replace existing metadata</span></label>
-                      <span className="text-[10px] text-slate-500">Target: {selectAllBatch ? "all rows" : selectedIds.length ? `${selectedIds.length} selected` : "all rows"}</span>
-                    </div>
-                    <div className="mt-2 flex flex-wrap gap-2">
-                      <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "Replace & Revalidate" : "Apply to Blanks"}</button>
-                      <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50">Apply as Primary Occurrence to All / Selected</button>
+                    <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 p-2 lg:col-span-3">
+                      <div className="grid flex-1 grid-cols-2 gap-1.5 sm:grid-cols-3">
+                        {[
+                          { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
+                          { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
+                          { label: "Invalid", value: summary.invalidRows, icon: "!", color: "text-red-700" },
+                          { label: "Duplicates", value: summary.duplicateRows, icon: "⧉", color: "text-amber-700" },
+                          { label: "Source Records", value: parserSummary?.totalCandidates ?? 0, icon: "▥", color: "text-slate-700" },
+                          { label: "Needs Review", value: parserSummary?.skippedCount ?? 0, icon: "⌕", color: "text-amber-700" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex min-h-[54px] items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
+                            <span className="min-w-0 text-[10px] font-medium leading-tight text-slate-500">{item.label}</span>
+                            <span className={`shrink-0 text-base font-black tabular-nums ${item.color}`}><span className="mr-1 text-xs">{item.icon}</span>{item.value.toLocaleString("en-US")}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
+                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
+                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
+                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="flex-1 rounded border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
+                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
+                      </div>
                     </div>
                   </section>
 
@@ -1006,81 +1027,7 @@ export default function QuestionImportPanel() {
                 <>
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">Import Preview <span className="font-normal text-slate-400">/</span> <span className="text-blue-700">Extracted Questions</span></h3><span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Batch: {batchId.slice(0, 8)}</span></div>
 
-                  <div className="mb-2 grid grid-cols-4 gap-1.5 lg:grid-cols-5">
-                    {[
-                      {
-                        label: "Total Questions",
-                        value: summary.totalRows,
-                        color: "text-slate-900",
-                        icon: "▤",
-                      },
-                      {
-                        label: "Valid",
-                        value: summary.validRows,
-                        color: "text-emerald-700",
-                        icon: "✓",
-                      },
-                      {
-                        label: "Invalid",
-                        value: summary.invalidRows,
-                        color: "text-red-700",
-                        icon: "!",
-                      },
-                      {
-                        label: "Duplicates",
-                        value: summary.duplicateRows,
-                        color: "text-amber-700",
-                        icon: "↗",
-                      },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-lg border border-slate-200 bg-white p-2"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-semibold text-slate-500">
-                            {item.label}
-                          </p>
-                          <span className={`text-lg font-bold ${item.color}`}>
-                            {item.icon}
-                          </span>
-                        </div>
-                        <p className={`mt-1 text-lg font-black ${item.color}`}>
-                          {item.value.toLocaleString("en-US")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
 
-                  {parserSummary && (
-                    <section className="mb-5 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold text-blue-950">
-                          Source Extraction Report
-                        </h4>
-                        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-800">
-                          {parserSummary.detectedStructure}
-                        </span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        {[
-                          { label: "Source Records", value: parserSummary.totalCandidates },
-                          { label: "Text Extracted", value: parserSummary.extractedCount },
-                          { label: "Needs Review", value: parserSummary.skippedCount },
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-lg border border-blue-100 bg-white p-3">
-                            <p className="text-[10px] font-semibold text-slate-500">{item.label}</p>
-                            <p className="mt-1 text-xl font-black tabular-nums text-slate-900">
-                              {item.value.toLocaleString("en-US")}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      {parserSummary.skippedCount > 0 && (
-                        <p className="mt-3 text-xs font-medium text-amber-800">
-                          {parserSummary.skippedCount}টি Source Record থেকে প্রশ্নের লেখা পুরোপুরি পাওয়া যায়নি। কোনো Record বাদ দেওয়া হয়নি—সবগুলো Preview-তে রাখা হয়েছে, অসম্পূর্ণগুলো INVALID হিসেবে সংশোধন করতে হবে।
-                        </p>
-                      )}
                       {parserSummary.warnings.length > 0 && (
                         <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600">
                           {parserSummary.warnings.map((warning, index) => (
@@ -1091,43 +1038,7 @@ export default function QuestionImportPanel() {
                     </section>
                   )}
 
-                  <div className="sticky bottom-0 z-20 mb-2 flex flex-nowrap items-center gap-1.5 overflow-x-auto rounded-md border border-slate-200 bg-white/95 p-1.5 shadow-md backdrop-blur">
-                    <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="shrink-0 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">Select All Rows (Across All Pages)</button>
-                    <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="shrink-0 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">Clear Selection</button>
-                    <span className="mr-auto shrink-0 text-[10px] font-semibold text-slate-600">
-                      {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
-                    </span>
 
-                    <button
-                      type="button"
-                      onClick={() => performAction("commit")}
-                      disabled={
-                        loading ||
-                        (selectAllBatch
-                          ? summary.validRows + summary.duplicateRows <= excludedIds.length
-                          : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))
-                      }
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40"
-                    >
-                      Commit Selected
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => performAction("skip")}
-                      disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)}
-                      className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
-                    >
-                      Skip Selected
-                    </button>
-
-                    <a
-                      href={`/api/imports/${batchId}/error-report?format=csv`}
-                      className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      Error Report →
-                    </a>
-                  </div>
 
                   <div className="mb-1 flex justify-end"><button type="button" onClick={() => { setShowAllDetails((current) => !current); setDetailOverrides({}); }} className="rounded px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">{showAllDetails ? "Hide Details" : "Show Details"}</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
