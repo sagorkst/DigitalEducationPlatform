@@ -1132,24 +1132,17 @@ export class ImportsService {
         const imageFingerprint = questionImages.length > 0
           ? questionImages.map((item) => item.trim()).sort().join('|')
           : '';
+        const isDuplicateInBatch =
+          (normalized.length > 0 && seenQuestions.has(normalized)) ||
+          (imageFingerprint.length > 0 && seenImageQuestions.has(imageFingerprint));
 
-        // Even manually approved rows participate in duplicate checks for later rows.
+        // Approved rows still become comparison candidates for subsequent rows.
         if (normalized) seenQuestions.add(normalized);
         if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
 
         if (reviewOverride?.duplicate === 'PASS') {
           validRows++;
-        } else if (
-          (normalized && seenQuestions.has(normalized) && rows.findIndex((item) => item.id === row.id) !== rows.findIndex((item) => {
-            const other = item.rawData && typeof item.rawData === 'object' ? item.rawData as Record<string, unknown> : {};
-            return this.normalizeText(String(other.questionText ?? '')) === normalized;
-          })) ||
-          (imageFingerprint && rows.slice(0, rows.findIndex((item) => item.id === row.id)).some((item) => {
-            const other = item.rawData && typeof item.rawData === 'object' ? item.rawData as Record<string, unknown> : {};
-            const refs = Array.isArray(other.imageReferences) ? other.imageReferences.filter((value): value is string => typeof value === 'string') : [];
-            return refs.length > 0 && refs.map((value) => value.trim()).sort().join('|') === imageFingerprint;
-          }))
-        ) {
+        } else if (isDuplicateInBatch) {
           rowStatus = 'DUPLICATE';
           errors.push('Duplicate question found within this import file.');
           duplicateRows++;
