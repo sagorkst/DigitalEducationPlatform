@@ -108,13 +108,9 @@ export class ImportsController {
         const contentId = String(attachment.contentId ?? '').replace(/[<>]/g, '').trim();
         if (!contentId || !Buffer.isBuffer(attachment.content)) continue;
         const dataUrl = `data:${attachment.contentType};base64,${attachment.content.toString('base64')}`;
-        const escapedId = contentId.replace(/[.*+?^${}()|[\]\\]/g, '\\      html =
-        typeof mimeMessage.html === 'string'
-          ? mimeMessage.html
-          : '';
-
-      if (!html.trim()) {');
-        html = html.replace(new RegExp(`cid:${escapedId}`, 'gi'), dataUrl);
+        html = html.replace(/cid:[^"'\\s)>]+/gi, (match) =>
+          match.toLowerCase() === `cid:${contentId.toLowerCase()}` ? dataUrl : match,
+        );
       }
 
       if (!html.trim()) {
