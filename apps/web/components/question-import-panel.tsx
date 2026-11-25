@@ -849,6 +849,7 @@ export default function QuestionImportPanel() {
                         <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
                         <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
                         <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
+                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} title="Set as primary occurrence" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
                     </div>
                     <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 p-2 lg:col-span-3">
@@ -870,6 +871,7 @@ export default function QuestionImportPanel() {
                       <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
                         <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
                         <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
+                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
                         <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="flex-1 rounded border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
                         <a href={`/api/imports/${batchId}/error-report?format=csv`} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
                       </div>
