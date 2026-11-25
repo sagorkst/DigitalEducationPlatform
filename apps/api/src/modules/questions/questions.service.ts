@@ -1010,8 +1010,7 @@ export class QuestionsService {
         const nextQuestionType =
           dto.questionType ?? existing.questionType;
 
-        const nextOptions =
-          dto.options ?? existing.options;
+        const nextOptions = dto.options;
 
         if (
           nextQuestionType === 'MCQ' &&
@@ -1022,7 +1021,7 @@ export class QuestionsService {
           );
         }
 
-        if (nextOptions.some((option) =>
+        if (nextOptions?.some((option) =>
           !option.optionText.trim() &&
           !(Array.isArray(option.imageReferences) && option.imageReferences.length > 0)
         )) {
