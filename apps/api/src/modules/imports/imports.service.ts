@@ -291,15 +291,19 @@ export class ImportsService {
     const subject = data.subject;
     const topic = data.topic;
 
-    if (
-      typeof questionText !== 'string' ||
-      !questionText.trim()
-    ) {
-      errors.push('Question text is required.');
-    } else if (questionText.trim().length < 3) {
+    const questionImages = data.imageReferences;
+    const hasQuestionImages = Array.isArray(questionImages) &&
+      questionImages.some((item) => typeof item === 'string' && item.trim().length > 0);
+
+    if (typeof questionText !== 'string' || (!questionText.trim() && !hasQuestionImages)) {
+      errors.push('Question text or at least one question image is required.');
+    } else if (questionText.trim() && questionText.trim().length < 3) {
       errors.push('Question text must contain at least 3 characters.');
     } else if (questionText.length > 1000) {
       errors.push('Question text cannot exceed 1000 characters.');
+    }
+    if (questionImages !== undefined && (!Array.isArray(questionImages) || questionImages.some((item) => typeof item !== 'string'))) {
+      errors.push('Question image references must be an array of strings.');
     }
 
     if (subject !== undefined && subject !== null && typeof subject !== 'string') {
@@ -385,11 +389,14 @@ export class ImportsService {
             labels.add(label);
           }
 
-          if (
-            typeof item.optionText !== 'string' ||
-            !item.optionText.trim()
-          ) {
-            errors.push(`Option ${index + 1} requires option text.`);
+          const optionImages = item.imageReferences;
+          const hasOptionImages = Array.isArray(optionImages) &&
+            optionImages.some((image) => typeof image === 'string' && image.trim().length > 0);
+          if ((typeof item.optionText !== 'string' || !item.optionText.trim()) && !hasOptionImages) {
+            errors.push(`Option ${index + 1} requires option text or at least one image.`);
+          }
+          if (optionImages !== undefined && (!Array.isArray(optionImages) || optionImages.some((image) => typeof image !== 'string'))) {
+            errors.push(`Option ${index + 1} image references must be an array of strings.`);
           }
 
           if (
@@ -793,6 +800,7 @@ export class ImportsService {
       data: {
         questionCode,
         questionText: dto.questionText,
+        ...(dto.imageReferences?.length ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue } : {}),
         questionType,
         subject: selectedSubject?.name ?? dto.subject ?? '',
         topic: selectedTopic?.name ?? dto.topic ?? '',
@@ -811,6 +819,7 @@ export class ImportsService {
           create: (dto.options ?? []).map((option) => ({
             label: option.label,
             optionText: option.optionText,
+            ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
             isCorrect: option.isCorrect ?? false,
             sortOrder: option.sortOrder ?? 0,
           })),
@@ -878,6 +887,7 @@ export class ImportsService {
     let duplicateRows = 0;
 
     const seenQuestions = new Set<string>();
+    const seenImageQuestions = new Set<string>();
 
     try {
       for (let index = 0; index < rows.length; index++) {
@@ -898,19 +908,26 @@ export class ImportsService {
           rowStatus = 'INVALID';
           invalidRows++;
         } else {
-          const questionText = String(row.questionText);
+          const questionText = String(row.questionText ?? '');
           const normalized = this.normalizeText(questionText);
+          const questionImages = Array.isArray(row.imageReferences)
+            ? row.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            : [];
+          const imageFingerprint = questionImages.length > 0
+            ? questionImages.map((item) => item.trim()).sort().join('|')
+            : '';
 
-          if (seenQuestions.has(normalized)) {
+          if ((normalized && seenQuestions.has(normalized)) || (imageFingerprint && seenImageQuestions.has(imageFingerprint))) {
             rowStatus = 'DUPLICATE';
             errors.push(
               'Duplicate question found within this import file.',
             );
             duplicateRows++;
           } else {
-            seenQuestions.add(normalized);
+            if (normalized) seenQuestions.add(normalized);
+            if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
 
-            const existing = await this.prisma.question.findFirst({
+            const existing = normalized ? await this.prisma.question.findFirst({
               where: {
                 deletedAt: null,
                 questionText: {
@@ -921,7 +938,7 @@ export class ImportsService {
               select: {
                 id: true,
               },
-            });
+            }) : null;
 
             if (existing) {
               rowStatus = 'DUPLICATE';
