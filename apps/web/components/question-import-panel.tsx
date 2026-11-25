@@ -854,14 +854,12 @@ export default function QuestionImportPanel() {
                     </div>
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
-                      <div className="grid flex-1 grid-cols-6 gap-3">
+                      <div className="grid flex-1 grid-cols-4 gap-3">
                         {[
                           { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
                           { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
                           { label: "Invalid", value: summary.invalidRows, icon: "!", color: "text-red-700" },
                           { label: "Duplicates", value: summary.duplicateRows, icon: "⧉", color: "text-amber-700" },
-                          { label: "Source Records", value: parserSummary?.totalCandidates ?? 0, icon: "▥", color: "text-slate-700" },
-                          { label: "Needs Review", value: parserSummary?.skippedCount ?? 0, icon: "⌕", color: "text-amber-700" },
                         ].map((item) => (
                           <div key={item.label} className="flex min-h-[54px] items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
                             <span className="min-w-0 text-[10px] font-medium leading-tight text-slate-500">{item.label}</span>
