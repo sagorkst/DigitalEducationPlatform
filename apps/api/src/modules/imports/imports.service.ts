@@ -1512,8 +1512,8 @@ export class ImportsService {
       throw new BadRequestException('Invalid question data.');
     }
 
-    if (!serialized || serialized.length > 500000) {
-      throw new BadRequestException('Question data exceeds the allowed size.');
+    if (!serialized || serialized.length > 15_000_000) {
+      throw new BadRequestException('Question data exceeds the 15 MB edit limit.');
     }
 
     const cleanData = JSON.parse(serialized) as ImportData;
