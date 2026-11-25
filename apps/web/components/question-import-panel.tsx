@@ -846,7 +846,7 @@ export default function QuestionImportPanel() {
               {summary && (
                 <div className="mb-6 space-y-5">
                   <section className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-5">
-                    <div className="flex h-full flex-col justify-between gap-2 rounded-b-md border-x border-b border-slate-200 bg-white p-2 lg:col-span-2">
+                    <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 lg:col-span-2">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Batch Metadata</h3>
                       <div className="grid flex-1 grid-cols-2 gap-2">
                         <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
@@ -865,7 +865,7 @@ export default function QuestionImportPanel() {
                         <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} title="Set as primary occurrence" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
                     </div>
-                    <div className="flex h-full flex-col justify-between gap-2 rounded-b-md border-x border-b border-slate-200 bg-white p-2 lg:col-span-3">
+                    <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 lg:col-span-3">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
                       <div className="grid flex-1 grid-cols-2 gap-1.5 sm:grid-cols-3">
                         {[
