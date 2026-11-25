@@ -877,6 +877,12 @@ export default function QuestionImportPanel() {
                       </div>
                     </div>
                   </section>
+                  {parserSummary && (parserSummary.warnings.length > 0 || parserSummary.detectedStructure) && (
+                    <details className="mb-3 rounded-md border border-slate-200 bg-white px-2 py-1.5">
+                      <summary className="cursor-pointer text-[10px] font-semibold text-slate-600">Source extraction details · {parserSummary.detectedStructure} · {parserSummary.extractedCount.toLocaleString("en-US")} extracted</summary>
+                      {parserSummary.warnings.length > 0 && <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] text-slate-600">{parserSummary.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
+                    </details>
+                  )}
 
                   <section id="manual-question-edit-form" className={`rounded-lg border border-amber-200 bg-white p-3 ${editingData ? "" : "hidden"}`}>
                     <h3 className="text-base font-bold text-slate-900">
