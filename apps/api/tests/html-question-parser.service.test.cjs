@@ -113,3 +113,24 @@ test('HTML parser never mixes exam metadata into question text fallback', () => 
   assert.equal(result.questions[0].questionText, 'Which diagram represents a parallel circuit?');
   assert.equal(result.questions[0].examName, 'Electrical Supervisor Exam 2024');
 });
+
+
+test('HTML parser preserves both question text and its accompanying image', () => {
+  const parser = new HtmlQuestionParserService();
+  const html = `
+    <div class="question-item" data-question-id="text-image-1">
+      <div class="question-text-el">
+        Which component is shown in the diagram?
+        <img src="https://cdn.example.test/questions/component.png" alt="Circuit component">
+      </div>
+      <div class="option-item" data-option-label="A" data-is-correct="1">Resistor</div>
+      <div class="option-item" data-option-label="B" data-is-correct="0">Capacitor</div>
+    </div>
+  `;
+
+  const result = parser.parse(html, 'text-and-image.html');
+  assert.equal(result.questions[0].questionText, 'Which component is shown in the diagram?');
+  assert.deepEqual(result.questions[0].imageReferences, [
+    'https://cdn.example.test/questions/component.png',
+  ]);
+});
