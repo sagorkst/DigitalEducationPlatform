@@ -101,6 +101,22 @@ export class ImportsController {
           ? mimeMessage.html
           : '';
 
+      // Resolve MHTML Content-ID images to data URLs so they remain visible
+      // after the original multipart archive has been discarded.
+      for (const attachment of mimeMessage.attachments ?? []) {
+        if (!String(attachment.contentType ?? '').toLowerCase().startsWith('image/')) continue;
+        const contentId = String(attachment.contentId ?? '').replace(/[<>]/g, '').trim();
+        if (!contentId || !Buffer.isBuffer(attachment.content)) continue;
+        const dataUrl = `data:${attachment.contentType};base64,${attachment.content.toString('base64')}`;
+        const escapedId = contentId.replace(/[.*+?^${}()|[\]\\]/g, '\\      html =
+        typeof mimeMessage.html === 'string'
+          ? mimeMessage.html
+          : '';
+
+      if (!html.trim()) {');
+        html = html.replace(new RegExp(`cid:${escapedId}`, 'gi'), dataUrl);
+      }
+
       if (!html.trim()) {
         throw new BadRequestException(
           'No HTML content was found inside the MHTML file.',
