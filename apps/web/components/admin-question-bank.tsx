@@ -925,6 +925,9 @@ export default function QuestionBankPage() {
     }
 
     const isMcq = form.questionType === "MCQ";
+    const editingQuestion = editingId
+      ? questions.find((question) => question.id === editingId)
+      : undefined;
 
     const optionValues = [
       ["A", form.optionA],
@@ -935,10 +938,11 @@ export default function QuestionBankPage() {
 
     const options = isMcq
       ? optionValues
-          .filter(([, value]) => value.trim())
+          .filter(([label, value]) => value.trim() || (editingQuestion?.optionImages[label]?.length ?? 0) > 0)
           .map(([label, optionText], index) => ({
             label,
             optionText: optionText.trim(),
+            imageReferences: editingQuestion?.optionImages[label] ?? [],
             isCorrect: form.correctAnswer === label,
             sortOrder: index,
           }))
