@@ -969,7 +969,7 @@ export default function QuestionImportPanel() {
                         />
                         <textarea
                           value={Array.isArray(editingData.imageReferences) ? editingData.imageReferences.join("\n") : ""}
-                          onChange={(e) => updateEditingField("imageReferences", e.target.value.split("\n").map((value) => value.trim()).filter(Boolean))}
+                          onChange={(e) => setEditingData((current) => current ? { ...current, imageReferences: e.target.value.split("\n").map((value) => value.trim()).filter(Boolean) } : current)}
                           placeholder="Question image URLs (one per line)"
                           rows={2}
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
