@@ -8,6 +8,7 @@ import {
   Min,
   Max,
   IsArray,
+  IsString,
   ValidateNested,
   ArrayMinSize,
   ArrayMaxSize,
@@ -48,9 +49,13 @@ export class UpdateQuestionOptionDto {
   label!: string;
 
   @IsString()
-  @IsNotEmpty()
   @MaxLength(2000)
   optionText!: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
 
   @IsOptional()
   @IsBoolean()
@@ -140,6 +145,7 @@ class AtLeastOneUpdateFieldConstraint
 
     const allowedFields = [
       'questionText',
+      'imageReferences',
       'questionType',
       'subject',
       'topic',
@@ -169,9 +175,13 @@ export class UpdateQuestionDto {
 
   @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
   questionText?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
 
   @IsOptional()
   @IsEnum(QuestionType)
