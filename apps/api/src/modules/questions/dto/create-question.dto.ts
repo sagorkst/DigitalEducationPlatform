@@ -44,7 +44,6 @@ export class QuestionOptionDto {
   label!: string;
 
   @IsString()
-  @IsNotEmpty()
   @MaxLength(2000)
   optionText!: string;
 
