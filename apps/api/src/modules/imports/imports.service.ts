@@ -1095,6 +1095,7 @@ export class ImportsService {
     let invalidRows = 0;
     let duplicateRows = 0;
     const seenQuestions = new Set<string>();
+    const seenImageQuestions = new Set<string>();
 
     for (const row of rows) {
       const data =
@@ -1123,39 +1124,50 @@ export class ImportsService {
             ? (data._importReviewOverride as Record<string, unknown>)
             : undefined;
 
-        if (reviewOverride?.duplicate === 'PASS') {
-          // Manual approval lets the row proceed; commit still links an exact
-          // match to the canonical question instead of creating a duplicate.
-          validRows++;
-        } else {
-          const questionText = String(data.questionText);
-          const normalized = this.normalizeText(questionText);
+        const questionText = String(data.questionText ?? '');
+        const normalized = this.normalizeText(questionText);
+        const questionImages = Array.isArray(data.imageReferences)
+          ? data.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          : [];
+        const imageFingerprint = questionImages.length > 0
+          ? questionImages.map((item) => item.trim()).sort().join('|')
+          : '';
 
-          if (seenQuestions.has(normalized)) {
+        // Even manually approved rows participate in duplicate checks for later rows.
+        if (normalized) seenQuestions.add(normalized);
+        if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
+
+        if (reviewOverride?.duplicate === 'PASS') {
+          validRows++;
+        } else if (
+          (normalized && seenQuestions.has(normalized) && rows.findIndex((item) => item.id === row.id) !== rows.findIndex((item) => {
+            const other = item.rawData && typeof item.rawData === 'object' ? item.rawData as Record<string, unknown> : {};
+            return this.normalizeText(String(other.questionText ?? '')) === normalized;
+          })) ||
+          (imageFingerprint && rows.slice(0, rows.findIndex((item) => item.id === row.id)).some((item) => {
+            const other = item.rawData && typeof item.rawData === 'object' ? item.rawData as Record<string, unknown> : {};
+            const refs = Array.isArray(other.imageReferences) ? other.imageReferences.filter((value): value is string => typeof value === 'string') : [];
+            return refs.length > 0 && refs.map((value) => value.trim()).sort().join('|') === imageFingerprint;
+          }))
+        ) {
+          rowStatus = 'DUPLICATE';
+          errors.push('Duplicate question found within this import file.');
+          duplicateRows++;
+        } else {
+          const existing = normalized ? await tx.question.findFirst({
+            where: {
+              deletedAt: null,
+              questionText: { equals: questionText, mode: 'insensitive' },
+            },
+            select: { id: true },
+          }) : null;
+
+          if (existing) {
             rowStatus = 'DUPLICATE';
-            errors.push('Duplicate question found within this import file.');
+            errors.push('An identical question already exists in the question bank.');
             duplicateRows++;
           } else {
-            seenQuestions.add(normalized);
-
-            const existing = await tx.question.findFirst({
-              where: {
-                deletedAt: null,
-                questionText: {
-                  equals: questionText,
-                  mode: 'insensitive',
-                },
-              },
-              select: { id: true },
-            });
-
-            if (existing) {
-              rowStatus = 'DUPLICATE';
-              errors.push('An identical question already exists in the question bank.');
-              duplicateRows++;
-            } else {
-              validRows++;
-            }
+            validRows++;
           }
         }
       }
