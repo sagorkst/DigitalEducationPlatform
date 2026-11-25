@@ -1,4 +1,4 @@
-﻿
+
 "use client";
 
 import { useEffect, useRef, useState } from "react";
@@ -108,6 +108,7 @@ export default function QuestionImportPanel() {
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
   const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; imageReferences: string[]; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (editingData) document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -401,6 +402,51 @@ export default function QuestionImportPanel() {
       return;
     }
     void reviewDuplicateRows(ids, "PASS");
+  }
+
+  async function uploadImageFiles(
+    files: FileList | null,
+    onUploaded: (references: string[]) => void,
+  ) {
+    const selectedFiles = Array.from(files ?? []);
+    if (selectedFiles.length === 0) return;
+
+    const invalidFile = selectedFiles.find((file) =>
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+      file.size > 10 * 1024 * 1024
+    );
+    if (invalidFile) {
+      setError("শুধু JPEG, PNG বা WebP ছবি দিন; প্রতিটি ছবির সর্বোচ্চ সাইজ ১০ MB।");
+      return;
+    }
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const references = await Promise.all(selectedFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/questions/images/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success || typeof result.data?.imageReference !== "string") {
+          throw new Error(result.message || "ছবি Upload করা যায়নি।");
+        }
+
+        return result.data.imageReference as string;
+      }));
+
+      onUploaded(references);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ছবি Upload করা যায়নি।");
+    } finally {
+      setUploadingImage(false);
+    }
   }
 
   function updateEditingField(field: string, value: string) {
@@ -974,6 +1020,38 @@ export default function QuestionImportPanel() {
                           rows={2}
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                         />
+                        <label className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                          <span className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700">
+                            {uploadingImage ? "Uploading..." : "＋ Upload Question Images"}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                            disabled={uploadingImage || savingEdit}
+                            onChange={(e) => {
+                              void uploadImageFiles(e.currentTarget.files, (references) =>
+                                setEditingData((current) => current ? {
+                                  ...current,
+                                  imageReferences: [
+                                    ...(Array.isArray(current.imageReferences) ? current.imageReferences.filter((value): value is string => typeof value === "string") : []),
+                                    ...references,
+                                  ],
+                                } : current),
+                              );
+                              e.currentTarget.value = "";
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="font-normal text-slate-500">JPEG / PNG / WebP · Max 10 MB each</span>
+                        </label>
+                        {Array.isArray(editingData.imageReferences) && editingData.imageReferences.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {editingData.imageReferences.map((source, index) => typeof source === "string" ? (
+                              <img key={index} src={source} alt={`Question image ${index + 1}`} className="max-h-28 max-w-48 rounded border border-slate-200 object-contain" />
+                            ) : null)}
+                          </div>
+                        )}
 
                         <div className="grid gap-3 sm:grid-cols-2">
                           <input value={String(editingData.subject ?? "")} onChange={(e) => updateEditingField("subject", e.target.value)} placeholder="Subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
@@ -1044,6 +1122,32 @@ export default function QuestionImportPanel() {
                                   rows={2}
                                   className="col-span-full w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
                                 />
+                                <label className="col-span-full flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                                  <span className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700">＋ Upload Option Images</span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    disabled={uploadingImage || savingEdit}
+                                    onChange={(e) => {
+                                      void uploadImageFiles(e.currentTarget.files, (references) =>
+                                        setEditingOptions((current) => current.map((item, i) =>
+                                          i === index ? { ...item, imageReferences: [...item.imageReferences, ...references] } : item
+                                        )),
+                                      );
+                                      e.currentTarget.value = "";
+                                    }}
+                                    className="sr-only"
+                                  />
+                                  <span className="font-normal text-slate-500">JPEG / PNG / WebP · Max 10 MB each</span>
+                                </label>
+                                {option.imageReferences.length > 0 && (
+                                  <div className="col-span-full flex flex-wrap gap-2">
+                                    {option.imageReferences.map((source, imageIndex) => (
+                                      <img key={imageIndex} src={source} alt={`Option ${option.label} image ${imageIndex + 1}`} className="max-h-24 max-w-40 rounded border border-slate-200 object-contain" />
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             {editingOptions.length === 0 && <p className="text-xs text-slate-500">এই প্রশ্নে এখনো কোনো Option নেই।</p>}
