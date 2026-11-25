@@ -802,9 +802,15 @@ export default function QuestionImportPanel() {
               )}
 
               {message && (
-                <div className="mt-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                  <span className="font-bold">✓</span>
-                  <p>{message}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true" aria-labelledby="import-success-title">
+                  <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
+                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl font-bold text-emerald-700">✓</div>
+                    <h3 id="import-success-title" className="text-center text-base font-bold text-slate-900">সফল হয়েছে</h3>
+                    <p className="mt-2 text-center text-sm leading-6 text-slate-600">{message}</p>
+                    <div className="mt-5 flex justify-center">
+                      <button type="button" onClick={() => setMessage("")} className="min-w-24 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">OK</button>
+                    </div>
+                  </div>
                 </div>
               )}
 
