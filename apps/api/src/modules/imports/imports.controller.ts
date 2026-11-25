@@ -108,7 +108,7 @@ export class ImportsController {
         const contentId = String(attachment.contentId ?? '').replace(/[<>]/g, '').trim();
         if (!contentId || !Buffer.isBuffer(attachment.content)) continue;
         const dataUrl = `data:${attachment.contentType};base64,${attachment.content.toString('base64')}`;
-        html = html.replace(/cid:[^"'\\s)>]+/gi, (match) =>
+        html = html.replace(/cid:[^"'\s)>]+/gi, (match) =>
           match.toLowerCase() === `cid:${contentId.toLowerCase()}` ? dataUrl : match,
         );
       }
