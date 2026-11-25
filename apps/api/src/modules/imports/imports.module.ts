@@ -12,9 +12,10 @@ import { HtmlQuestionParserService } from './html-question-parser.service';
 import { QuestionsModule } from '../questions/questions.module';
 import { AuthModule } from '../auth/auth.module';
 import { RbacModule } from '../rbac/rbac.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
-  imports: [QuestionsModule, AuthModule, RbacModule],
+  imports: [QuestionsModule, AuthModule, RbacModule, StorageModule],
   controllers: [ImportsController],
   providers: [
     ImportsService,
