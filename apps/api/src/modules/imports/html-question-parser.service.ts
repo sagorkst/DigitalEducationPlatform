@@ -492,7 +492,7 @@ export class HtmlQuestionParserService {
     const add = (value: string | undefined) => {
       const source = String(value ?? '').trim();
       if (!source || /^javascript:/i.test(source)) return;
-      if (/^data:image\//i.test(source) && source.length > 2_000_000) return;
+      if (/^data:image\//i.test(source) && source.length > 6_500_000) return;
       const baseHref = $('base[href]').first().attr('href');
       if (baseHref && !/^(?:data:|https?:|cid:|\/\/)/i.test(source)) {
         try {
