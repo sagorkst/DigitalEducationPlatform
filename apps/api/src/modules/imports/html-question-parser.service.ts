@@ -285,7 +285,16 @@ export class HtmlQuestionParserService {
     const examYear = examMetadata.examYear;
 
     const imageContainer = container.clone();
-    imageContainer.find(this.optionSelectors.join(', ')).remove();
+    imageContainer.find([
+      ...this.optionSelectors,
+      '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.question-meta',
+      '.metadata',
+      '.exam',
+    ].join(', ')).remove();
     const imageReferences = this.extractImages($, imageContainer);
 
     const warnings: string[] = [];
@@ -484,6 +493,15 @@ export class HtmlQuestionParserService {
       const source = String(value ?? '').trim();
       if (!source || /^javascript:/i.test(source)) return;
       if (/^data:image\//i.test(source) && source.length > 2_000_000) return;
+      const baseHref = $('base[href]').first().attr('href');
+      if (baseHref && !/^(?:data:|https?:|cid:|\/\/)/i.test(source)) {
+        try {
+          images.add(new URL(source, baseHref).toString());
+          return;
+        } catch {
+          // Keep the original source when the base URL is malformed.
+        }
+      }
       images.add(source);
     };
 
