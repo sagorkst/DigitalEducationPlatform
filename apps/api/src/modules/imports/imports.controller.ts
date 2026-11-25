@@ -164,7 +164,7 @@ export class ImportsController {
         topic: question.topic ?? '',
         difficulty: 'MEDIUM',
         status: 'DRAFT',
-        ...(question.questionType === 'MCQ' ? { options } : {}),
+        ...(options.length > 0 ? { options } : {}),
         ...(correctOption
           ? { correctAnswer: correctOption.text }
           : {}),
