@@ -2208,7 +2208,7 @@ export default function QuestionBankPage() {
               </h3>
               {selectedQuestion.imageReferences.length > 0 && <div className="flex flex-wrap gap-2">{selectedQuestion.imageReferences.map((source, imageIndex) => <img key={imageIndex} src={source} alt={`Question image ${imageIndex + 1}`} className="max-h-56 max-w-full rounded border border-slate-200 object-contain" />)}</div>}
 
-              {["MCQ", "True/False"].includes(selectedQuestion.questionType) && (
+              {(selectedQuestion.optionA || selectedQuestion.optionB || selectedQuestion.optionC || selectedQuestion.optionD || Object.values(selectedQuestion.optionImages).some((images) => images.length > 0)) && (
                 <div className="grid gap-2 sm:grid-cols-2">
                   {(["A", "B", "C", "D"] as const).map((label) => {
                     const text = selectedQuestion[`option${label}`];
