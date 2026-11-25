@@ -1,5 +1,8 @@
 import {
   Controller,
+  BadRequestException,
+  UploadedFile,
+  UseInterceptors,
   Post,
   Get,
   Put,
@@ -12,9 +15,12 @@ import {
   HttpStatus,
   UseGuards,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
 
 import { QuestionsService } from './questions.service';
 import { QuestionsBulkService } from './questions-bulk.service';
+import { LocalStorageService } from '../users/local-storage.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
 import { BulkUpdateQuestionsDto } from './dto/bulk-update-questions.dto';
@@ -31,7 +37,37 @@ export class QuestionsController {
   constructor(
     private readonly questionsService: QuestionsService,
     private readonly questionsBulkService: QuestionsBulkService,
+    private readonly storage: LocalStorageService,
   ) {}
+
+  // UPLOAD AN IMAGE FOR A QUESTION OR OPTION
+  @Post('images/upload')
+  @RequirePermissions('content.manage')
+  @HttpCode(HttpStatus.CREATED)
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: {
+        fileSize: 10 * 1024 * 1024,
+        files: 1,
+      },
+    }),
+  )
+  async uploadQuestionImage(
+    @UploadedFile() file: Express.Multer.File | undefined,
+  ) {
+    if (!file?.buffer) {
+      throw new BadRequestException('Please select an image file.');
+    }
+
+    const imageReference = await this.storage.saveQuestionImage(file.buffer);
+
+    return {
+      success: true,
+      message: 'Image uploaded successfully.',
+      data: { imageReference },
+    };
+  }
 
   // BULK UPDATE SELECTED QUESTIONS
   @Post('bulk')
