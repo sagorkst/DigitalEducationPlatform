@@ -11,14 +11,6 @@ type ImportSummary = {
   duplicateRows: number;
 };
 
-type HtmlParserSummary = {
-  detectedStructure: string;
-  totalCandidates: number;
-  extractedCount: number;
-  skippedCount: number;
-  warnings: string[];
-};
-
 type ImportRow = {
   id: string;
   rowNumber: number;
@@ -94,8 +86,7 @@ export default function QuestionImportPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [parserSummary, setParserSummary] = useState<HtmlParserSummary | null>(null);
-  const [rows, setRows] = useState<ImportRow[]>([]);
+    const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAllBatch, setSelectAllBatch] = useState(false);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
@@ -143,7 +134,6 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setBatchId("");
     setSelectedIds([]);
@@ -181,7 +171,6 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setSelectAllBatch(false);
@@ -212,7 +201,6 @@ export default function QuestionImportPanel() {
 
       setBatchId(id);
       setSummary(result.data.summary);
-      setParserSummary(result.parser ?? null);
       await loadRows(id, 1);
       setMessage("ফাইল সফলভাবে Preview তৈরি হয়েছে।");
     } catch (err) {
@@ -569,7 +557,6 @@ export default function QuestionImportPanel() {
     setFile(null);
     setBatchId("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setPage(1);
@@ -845,10 +832,10 @@ export default function QuestionImportPanel() {
 
               {summary && (
                 <div className="mb-6 space-y-5">
-                  <section className="mb-3 grid grid-cols-1 gap-3 lg:grid-cols-5">
-                    <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 lg:col-span-2">
+                  <section className="mb-3 grid grid-cols-1 gap-4 lg:grid-cols-5">
+                    <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-2">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Batch Metadata</h3>
-                      <div className="grid flex-1 grid-cols-2 gap-2">
+                      <div className="grid flex-1 grid-cols-4 gap-3">
                         <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
                         <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
                         <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
@@ -865,9 +852,9 @@ export default function QuestionImportPanel() {
                         <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} title="Set as primary occurrence" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
                     </div>
-                    <div className="flex h-full flex-col justify-between gap-2 rounded-md border border-slate-200 bg-white p-2 lg:col-span-3">
+                    <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
-                      <div className="grid flex-1 grid-cols-2 gap-1.5 sm:grid-cols-3">
+                      <div className="grid flex-1 grid-cols-6 gap-3">
                         {[
                           { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
                           { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
@@ -891,13 +878,6 @@ export default function QuestionImportPanel() {
                       </div>
                     </div>
                   </section>
-                  {parserSummary && (parserSummary.warnings.length > 0 || parserSummary.detectedStructure) && (
-                    <details className="mb-3 rounded-md border border-slate-200 bg-white px-2 py-1.5">
-                      <summary className="cursor-pointer text-[10px] font-semibold text-slate-600">Source extraction details · {parserSummary.detectedStructure} · {parserSummary.extractedCount.toLocaleString("en-US")} extracted</summary>
-                      {parserSummary.warnings.length > 0 && <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] text-slate-600">{parserSummary.warnings.map((warning, index) => <li key={index}>{warning}</li>)}</ul>}
-                    </details>
-                  )}
-
                   <section id="manual-question-edit-form" className={`rounded-lg border border-amber-200 bg-white p-3 ${editingData ? "" : "hidden"}`}>
                     <h3 className="text-base font-bold text-slate-900">
                       Manual Question Edit
