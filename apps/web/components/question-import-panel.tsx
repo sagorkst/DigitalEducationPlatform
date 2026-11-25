@@ -1036,15 +1036,7 @@ export default function QuestionImportPanel() {
                   <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">Import Preview <span className="font-normal text-slate-400">/</span> <span className="text-blue-700">Extracted Questions</span></h3><span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Batch: {batchId.slice(0, 8)}</span></div>
 
 
-                      {parserSummary.warnings.length > 0 && (
-                        <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600">
-                          {parserSummary.warnings.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  )}
+
 
 
 
