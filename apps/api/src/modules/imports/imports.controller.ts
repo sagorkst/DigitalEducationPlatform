@@ -146,7 +146,7 @@ export class ImportsController {
 
       return {
         questionText: question.questionText,
-        questionImages: question.imageReferences,
+        imageReferences: question.imageReferences,
         questionType: question.questionType,
         subject: question.subject ?? '',
         topic: question.topic ?? '',
