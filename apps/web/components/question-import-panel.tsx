@@ -59,6 +59,10 @@ function statusStyle(status: string) {
   }
 }
 
+function getBatchSuggestions(rows: ImportRow[], field: string) {
+  return Array.from(new Set(rows.map((row) => String(row.rawData?.[field] ?? "").trim()).filter(Boolean))).slice(0, 50);
+}
+
 function FileIcon({ type }: { type: string }) {
   return (
     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -98,6 +102,7 @@ export default function QuestionImportPanel() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [showAllDetails, setShowAllDetails] = useState(false);
+  const [detailOverrides, setDetailOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -106,11 +111,7 @@ export default function QuestionImportPanel() {
     examName: "",
     examYear: "",
     postName: "",
-    department: "",
   });
-  const [batchOccurrences, setBatchOccurrences] = useState([
-    { examName: "", examYear: "", postName: "", department: "" },
-  ]);
   const [batchOverwriteExisting, setBatchOverwriteExisting] = useState(false);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
@@ -381,13 +382,6 @@ export default function QuestionImportPanel() {
     });
   }
 
-  function addBatchOccurrence() {
-    setBatchOccurrences((current) => [...current, { examName: "", examYear: "", postName: "", department: "" }]);
-  }
-
-  function updateBatchOccurrence(index: number, field: string, value: string) {
-    setBatchOccurrences((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  }
 
   function addEditingOccurrence() {
     setEditingData((current) => current ? { ...current, occurrences: [...(Array.isArray(current.occurrences) ? current.occurrences : []), {}] } : current);
@@ -457,33 +451,23 @@ export default function QuestionImportPanel() {
   async function applyBatchMetadataNow(setAsPrimary = false) {
     if (!batchId) return;
 
-    const occurrences = batchOccurrences
-      .filter((item) => item.examName.trim())
-      .map((item) => ({
-        examName: item.examName.trim(),
-        examYear: item.examYear.trim() ? Number(item.examYear) : undefined,
-        postName: item.postName.trim() || undefined,
-        department: item.department.trim() || undefined,
-      }));
     const body = {
       institution: batchMetadata.institution.trim() || undefined,
       examName: batchMetadata.examName.trim() || undefined,
       examYear: batchMetadata.examYear.trim() ? Number(batchMetadata.examYear) : undefined,
       postName: batchMetadata.postName.trim() || undefined,
-      department: batchMetadata.department.trim() || undefined,
-      occurrences: occurrences.length ? occurrences : undefined,
       rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
       applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
       overwriteExisting: batchOverwriteExisting,
       setAsPrimary,
     };
 
-    if (setAsPrimary && !body.examName && !body.occurrences?.length) {
+    if (setAsPrimary && !body.examName) {
       setError("Primary Occurrence নির্ধারণের জন্য Exam Name দিন।");
       return;
     }
 
-    if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
+    if (!body.institution && !body.examName && !body.examYear && !body.postName) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
       return;
     }
@@ -642,7 +626,7 @@ export default function QuestionImportPanel() {
             </div>
 
             <div className={`min-h-0 overflow-y-auto ${summary ? "p-2 sm:p-3" : "p-4 sm:p-7"}`}>
-              <div className="mb-6 grid gap-3 sm:grid-cols-3">
+              <div className={`${summary ? "hidden" : ""} mb-6 grid gap-3 sm:grid-cols-3`}>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Supported formats
@@ -849,63 +833,27 @@ export default function QuestionImportPanel() {
 
               {summary && (
                 <div className="mb-6 space-y-5">
-                  <details className="rounded-lg border border-blue-200 bg-white p-2.5"><summary className="flex cursor-pointer list-none items-center justify-between text-sm font-bold text-slate-900"><span>Batch Metadata — Apply to Missing Information</span><span className="text-[10px] text-blue-700">Show / Hide</span></summary><div className="pt-2">
-                    <p className="mt-1 text-xs text-slate-500">
-                      একই পরীক্ষার Institution, Exam, Year ও Post একবার লিখুন।
-                      আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
-                    </p>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      <input value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Shared Institution" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Default Exam Name (optional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Default Exam Year" inputMode="numeric" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Shared Post Name" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.department} onChange={(e) => setBatchMetadata((v) => ({ ...v, department: e.target.value }))} placeholder="Shared Department" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                  <section className="mb-3 rounded-md border border-blue-200 bg-white p-2">
+                    <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h4 className="text-xs font-bold text-slate-800">Batch Metadata</h4><span className="text-[10px] text-slate-500">Suggestions from values in this batch</span></div>
+                    <div className="grid grid-cols-2 gap-2 md:grid-cols-4">
+                      <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+                      <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+                      <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
+                      <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="min-w-0 w-full rounded-md border border-slate-300 px-2 py-1.5 text-xs" />
                     </div>
-                    <div className="mt-4 rounded-lg border border-slate-200 p-3">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-700">একই প্রশ্নের জন্য একাধিক Exam যুক্ত করুন</p>
-                        <button type="button" onClick={addBatchOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
-                      </div>
-                      <div className="space-y-3">
-                        {batchOccurrences.map((item, index) => (
-                          <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <input value={item.examName} onChange={(e) => updateBatchOccurrence(index, "examName", e.target.value)} placeholder={`Exam Name ${index + 1}`} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <input value={item.examYear} onChange={(e) => updateBatchOccurrence(index, "examYear", e.target.value)} placeholder="Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <input value={item.postName} onChange={(e) => updateBatchOccurrence(index, "postName", e.target.value)} placeholder="Post" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <div className="flex gap-2">
-                              <input value={item.department} onChange={(e) => updateBatchOccurrence(index, "department", e.target.value)} placeholder="Department" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                              <button type="button" onClick={() => setBatchOccurrences((current) => current.filter((_, i) => i !== index))} disabled={batchOccurrences.length === 1} aria-label="Remove exam" className="rounded-md border border-red-200 px-2 text-red-600 disabled:opacity-30">×</button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+                    <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution").map((value) => <option key={value} value={value} />)}</datalist>
+                    <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName").map((value) => <option key={value} value={value} />)}</datalist>
+                    <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear").map((value) => <option key={value} value={value} />)}</datalist>
+                    <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName").map((value) => <option key={value} value={value} />)}</datalist>
+                    <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
+                      <label className="flex items-center gap-2 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span><strong>Replace existing values</strong> · off = fill blanks only; on = replace existing metadata</span></label>
+                      <span className="text-[10px] text-slate-500">Target: {selectAllBatch ? "all rows" : selectedIds.length ? `${selectedIds.length} selected` : "all rows"}</span>
                     </div>
-                    <label className="mt-3 flex items-start gap-2 text-xs text-slate-700">
-                      <input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="mt-0.5 rounded border-slate-300" />
-                      <span><strong>Replace existing values</strong> — ভুল Institution / Exam / Post / Year থাকলে নির্বাচিত Bulk Metadata দিয়ে প্রতিস্থাপন করবে। বন্ধ থাকলে শুধু ফাঁকা ঘর পূরণ হবে।</span>
-                    </label>
-                    <p className="mt-3 text-xs text-slate-500">
-                      Apply target: {selectAllBatch ? "সব import row" : selectedIds.length ? `${selectedIds.length}টি selected row` : "সব import row"}।
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={() => applyBatchMetadataNow()}
-                      disabled={loading}
-                      className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      {batchOverwriteExisting ? "Replace Existing Metadata & Revalidate" : "Apply to Missing Fields & Revalidate"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => applyBatchMetadataNow(true)}
-                      disabled={loading || (!batchMetadata.examName.trim() && !batchOccurrences.some((item) => item.examName.trim()))}
-                      className="mt-2 ml-2 rounded-lg border border-emerald-300 bg-emerald-50 px-4 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50"
-                    >
-                      Apply as Primary Occurrence to All / Selected
-                    </button>
-                  </div></details>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "Replace & Revalidate" : "Apply to Blanks"}</button>
+                      <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100 disabled:opacity-50">Apply as Primary Occurrence to All / Selected</button>
+                    </div>
+                  </section>
 
                   <section id="manual-question-edit-form" className={`rounded-lg border border-amber-200 bg-white p-3 ${editingData ? "" : "hidden"}`}>
                     <h3 className="text-base font-bold text-slate-900">
@@ -1056,19 +1004,7 @@ export default function QuestionImportPanel() {
               )}
               {summary && (
                 <>
-                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Import Preview
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Review the extracted records before committing.
-                      </p>
-                    </div>
-                    <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                      Batch: {batchId.slice(0, 8)}
-                    </span>
-                  </div>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">Import Preview <span className="font-normal text-slate-400">/</span> <span className="text-blue-700">Extracted Questions</span></h3><span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Batch: {batchId.slice(0, 8)}</span></div>
 
                   <div className="mb-2 grid grid-cols-4 gap-1.5 lg:grid-cols-5">
                     {[
@@ -1099,7 +1035,7 @@ export default function QuestionImportPanel() {
                     ].map((item) => (
                       <div
                         key={item.label}
-                        className="rounded-xl border border-slate-200 bg-white p-4"
+                        className="rounded-lg border border-slate-200 bg-white p-2"
                       >
                         <div className="flex items-center justify-between">
                           <p className="text-xs font-semibold text-slate-500">
@@ -1109,7 +1045,7 @@ export default function QuestionImportPanel() {
                             {item.icon}
                           </span>
                         </div>
-                        <p className={`mt-2 text-2xl font-black ${item.color}`}>
+                        <p className={`mt-1 text-lg font-black ${item.color}`}>
                           {item.value.toLocaleString("en-US")}
                         </p>
                       </div>
@@ -1155,38 +1091,10 @@ export default function QuestionImportPanel() {
                     </section>
                   )}
 
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        Extracted Questions
-                      </h4>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Select records to commit or skip.
-                      </p>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={selectAllValid}
-                        disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Select All Rows (Across All Pages)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }}
-                        disabled={loading || (selectedIds.length === 0 && !selectAllBatch)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Clear Selection
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="sticky bottom-0 z-20 mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white/95 p-2 shadow-lg backdrop-blur">
-                    <span className="mr-auto text-xs font-semibold text-slate-600">
+                  <div className="sticky bottom-0 z-20 mb-2 flex flex-nowrap items-center gap-1.5 overflow-x-auto rounded-md border border-slate-200 bg-white/95 p-1.5 shadow-md backdrop-blur">
+                    <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="shrink-0 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">Select All Rows (Across All Pages)</button>
+                    <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="shrink-0 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">Clear Selection</button>
+                    <span className="mr-auto shrink-0 text-[10px] font-semibold text-slate-600">
                       {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
                     </span>
 
@@ -1221,9 +1129,9 @@ export default function QuestionImportPanel() {
                     </a>
                   </div>
 
-                  <div className="mb-2 flex flex-wrap items-center gap-2 rounded-lg border border-slate-200 bg-white px-2 py-1.5"><span className="mr-auto text-[11px] font-semibold text-slate-600">Details:</span><button type="button" onClick={() => setShowAllDetails(false)} className="rounded px-2 py-1 text-[10px] font-semibold text-slate-600 hover:bg-slate-100">Collapse All</button><button type="button" onClick={() => setShowAllDetails(true)} className="rounded bg-blue-100 px-2 py-1 text-[10px] font-semibold text-blue-700">Expand All</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+                  <div className="mb-1 flex justify-end"><button type="button" onClick={() => { setShowAllDetails((current) => !current); setDetailOverrides({}); }} className="rounded px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">{showAllDetails ? "Hide Details" : "Show Details"}</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[1120px] text-left text-xs">
+                      <table className="w-full min-w-[980px] text-left text-xs">
                         <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                           <tr>
                             <th className="w-12 p-3">Select</th>
@@ -1306,24 +1214,17 @@ export default function QuestionImportPanel() {
                                     </div>
                                   )}
 
-                                  {raw.correctAnswer != null && (
-                                    <p className="mt-1 text-[11px] font-semibold text-emerald-700">
-                                      Correct Answer: {String(raw.correctAnswer)}
-                                    </p>
-                                  )}
-
-                                  <div className="mt-1 flex flex-wrap gap-x-3 gap-y-0.5 text-[10px] text-slate-600">
-                                    {raw.questionType != null && <span>Type: <strong>{String(raw.questionType)}</strong></span>}
-                                    {raw.difficulty != null && <span>Difficulty: <strong>{String(raw.difficulty)}</strong></span>}
-                                    {raw.examName != null && <span>Exam: <strong>{String(raw.examName)}</strong></span>}
-                                    {raw.examYear != null && <span>Year: <strong>{String(raw.examYear)}</strong></span>}
-                                    {raw.institution != null && <span>Institution: <strong>{String(raw.institution)}</strong></span>}
-                                    {raw.postName != null && <span>Post: <strong>{String(raw.postName)}</strong></span>}
-                                    {raw.department != null && <span>Department: <strong>{String(raw.department)}</strong></span>}
-                                  </div>
-                                  <details open={showAllDetails} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                    <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Additional details · explanation · source · occurrences · other fields</summary>
+                                  <details open={detailOverrides[row.id] ?? showAllDetails} onToggle={(event) => setDetailOverrides((current) => ({ ...current, [row.id]: event.currentTarget.open }))} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</summary>
                                     <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
+                                      {raw.correctAnswer != null && <p className="text-[11px] font-semibold text-emerald-700"><strong>Correct Answer:</strong> {String(raw.correctAnswer)}</p>}
+                                      {raw.questionType != null && <p className="text-[11px]"><strong>Type:</strong> {String(raw.questionType)}</p>}
+                                      {raw.difficulty != null && <p className="text-[11px]"><strong>Difficulty:</strong> {String(raw.difficulty)}</p>}
+                                      {raw.examName != null && <p className="text-[11px]"><strong>Exam:</strong> {String(raw.examName)}</p>}
+                                      {raw.examYear != null && <p className="text-[11px]"><strong>Year:</strong> {String(raw.examYear)}</p>}
+                                      {raw.institution != null && <p className="text-[11px]"><strong>Institution:</strong> {String(raw.institution)}</p>}
+                                      {raw.postName != null && <p className="text-[11px]"><strong>Post:</strong> {String(raw.postName)}</p>}
+                                      {raw.department != null && <p className="text-[11px]"><strong>Department:</strong> {String(raw.department)}</p>}
                                       {raw.explanation != null && String(raw.explanation).trim() !== "" && <p className="whitespace-pre-wrap text-[11px]"><strong>Explanation:</strong> {String(raw.explanation)}</p>}
                                       {raw.source != null && <p className="text-[11px]"><strong>Source:</strong> {String(raw.source)}</p>}
                                       {raw.sourcePage != null && <p className="text-[11px]"><strong>Source Page:</strong> {String(raw.sourcePage)}</p>}
