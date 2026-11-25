@@ -522,6 +522,31 @@ export class ImportsController {
     return this.importsService.applyBatchMetadata(id, body);
   }
 
+  @Put(':id/duplicate-review')
+  @HttpCode(HttpStatus.OK)
+  reviewDuplicates(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { rowIds?: unknown; action?: unknown },
+  ) {
+    if (
+      !Array.isArray(body.rowIds) ||
+      body.rowIds.length === 0 ||
+      body.rowIds.some((rowId) => typeof rowId !== 'string')
+    ) {
+      throw new BadRequestException('Select at least one duplicate row.');
+    }
+
+    if (body.action !== 'PASS' && body.action !== 'RECHECK') {
+      throw new BadRequestException('Duplicate review action must be PASS or RECHECK.');
+    }
+
+    return this.importsService.reviewDuplicates(
+      id,
+      body.rowIds as string[],
+      body.action,
+    );
+  }
+
   @Put(':id/rows/:rowId')
   @HttpCode(HttpStatus.OK)
   updateImportRow(
