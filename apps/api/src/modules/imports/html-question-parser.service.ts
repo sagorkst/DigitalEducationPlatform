@@ -272,12 +272,18 @@ export class HtmlQuestionParserService {
       '[data-topic]',
     ]);
 
-    const examReference = this.extractBySelectors($, container, [
-      '.q-exam-ref',
-      '.exam-name',
-      '.exam-reference',
-      '.question-exam',
-    ]);
+    const examReference =
+      this.extractBySelectors($, container, [
+        '.q-exam-ref',
+        '.exam-name',
+        '.exam-reference',
+        '.question-exam',
+        '.exam-title',
+        '[data-exam-name]',
+      ]) ||
+      container.find('[data-exam-name]').first().attr('data-exam-name') ||
+      this.firstAttribute(container, ['data-exam-name', 'data-exam']) ||
+      null;
 
     const examMetadata = this.extractExamMetadata(examReference);
     const examName = examMetadata.examName;
@@ -291,6 +297,8 @@ export class HtmlQuestionParserService {
       '.exam-name',
       '.exam-reference',
       '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
       '.question-meta',
       '.metadata',
       '.exam',
@@ -382,6 +390,8 @@ export class HtmlQuestionParserService {
       '.exam-name',
       '.exam-reference',
       '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
       '.exam',
       '.metadata',
       '.question-meta',
@@ -638,6 +648,8 @@ export class HtmlQuestionParserService {
       '.exam-name',
       '.exam-reference',
       '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
       '.question-meta',
       '.metadata',
     ].join(', ')).remove();
