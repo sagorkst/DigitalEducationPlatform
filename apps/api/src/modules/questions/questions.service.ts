@@ -153,6 +153,13 @@ export class QuestionsService {
       );
     }
 
+    if (dto.options?.some((option) =>
+      !option.optionText.trim() &&
+      !(Array.isArray(option.imageReferences) && option.imageReferences.length > 0)
+    )) {
+      throw new BadRequestException('Each option must contain text or at least one image.');
+    }
+
     const questionCode = `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
 
     try {
@@ -1013,6 +1020,13 @@ export class QuestionsService {
           throw new BadRequestException(
             'MCQ questions must have 2 to 4 options.',
           );
+        }
+
+        if (nextOptions.some((option) =>
+          !option.optionText.trim() &&
+          !(Array.isArray(option.imageReferences) && option.imageReferences.length > 0)
+        )) {
+          throw new BadRequestException('Each option must contain text or at least one image.');
         }
 
         // Resolve Master Subject/Topic relations only when UUIDs are supplied.
