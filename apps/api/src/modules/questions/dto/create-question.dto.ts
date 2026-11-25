@@ -49,6 +49,11 @@ export class QuestionOptionDto {
   optionText!: string;
 
   @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
+
+  @IsOptional()
   @IsBoolean()
   isCorrect?: boolean;
 
@@ -126,6 +131,11 @@ export class CreateQuestionDto {
   @IsNotEmpty()
   @MaxLength(1000)
   questionText!: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
 
   @IsOptional()
   @IsEnum(QuestionType)
