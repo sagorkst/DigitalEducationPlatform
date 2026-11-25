@@ -1032,7 +1032,7 @@ export default function QuestionImportPanel() {
                           </div>
                           <div className="space-y-2">
                             {editingOptions.map((option, index) => (
-                              <div key={index} className="flex items-center gap-2">
+                              <div key={index} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto_auto] items-center gap-2">
                                 <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
                                 <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1} text`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
                                 <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={option.isCorrect} onChange={() => toggleCorrectEditingOption(index)} /> Correct</label>
@@ -1042,7 +1042,7 @@ export default function QuestionImportPanel() {
                                   onChange={(e) => setEditingOptions((current) => current.map((item, i) => i === index ? { ...item, imageReferences: e.target.value.split("\n").map((value) => value.trim()).filter(Boolean) } : item))}
                                   placeholder="Option image URLs (one per line)"
                                   rows={2}
-                                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs sm:col-span-2"
+                                  className="col-span-full w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
                                 />
                               </div>
                             ))}
