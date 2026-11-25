@@ -575,6 +575,51 @@ test('23 - rejects invalid import row status', async () => {
 });
 
 // =====================================================
+// MANUAL DUPLICATE REVIEW
+// =====================================================
+
+test('manually passing a duplicate persists the override and revalidates it as valid', async () => {
+  const { service, prisma } = createService();
+  const row = {
+    id: 'row-duplicate',
+    rowNumber: 2,
+    status: 'DUPLICATE',
+    rawData: validRow(),
+  };
+  let questionLookups = 0;
+
+  prisma.importBatch.findUnique = async () => ({
+    id: BATCH_ID,
+    status: 'REVIEW',
+  });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.findMany = async () => [row];
+  prisma.importRow.update = async ({ data }) => {
+    row.rawData = data.rawData;
+    if (data.status) row.status = data.status;
+    return row;
+  };
+  prisma.question.findFirst = async () => {
+    questionLookups++;
+    return { id: 'existing-question' };
+  };
+
+  const result = await service.reviewDuplicates(
+    BATCH_ID,
+    ['row-duplicate'],
+    'PASS',
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.updatedRows, 1);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.duplicateRows, 0);
+  assert.equal(row.status, 'VALID');
+  assert.equal(row.rawData._importReviewOverride.duplicate, 'PASS');
+  assert.equal(questionLookups, 0);
+});
+
+// =====================================================
 // SKIP ROWS
 // =====================================================
 
