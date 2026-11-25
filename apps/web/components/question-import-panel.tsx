@@ -106,7 +106,7 @@ export default function QuestionImportPanel() {
   const [batchOverwriteExisting, setBatchOverwriteExisting] = useState(false);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
-  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
+  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; imageReferences: string[]; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
 
   useEffect(() => {
@@ -434,6 +434,7 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => [...current, {
       label: String.fromCharCode(65 + current.length),
       optionText: "",
+      imageReferences: [],
       isCorrect: false,
       sortOrder: current.length,
     }]);
@@ -477,6 +478,7 @@ export default function QuestionImportPanel() {
             return {
               label: String(optionData.label ?? String.fromCharCode(65 + index)),
               optionText: String(optionData.optionText ?? ""),
+              imageReferences: Array.isArray(optionData.imageReferences) ? optionData.imageReferences.filter((value): value is string => typeof value === "string") : [],
               isCorrect: Boolean(optionData.isCorrect),
               sortOrder: Number(optionData.sortOrder ?? index),
             };
@@ -549,7 +551,7 @@ export default function QuestionImportPanel() {
     if (!batchId || !editingRowId || !editingData) return;
 
     const normalizedOptions = editingOptions
-      .filter((option) => option.optionText.trim())
+      .filter((option) => option.optionText.trim() || option.imageReferences.length > 0)
       .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
     if (normalizedOptions.length > 4) {
       setError("সর্বোচ্চ ৪টি Option দেওয়া যাবে। Option ও Correct Answer ফাঁকা রাখা যাবে।");
@@ -961,8 +963,15 @@ export default function QuestionImportPanel() {
                         <textarea
                           value={String(editingData.questionText ?? "")}
                           onChange={(e) => updateEditingField("questionText", e.target.value)}
-                          placeholder="Question Text"
+                          placeholder="Question Text (image-only questions are supported)"
                           rows={3}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                        <textarea
+                          value={Array.isArray(editingData.imageReferences) ? editingData.imageReferences.join("\n") : ""}
+                          onChange={(e) => updateEditingField("imageReferences", e.target.value.split("\n").map((value) => value.trim()).filter(Boolean))}
+                          placeholder="Question image URLs (one per line)"
+                          rows={2}
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                         />
 
@@ -1025,9 +1034,16 @@ export default function QuestionImportPanel() {
                             {editingOptions.map((option, index) => (
                               <div key={index} className="flex items-center gap-2">
                                 <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
-                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1}`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1} text`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
                                 <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={option.isCorrect} onChange={() => toggleCorrectEditingOption(index)} /> Correct</label>
                                 <button type="button" onClick={() => removeEditingOption(index)} aria-label="Remove option" className="rounded-md border border-red-200 px-2 py-2 text-red-600">×</button>
+                                <textarea
+                                  value={option.imageReferences.join("\n")}
+                                  onChange={(e) => setEditingOptions((current) => current.map((item, i) => i === index ? { ...item, imageReferences: e.target.value.split("\n").map((value) => value.trim()).filter(Boolean) } : item))}
+                                  placeholder="Option image URLs (one per line)"
+                                  rows={2}
+                                  className="w-full rounded-md border border-slate-300 px-3 py-2 text-xs sm:col-span-2"
+                                />
                               </div>
                             ))}
                             {editingOptions.length === 0 && <p className="text-xs text-slate-500">এই প্রশ্নে এখনো কোনো Option নেই।</p>}
@@ -1145,7 +1161,13 @@ export default function QuestionImportPanel() {
                                         Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
                                       </p>
                                     )}
-                                  {String(raw.questionText ?? "â€”")}
+                                  {String(raw.questionText ?? "")}
+                                  {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {raw.imageReferences.map((source: unknown, index: number) => typeof source === "string" ? <img key={index} src={source} alt={`Question image ${index + 1}`} loading="lazy" className="max-h-36 max-w-full rounded border border-slate-200 object-contain" /> : null)}
+                                    </div>
+                                  )}
+                                  {!String(raw.questionText ?? "").trim() && (!Array.isArray(raw.imageReferences) || raw.imageReferences.length === 0) && <span className="text-red-600">Question text/image missing</span>}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
                                     <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
                                       {raw.options.map((option: { label?: string; optionText?: string; text?: string; isCorrect?: boolean }, index: number) => (
@@ -1161,6 +1183,11 @@ export default function QuestionImportPanel() {
                                             {option.label ?? String.fromCharCode(65 + index)}.
                                           </span>
                                           {option.optionText ?? option.text ?? ""}
+                                          {Array.isArray(option.imageReferences) && option.imageReferences.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                              {option.imageReferences.map((source: unknown, imageIndex: number) => typeof source === "string" ? <img key={imageIndex} src={source} alt={`Option ${option.label ?? index} image ${imageIndex + 1}`} loading="lazy" className="max-h-24 max-w-full rounded border border-slate-200 object-contain" /> : null)}
+                                            </div>
+                                          )}
                                           {option.isCorrect && (
                                             <span className="ml-2">✓ Correct</span>
                                           )}
