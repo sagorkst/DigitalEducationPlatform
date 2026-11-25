@@ -86,7 +86,7 @@ export default function QuestionImportPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-    const [rows, setRows] = useState<ImportRow[]>([]);
+  const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAllBatch, setSelectAllBatch] = useState(false);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
