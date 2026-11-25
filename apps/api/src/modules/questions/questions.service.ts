@@ -243,6 +243,7 @@ export class QuestionsService {
           data: {
             questionCode,
             questionText: dto.questionText,
+            ...(dto.imageReferences?.length ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue } : {}),
             questionType,
 
             subject: selectedSubject?.name ?? dto.subject,
@@ -273,6 +274,7 @@ export class QuestionsService {
               create: (dto.options ?? []).map((option) => ({
                 label: option.label,
                 optionText: option.optionText,
+                ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
                 isCorrect: option.isCorrect ?? false,
                 sortOrder: option.sortOrder ?? 0,
               })),
@@ -1135,6 +1137,10 @@ export class QuestionsService {
             ? { questionText: dto.questionText }
             : {}),
 
+          ...(dto.imageReferences !== undefined
+            ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue }
+            : {}),
+
           ...(dto.questionType !== undefined
             ? { questionType: dto.questionType }
             : {}),
@@ -1203,6 +1209,7 @@ export class QuestionsService {
                     create: dto.options.map((option) => ({
                       label: option.label,
                       optionText: option.optionText,
+                      ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
                       isCorrect: option.isCorrect ?? false,
                       sortOrder: option.sortOrder ?? 0,
                     })),
@@ -1370,6 +1377,7 @@ export class QuestionsService {
 
         type QuestionSnapshot = {
           questionText: string;
+          imageReferences?: unknown;
           questionType:
             | 'MCQ'
             | 'TRUE_FALSE'
@@ -1386,6 +1394,7 @@ export class QuestionsService {
           options: {
             label: string;
             optionText: string;
+            imageReferences?: unknown;
             isCorrect: boolean;
             sortOrder: number;
           }[];
@@ -1440,6 +1449,7 @@ export class QuestionsService {
           where: { id },
           data: {
             questionText: snapshot.questionText,
+            ...(Array.isArray(snapshot.imageReferences) ? { imageReferences: snapshot.imageReferences as Prisma.InputJsonValue } : {}),
             questionType: snapshot.questionType,
             subject: snapshot.subject,
             topic: snapshot.topic,
@@ -1470,6 +1480,7 @@ export class QuestionsService {
               create: snapshot.options.map((option) => ({
                 label: option.label,
                 optionText: option.optionText,
+                ...(Array.isArray(option.imageReferences) ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
                 isCorrect: option.isCorrect,
                 sortOrder: option.sortOrder,
               })),
