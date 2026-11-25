@@ -133,6 +133,7 @@ export class ImportsController {
       const options = question.options.map((option, index) => ({
         label: option.label,
         optionText: option.text,
+        imageReferences: option.imageReferences,
         isCorrect: option.isCorrect === true,
         sortOrder: index + 1,
       }));
@@ -145,6 +146,7 @@ export class ImportsController {
 
       return {
         questionText: question.questionText,
+        questionImages: question.imageReferences,
         questionType: question.questionType,
         subject: question.subject ?? '',
         topic: question.topic ?? '',
@@ -170,6 +172,10 @@ export class ImportsController {
           sourceUrl: question.sourceUrl,
           sourceQuestionId: question.sourceQuestionId,
           imageReferences: question.imageReferences,
+          optionImageReferences: question.options.map((option) => ({
+            label: option.label,
+            imageReferences: option.imageReferences,
+          })),
           confidence: question.confidence,
           warnings: question.warnings,
         },
