@@ -927,18 +927,23 @@ export class ImportsService {
             if (normalized) seenQuestions.add(normalized);
             if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
 
-            const existing = normalized ? await this.prisma.question.findFirst({
-              where: {
-                deletedAt: null,
-                questionText: {
-                  equals: questionText,
-                  mode: 'insensitive',
-                },
-              },
-              select: {
-                id: true,
-              },
-            }) : null;
+            const existing = normalized
+              ? await this.prisma.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    questionText: { equals: questionText, mode: 'insensitive' },
+                  },
+                  select: { id: true },
+                })
+              : questionImages.length > 0
+                ? await this.prisma.question.findFirst({
+                    where: {
+                      deletedAt: null,
+                      imageReferences: { equals: questionImages as Prisma.InputJsonValue },
+                    },
+                    select: { id: true },
+                  })
+                : null;
 
             if (existing) {
               rowStatus = 'DUPLICATE';
@@ -1147,13 +1152,23 @@ export class ImportsService {
           errors.push('Duplicate question found within this import file.');
           duplicateRows++;
         } else {
-          const existing = normalized ? await tx.question.findFirst({
-            where: {
-              deletedAt: null,
-              questionText: { equals: questionText, mode: 'insensitive' },
-            },
-            select: { id: true },
-          }) : null;
+          const existing = normalized
+            ? await tx.question.findFirst({
+                where: {
+                  deletedAt: null,
+                  questionText: { equals: questionText, mode: 'insensitive' },
+                },
+                select: { id: true },
+              })
+            : questionImages.length > 0
+              ? await tx.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    imageReferences: { equals: questionImages as Prisma.InputJsonValue },
+                  },
+                  select: { id: true },
+                })
+              : null;
 
           if (existing) {
             rowStatus = 'DUPLICATE';
