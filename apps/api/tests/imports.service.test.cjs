@@ -595,7 +595,9 @@ test('manually passing a duplicate persists the override and revalidates it as v
   prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
   prisma.importRow.findMany = async () => [row];
   prisma.importRow.update = async ({ data }) => {
-    row.rawData = data.rawData;
+    if (Object.prototype.hasOwnProperty.call(data, 'rawData')) {
+      row.rawData = data.rawData;
+    }
     if (data.status) row.status = data.status;
     return row;
   };
