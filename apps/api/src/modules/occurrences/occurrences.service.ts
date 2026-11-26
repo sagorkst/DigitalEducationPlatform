@@ -309,9 +309,10 @@ export class OccurrencesService {
               'institution', 'examName', 'examYear', 'postName', 'institutionId',
               'examId', 'postId', 'source', 'sourceDocumentId',
             ]) {
+              const referenceValue = (references as Record<string, unknown>)[field];
               if ((existing[field] === null || existing[field] === undefined || existing[field] === '') &&
-                  references[field] !== null && references[field] !== undefined && references[field] !== '') {
-                patch[field] = references[field];
+                  referenceValue !== null && referenceValue !== undefined && referenceValue !== '') {
+                patch[field] = referenceValue;
               }
             }
             if (existing.department == null && dto.department !== undefined) patch.department = dto.department;
@@ -320,7 +321,7 @@ export class OccurrencesService {
             if (existing.sourceUrl == null && dto.sourceUrl !== undefined) patch.sourceUrl = dto.sourceUrl;
             return tx.questionOccurrence.update({
               where: { id: existing.id },
-              data: patch,
+              data: patch as any,
               include: this.occurrenceInclude,
             });
           }

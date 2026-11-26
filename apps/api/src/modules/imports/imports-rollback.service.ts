@@ -20,6 +20,7 @@ export class ImportsRollbackService {
             status: 'IMPORTED',
             questionId: { not: null },
           },
+          orderBy: { rowNumber: 'asc' },
           select: {
             id: true,
             questionId: true,
@@ -202,7 +203,7 @@ export class ImportsRollbackService {
         for (const snapshot of snapshotsToRestore) {
           await tx.questionOccurrence.update({
             where: { id: snapshot.id },
-            data: snapshot.data,
+            data: snapshot.data as any,
           });
           restoredOccurrences++;
         }

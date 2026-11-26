@@ -737,7 +737,7 @@ export class ImportsService {
         }
         if (Object.keys(patch).length > 0) {
           capture(existing);
-          await tx.questionOccurrence.update({ where: { id: existing.id }, data: patch });
+          await tx.questionOccurrence.update({ where: { id: existing.id }, data: patch as any });
         }
         continue;
       }
@@ -842,7 +842,10 @@ export class ImportsService {
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
       if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
-      const match = OccurrenceIdentityService.classify(resolvedOccurrences, resolved);
+      const match = OccurrenceIdentityService.classify(
+        resolvedOccurrences as unknown as Record<string, any>[],
+        resolved,
+      );
       if (match.kind === 'AMBIGUOUS') {
         throw new BadRequestException('একই প্রশ্নের জন্য একাধিক অস্পষ্ট Exam Occurrence পাওয়া গেছে।');
       }
@@ -1449,7 +1452,7 @@ export class ImportsService {
           let target: Record<string, unknown> | undefined;
 
           if (hasCore) {
-            const match = OccurrenceIdentityService.classify(existingOccurrences, addition);
+            const match = OccurrenceIdentityService.classify(existingOccurrences, addition as any);
             if (match.kind === 'AMBIGUOUS') {
               throw new BadRequestException(
                 'এই Batch Metadata একাধিক Occurrence-এর সঙ্গে মিলে যাচ্ছে। Year বা Post নির্দিষ্ট করুন।',
