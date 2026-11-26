@@ -273,6 +273,10 @@ export class ImportsService {
         }
       }
 
+      if ('imageReferences' in data) {
+        data.imageReferences = this.parseJsonValue(data.imageReferences);
+      }
+
       if ('options' in data) {
         data.options = this.parseJsonValue(data.options);
       }
