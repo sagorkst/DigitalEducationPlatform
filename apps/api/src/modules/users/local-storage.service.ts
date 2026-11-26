@@ -90,10 +90,10 @@ export class LocalStorageService {
 
       if (
         !metadata.format ||
-        !['jpeg', 'png', 'webp'].includes(metadata.format)
+        !['jpeg', 'png', 'webp', 'gif', 'svg'].includes(metadata.format)
       ) {
         throw new BadRequestException(
-          'Only JPEG, PNG and WebP images are allowed.',
+          'Only JPEG, PNG, WebP, GIF and SVG images are allowed.',
         );
       }
 
