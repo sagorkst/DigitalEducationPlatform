@@ -6,6 +6,7 @@ import {
   IsInt,
   IsUUID,
   IsUrl,
+  IsBoolean,
   MaxLength,
   Min,
   Max,
@@ -76,4 +77,8 @@ export class UpdateOccurrenceDto {
   @IsOptional()
   @IsUUID()
   sourceDocumentId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
 }
