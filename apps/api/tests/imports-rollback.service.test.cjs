@@ -67,6 +67,15 @@ function createService(options = {}) {
       findMany: async () => [],
     },
 
+    questionOccurrence: {
+      findMany: async () => options.occurrences ?? [],
+      update: async ({ where, data }) => {
+        options.occurrenceUpdates?.push({ where, data });
+        return { id: where.id, ...data };
+      },
+      deleteMany: async () => ({ count: 0 }),
+    },
+
     $transaction: async (callback) => callback(prisma),
   };
 
@@ -653,4 +662,42 @@ test('rollback propagates transaction errors', async () => {
     service.rollback('batch-001'),
     /Transaction failed/,
   );
+});
+
+test('rollback restores the previous metadata and Primary flag of an existing Occurrence', async () => {
+  const occurrenceUpdates = [];
+  const batch = createBatch({
+    rows: [{
+      id: 'row-link',
+      questionId: 'question-linked',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: [],
+          occurrenceSnapshots: [{
+            id: 'occurrence-primary',
+            questionId: 'question-linked',
+            data: { isPrimary: false, examYear: 2022 },
+          }],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [{
+      id: 'occurrence-primary',
+      updatedAt: new Date('2026-01-01T10:30:00.000Z'),
+    }],
+    occurrenceUpdates,
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.rolledBackQuestions, 0);
+  assert.equal(result.data.restoredOccurrences, 1);
+  assert.deepEqual(occurrenceUpdates, [{
+    where: { id: 'occurrence-primary' },
+    data: { isPrimary: false, examYear: 2022 },
+  }]);
 });
