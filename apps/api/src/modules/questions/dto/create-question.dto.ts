@@ -131,7 +131,6 @@ export class QuestionOccurrenceDto {
 
 export class CreateQuestionDto {
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
   questionText!: string;
 
