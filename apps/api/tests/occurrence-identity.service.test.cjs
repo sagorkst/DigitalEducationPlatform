@@ -21,6 +21,30 @@ function occurrence(year, overrides = {}) {
   };
 }
 
+test('findMatch takes a per-Question transaction lock before reading occurrences', async () => {
+  let lockCalled = false;
+  const db = {
+    $queryRaw: async (strings, questionId) => {
+      lockCalled = true;
+      assert.match(strings.join(''), /pg_advisory_xact_lock/);
+      assert.equal(questionId, 'question-lock-test');
+      return [];
+    },
+    questionOccurrence: {
+      findMany: async () => [],
+    },
+  };
+
+  const result = await OccurrenceIdentityService.findMatch(
+    db,
+    'question-lock-test',
+    { ...base, examYear: 2020 },
+  );
+
+  assert.equal(lockCalled, true);
+  assert.equal(result.kind, 'CREATE');
+});
+
 test('same Year identity reuses an occurrence regardless of question number', () => {
   const result = OccurrenceIdentityService.classify(
     [occurrence(2020)],
