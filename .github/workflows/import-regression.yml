@@ -15,6 +15,20 @@ permissions:
 jobs:
   import-regression:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: ci
+          POSTGRES_PASSWORD: ci
+          POSTGRES_DB: shikhasetu_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U ci -d shikhasetu_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -39,6 +53,11 @@ jobs:
 
       - name: Validate Prisma schema
         run: npx prisma validate --config prisma7.config.ts
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/shikhasetu_ci?schema=public
+
+      - name: Deploy all Prisma migrations to clean PostgreSQL
+        run: npx prisma migrate deploy --config prisma7.config.ts
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/shikhasetu_ci?schema=public
 
