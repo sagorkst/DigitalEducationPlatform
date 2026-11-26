@@ -73,12 +73,14 @@ export class OccurrenceIdentityService {
     const leftPostName = this.normalize(left.postName);
     const rightPostName = this.normalize(right.postName);
 
+    // When both IDs exist they are authoritative. When either ID is absent,
+    // compare names whenever both sides have them; a known different Post
+    // must never be treated as a wildcard match.
     if (leftPostId && rightPostId) return leftPostId === rightPostId;
     if (leftPostName && rightPostName) return leftPostName === rightPostName;
 
-    // Missing Post data is unknown. A single candidate can be enriched;
-    // multiple candidates remain ambiguous and are never guessed.
-    return !leftPostId || !rightPostId || !leftPostName || !rightPostName;
+    // A missing Post on either side is unknown and can only be enriched
+    // when the surrounding Institution/Exam/Year identifies one candidate.
   }
 
   private static needsEnrichment(
@@ -169,6 +171,13 @@ export class OccurrenceIdentityService {
     incoming: OccurrenceIdentityFields,
     excludeId?: string,
   ): Promise<OccurrenceIdentityMatch> {
+    // Serialize identity checks for the same Question. This closes the race
+    // where concurrent Manual Add / Import transactions both see no match
+    // and create duplicate occurrences with different question numbers.
+    if (typeof db.$queryRaw === 'function') {
+      await db.$queryRaw`SELECT pg_advisory_xact_lock(hashtextextended(${questionId}, 0))`;
+    }
+
     const rows = await db.questionOccurrence.findMany({
       where: { questionId },
       select: {
