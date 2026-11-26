@@ -330,7 +330,7 @@ test('CSV and XLSX exports preserve nested image references and Primary Occurren
   const csvOptions = JSON.parse(csvRow.options);
   const csvOccurrences = JSON.parse(csvRow.occurrences);
   assert.deepEqual(csvOptions[0].imageReferences, ['/uploads/questions/option-a.webp']);
-  assert.deepEqual(csvRow.imageReferences, ['/uploads/questions/question-diagram.webp']);
+  assert.deepEqual(JSON.parse(csvRow.imageReferences), ['/uploads/questions/question-diagram.webp']);
   assert.equal(csvOccurrences[0].isPrimary, true);
 
   const xlsxResult = await service.exportQuestions('xlsx');
@@ -339,7 +339,7 @@ test('CSV and XLSX exports preserve nested image references and Primary Occurren
   const xlsxOptions = JSON.parse(xlsxRow.options);
   const xlsxOccurrences = JSON.parse(xlsxRow.occurrences);
   assert.deepEqual(xlsxOptions[0].imageReferences, ['/uploads/questions/option-a.webp']);
-  assert.deepEqual(xlsxRow.imageReferences, ['/uploads/questions/question-diagram.webp']);
+  assert.deepEqual(JSON.parse(xlsxRow.imageReferences), ['/uploads/questions/question-diagram.webp']);
   assert.equal(xlsxOccurrences[0].isPrimary, true);
 });
 
