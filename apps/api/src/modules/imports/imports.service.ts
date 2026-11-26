@@ -798,10 +798,23 @@ export class ImportsService {
       throw new BadRequestException('একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।');
     }
 
+    const incomingOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
       if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+      incomingOccurrences.push(resolved);
+    }
 
+    // Resolve known years first. Otherwise a yearless row at the top of the
+    // file could be enriched with 2020 before a later 2022 row is seen,
+    // making the result depend on source row order.
+    incomingOccurrences.sort(
+      (left, right) =>
+        Number(right.examYear !== null && right.examYear !== undefined) -
+        Number(left.examYear !== null && left.examYear !== undefined),
+    );
+
+    for (const resolved of incomingOccurrences) {
       const match = await OccurrenceIdentityService.findMatch(tx, questionId, resolved);
       if (match.kind === 'AMBIGUOUS') {
         throw new BadRequestException(
@@ -930,11 +943,22 @@ export class ImportsService {
       }
     }
 
-    // Resolve all occurrence references inside the same transaction.
-    const resolvedOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    // Resolve all occurrence references before matching so that yearless
+    // rows can be checked against every known year in this same Question set.
+    const incomingOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
       if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+      incomingOccurrences.push(resolved);
+    }
+    incomingOccurrences.sort(
+      (left, right) =>
+        Number(right.examYear !== null && right.examYear !== undefined) -
+        Number(left.examYear !== null && left.examYear !== undefined),
+    );
+
+    const resolvedOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    for (const resolved of incomingOccurrences) {
       const match = OccurrenceIdentityService.classify(
         resolvedOccurrences as unknown as Record<string, any>[],
         resolved,
