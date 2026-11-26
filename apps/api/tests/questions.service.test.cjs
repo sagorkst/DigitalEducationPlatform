@@ -861,3 +861,174 @@ test('32 - Convert Prisma P2002 into ConflictException', async () => {
     ConflictException,
   );
 });
+
+
+test('manual Question creation stores one occurrence when Year and core identity match despite question-number changes', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return {
+            id: QUESTION_ID,
+            ...args.data,
+            options: args.data.options.create,
+            occurrences: args.data.occurrences.create,
+          };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  const occurrences = [
+    {
+      institution: 'PSC',
+      examName: 'BCS Preliminary',
+      examYear: 2024,
+      postName: 'Assistant Director',
+      questionNumber: 1,
+    },
+    {
+      institution: 'psc',
+      examName: 'BCS Preliminary',
+      examYear: 2024,
+      postName: 'Assistant Director',
+      questionNumber: 99,
+    },
+  ];
+
+  await service.create({
+    questionText: 'What is the capital?',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    occurrences,
+    options: validOptions,
+  });
+
+  assert.equal(questionCreateArgs.data.occurrences.create.length, 1);
+  assert.equal(questionCreateArgs.data.occurrences.create[0].questionNumber, 1);
+});
+
+test('manual Question creation preserves separate Year occurrences and a single Primary', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return { id: QUESTION_ID, ...args.data };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await service.create({
+    questionText: 'What is the capital?',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    occurrences: [
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Assistant Director',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Assistant Director',
+        isPrimary: true,
+      },
+    ],
+    options: validOptions,
+  });
+
+  assert.equal(questionCreateArgs.data.occurrences.create.length, 2);
+  assert.deepEqual(
+    questionCreateArgs.data.occurrences.create.map((item) => item.examYear),
+    [2020, 2022],
+  );
+  assert.deepEqual(
+    questionCreateArgs.data.occurrences.create.map((item) => item.isPrimary),
+    [false, true],
+  );
+});
+
+test('manual Question creation rejects multiple Primary Occurrences', async () => {
+  let createCalled = false;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async () => {
+          createCalled = true;
+          return { id: QUESTION_ID };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await assert.rejects(
+    service.create({
+      questionText: 'What is the capital?',
+      questionType: 'MCQ',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [
+        {
+          institution: 'PSC',
+          examName: 'BCS Preliminary',
+          examYear: 2020,
+          postName: 'Assistant Director',
+          isPrimary: true,
+        },
+        {
+          institution: 'PSC',
+          examName: 'BCS Preliminary',
+          examYear: 2022,
+          postName: 'Assistant Director',
+          isPrimary: true,
+        },
+      ],
+      options: validOptions,
+    }),
+    BadRequestException,
+  );
+  assert.equal(createCalled, false);
+});
+
+test('manual Question creation accepts image-only question content', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return { id: QUESTION_ID, ...args.data };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await service.create({
+    questionText: '',
+    imageReferences: ['/uploads/questions/diagram.webp'],
+    questionType: 'WRITTEN',
+    subject: 'Science',
+    topic: 'Diagrams',
+    occurrences: [],
+  });
+
+  assert.equal(questionCreateArgs.data.questionText, '');
+  assert.deepEqual(
+    questionCreateArgs.data.imageReferences,
+    ['/uploads/questions/diagram.webp'],
+  );
+});
