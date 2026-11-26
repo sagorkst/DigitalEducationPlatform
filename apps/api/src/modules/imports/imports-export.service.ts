@@ -102,6 +102,8 @@ export class ImportsExportService {
 
     const flatData = data.map((question) => ({
       ...question,
+      // CSV/XLSX cells are scalar values. Keep nested JSON round-trippable.
+      imageReferences: JSON.stringify(question.imageReferences ?? []),
       options: JSON.stringify(question.options),
       occurrences: JSON.stringify(question.occurrences),
     }));
