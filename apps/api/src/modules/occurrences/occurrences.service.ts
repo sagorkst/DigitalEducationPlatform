@@ -247,30 +247,6 @@ export class OccurrencesService {
   // DUPLICATE PROTECTION
   // ==========================================
 
-  private async ensureNoDuplicate(
-    data: {
-      questionId: string;
-      examName?: string | null;
-      institution?: string | null;
-      examYear?: number | null;
-      postName?: string | null;
-      institutionId?: string | null;
-      examId?: string | null;
-      postId?: string | null;
-    },
-    excludeId?: string,
-    db: any = this.prisma,
-  ) {
-    const match = await OccurrenceIdentityService.findMatch(db, data.questionId, data, excludeId);
-    if (match.kind !== 'CREATE') {
-      throw new ConflictException(
-        match.kind === 'AMBIGUOUS'
-          ? 'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।'
-          : 'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
-      );
-    }
-  }
-
   // ==========================================
   // CREATE QUESTION OCCURRENCE
   // ==========================================
@@ -616,14 +592,20 @@ export class OccurrencesService {
             tx,
           );
 
-          await this.ensureNoDuplicate(
-            {
-              questionId: existing.questionId,
-              ...references,
-            },
-            id,
+          const identityMatch = await OccurrenceIdentityService.findMatch(
             tx,
+            existing.questionId,
+            references,
+            id,
           );
+
+          if (identityMatch.kind !== 'CREATE') {
+            throw new ConflictException(
+              identityMatch.kind === 'AMBIGUOUS'
+                ? 'একই পরীক্ষার তথ্যের একাধিক Occurrence পাওয়া গেছে। আগে Duplicate তথ্য সমাধান করুন।'
+                : 'এই প্রশ্নের একই পরীক্ষার Occurrence আগে থেকেই যুক্ত আছে।',
+            );
+          }
 
           if (dto.isPrimary === true) {
             await tx.questionOccurrence.updateMany({
