@@ -934,7 +934,7 @@ export default function QuestionImportPanel() {
                   <section className="mb-3 grid grid-cols-1 gap-4 lg:grid-cols-5">
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-2">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Batch Metadata</h3>
-                      <div className="grid flex-1 grid-cols-4 gap-3">
+                      <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
                         <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
                         <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
                         <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
@@ -948,12 +948,12 @@ export default function QuestionImportPanel() {
                         <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
                         <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
                         <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
-                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.institution.trim() || !batchMetadata.examName.trim() || !batchMetadata.postName.trim() || !batchMetadata.examYear.trim()} title="Set as primary occurrence (Institution, Exam, Post and Year required)" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
+                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.institution.trim() || !batchMetadata.examName.trim() || !batchMetadata.postName.trim() || !/^\\d{4}$/.test(batchMetadata.examYear) || Number(batchMetadata.examYear) < 1900 || Number(batchMetadata.examYear) > 2100} title="Set as primary occurrence (Institution, Exam, Post and a valid Year required)" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
                     </div>
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
-                      <div className="grid flex-1 grid-cols-4 gap-3">
+                      <div className="grid flex-1 grid-cols-2 gap-3 xl:grid-cols-4">
                         {[
                           { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
                           { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
