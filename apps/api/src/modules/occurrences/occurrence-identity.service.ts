@@ -81,6 +81,7 @@ export class OccurrenceIdentityService {
 
     // A missing Post on either side is unknown and can only be enriched
     // when the surrounding Institution/Exam/Year identifies one candidate.
+    return true;
   }
 
   private static needsEnrichment(
