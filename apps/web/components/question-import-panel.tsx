@@ -584,7 +584,7 @@ export default function QuestionImportPanel() {
       );
       await loadRows(batchId, page);
       setMessage(setAsPrimary
-        `Primary Occurrence ${payload.updatedRows ?? 0}টি প্রশ্নের জন্য নির্ধারণ করা হয়েছে। আগের Occurrence রেকর্ড অক্ষত আছে; শুধু Primary flag পরিবর্তিত হয়েছে।`
+        ? `Primary Occurrence ${payload.updatedRows ?? 0}টি প্রশ্নের জন্য নির্ধারণ করা হয়েছে। আগের Occurrence রেকর্ড অক্ষত আছে; শুধু Primary flag পরিবর্তিত হয়েছে।`
         : `Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
