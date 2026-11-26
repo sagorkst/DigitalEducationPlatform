@@ -117,7 +117,10 @@ export class ImportsRollbackService {
     }
     const snapshotsToRestore = [...occurrenceSnapshots.values()];
 
-    if (questionIds.length === 0 && occurrenceIds.length === 0 && snapshotsToRestore.length === 0) {
+    // A completed import may legitimately link a question to an occurrence
+    // that already existed, producing no data mutation. Such a batch is still
+    // rollbackable (as a no-op); only reject batches with no imported rows.
+    if (!batch.rows.some((row) => Boolean(row.questionId))) {
       throw new BadRequestException(
         'No imported questions or linked occurrences found for rollback.',
       );
@@ -174,9 +177,39 @@ export class ImportsRollbackService {
       let restoredOccurrences = 0;
 
       if (occurrenceIds.length > 0) {
+        const createdOccurrences = await tx.questionOccurrence.findMany({
+          where: { id: { in: occurrenceIds } },
+          select: { id: true, createdAt: true, updatedAt: true },
+        });
+
+        if (createdOccurrences.length !== occurrenceIds.length) {
+          throw new ConflictException(
+            'Some imported Exam Occurrences are missing. Rollback cancelled.',
+          );
+        }
+
+        const unsafeCreatedOccurrences = createdOccurrences.filter(
+          (occurrence) =>
+            occurrence.createdAt < batch.startedAt! ||
+            occurrence.createdAt > batch.completedAt! ||
+            occurrence.updatedAt < batch.startedAt! ||
+            occurrence.updatedAt > batch.completedAt!,
+        );
+
+        if (unsafeCreatedOccurrences.length > 0) {
+          throw new ConflictException(
+            'Some imported Exam Occurrences were modified after import. Rollback cancelled.',
+          );
+        }
+
         const deletedOccurrences = await tx.questionOccurrence.deleteMany({
           where: { id: { in: occurrenceIds } },
         });
+        if (deletedOccurrences.count !== occurrenceIds.length) {
+          throw new ConflictException(
+            'Some imported Exam Occurrences changed during rollback. Rollback cancelled.',
+          );
+        }
         rolledBackOccurrences = deletedOccurrences.count;
       }
 
