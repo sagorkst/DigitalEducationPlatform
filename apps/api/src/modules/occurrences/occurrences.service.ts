@@ -319,6 +319,15 @@ export class OccurrencesService {
             if (existing.questionNumber == null && dto.questionNumber !== undefined) patch.questionNumber = dto.questionNumber;
             if (existing.sourcePage == null && dto.sourcePage !== undefined) patch.sourcePage = dto.sourcePage;
             if (existing.sourceUrl == null && dto.sourceUrl !== undefined) patch.sourceUrl = dto.sourceUrl;
+            if (dto.isPrimary === true) {
+              await tx.questionOccurrence.updateMany({
+                where: { questionId, isPrimary: true },
+                data: { isPrimary: false },
+              });
+              patch.isPrimary = true;
+            } else if (dto.isPrimary !== undefined) {
+              patch.isPrimary = dto.isPrimary;
+            }
             return tx.questionOccurrence.update({
               where: { id: existing.id },
               data: patch as any,
@@ -326,9 +335,17 @@ export class OccurrencesService {
             });
           }
 
+          if (dto.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId, isPrimary: true },
+              data: { isPrimary: false },
+            });
+          }
+
           return tx.questionOccurrence.create({
             data: {
               questionId,
+              isPrimary: dto.isPrimary ?? false,
               institution: references.institution,
               examName: references.examName,
               examYear: references.examYear,
@@ -599,11 +616,6 @@ export class OccurrencesService {
             tx,
           );
 
-          const questionNumber =
-            dto.questionNumber !== undefined
-              ? dto.questionNumber
-              : existing.questionNumber;
-
           await this.ensureNoDuplicate(
             {
               questionId: existing.questionId,
@@ -613,9 +625,17 @@ export class OccurrencesService {
             tx,
           );
 
+          if (dto.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId: existing.questionId, isPrimary: true, id: { not: id } },
+              data: { isPrimary: false },
+            });
+          }
+
           return tx.questionOccurrence.update({
             where: { id },
             data: {
+              ...(dto.isPrimary !== undefined && { isPrimary: dto.isPrimary }),
               institution: references.institution,
               examName: references.examName,
               examYear: references.examYear,
