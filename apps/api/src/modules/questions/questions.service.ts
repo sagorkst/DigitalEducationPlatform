@@ -1385,28 +1385,33 @@ export class QuestionsService {
           });
         }
 
-        await tx.question.update({
-          where: { id },
-          data: {
-            ...updateData,
+        const questionUpdateData: Prisma.QuestionUpdateInput = {
+          ...updateData,
+          ...(dto.options !== undefined
+            ? {
+                options: {
+                  deleteMany: {},
+                  create: dto.options.map((option) => ({
+                    label: option.label,
+                    optionText: option.optionText,
+                    ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
+                    isCorrect: option.isCorrect ?? false,
+                    sortOrder: option.sortOrder ?? 0,
+                  })),
+                },
+              }
+            : {}),
+        };
 
-            ...(dto.options !== undefined
-              ? {
-                  options: {
-                    deleteMany: {},
-                    create: dto.options.map((option) => ({
-                      label: option.label,
-                      optionText: option.optionText,
-                      ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
-                      isCorrect: option.isCorrect ?? false,
-                      sortOrder: option.sortOrder ?? 0,
-                    })),
-                  },
-                }
-              : {}),
-
-          },
-        });
+        // Occurrence-only edits are persisted through the shared transaction
+        // above. Do not send Prisma an empty Question update when no scalar
+        // fields or options changed.
+        if (Object.keys(questionUpdateData).length > 0) {
+          await tx.question.update({
+            where: { id },
+            data: questionUpdateData,
+          });
+        }
 
         const updated = await tx.question.findUnique({
           where: { id },

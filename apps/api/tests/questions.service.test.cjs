@@ -1040,13 +1040,21 @@ test('manual Question creation accepts image-only question content', async () =>
 
 function createQuestionUpdateHarness(existingOccurrences = []) {
   const occurrences = existingOccurrences.map((item) => ({ ...item }));
-  const calls = { occurrenceCreates: [], occurrenceUpdates: [], occurrenceUpdateMany: [] };
+  const calls = {
+    occurrenceCreates: [],
+    occurrenceUpdates: [],
+    occurrenceUpdateMany: [],
+    questionUpdates: [],
+  };
   let nextOccurrenceId = 1;
 
   const tx = {
     question: {
       findFirst: async () => createExistingQuestion({ occurrences: occurrences.map((item) => ({ ...item })) }),
-      update: async () => ({ id: QUESTION_ID }),
+      update: async ({ data }) => {
+        calls.questionUpdates.push(data);
+        return { id: QUESTION_ID };
+      },
       findUnique: async () => createExistingQuestion({ occurrences: occurrences.map((item) => ({ ...item })) }),
     },
     questionHistory: {
@@ -1293,4 +1301,23 @@ test('history restore normalizes legacy snapshots containing multiple Primary Oc
   const restored = getUpdateArgs().occurrences.create;
   assert.equal(restored.length, 2);
   assert.deepEqual(restored.map((item) => item.isPrimary), [true, false]);
+});
+
+
+test('Question update with only Occurrence additions skips an empty Question update', async () => {
+  const { service, calls } = createQuestionUpdateHarness([
+    updateOccurrence(),
+  ]);
+
+  await service.update(QUESTION_ID, {
+    addOccurrences: [{
+      institution: 'PSC',
+      examName: 'BCS Preliminary',
+      examYear: 2022,
+      postName: 'Computer Typist',
+    }],
+  });
+
+  assert.equal(calls.occurrenceCreates.length, 1);
+  assert.equal(calls.questionUpdates.length, 0);
 });
