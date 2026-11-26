@@ -53,6 +53,7 @@ const permissions = [
   // Subject and Topic management
   { key: 'subjects.manage', description: 'বিষয় পরিচালনা' },
   { key: 'topics.manage', description: 'বিষয়ভিত্তিক টপিক পরিচালনা' },
+  { key: 'academic.manage', description: 'একাডেমিক ক্লাস, সেশন, অধ্যায়, লেসন ও শিক্ষাসামগ্রী পরিচালনা' },
 ];
 
 async function main() {

@@ -108,6 +108,8 @@ model User {
   deletedAt     DateTime?
 
   memberships         Membership[]
+  academicEnrollments StudentEnrollment[]
+  lessonProgress      LessonProgress[]
   userRoles           UserRole[]
   auditLogs           AuditLog[]           @relation("AuditActor")
   importBatches       ImportBatch[]        @relation("ImportCreator")
@@ -233,8 +235,9 @@ model Subject {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  topics    Topic[]
-  questions Question[]
+  topics        Topic[]
+  questions     Question[]
+  classSubjects ClassSubject[]
 
   @@index([isActive])
 }
@@ -595,4 +598,143 @@ model PasswordResetToken {
 
   @@index([userId, createdAt])
   @@index([expiresAt])
+}
+
+
+model AcademicClass {
+  id          String   @id @default(uuid()) @db.Uuid
+  name        String
+  code        String   @unique
+  level       String?
+  description String?
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classSubjects ClassSubject[]
+  enrollments   StudentEnrollment[]
+
+  @@index([isActive, sortOrder])
+  @@index([name])
+}
+
+model AcademicSession {
+  id        String   @id @default(uuid()) @db.Uuid
+  name      String   @unique
+  startsAt  DateTime?
+  endsAt    DateTime?
+  isCurrent Boolean  @default(false)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  enrollments StudentEnrollment[]
+
+  @@index([isActive, isCurrent])
+}
+
+model ClassSubject {
+  id        String   @id @default(uuid()) @db.Uuid
+  classId   String   @db.Uuid
+  subjectId String   @db.Uuid
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  academicClass AcademicClass @relation(fields: [classId], references: [id], onDelete: Cascade)
+  subject       Subject       @relation(fields: [subjectId], references: [id], onDelete: Restrict)
+  chapters      Chapter[]
+
+  @@unique([classId, subjectId])
+  @@index([classId, isActive, sortOrder])
+  @@index([subjectId])
+}
+
+model Chapter {
+  id             String   @id @default(uuid()) @db.Uuid
+  classSubjectId String   @db.Uuid
+  name           String
+  description    String?
+  sortOrder      Int      @default(0)
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  classSubject ClassSubject @relation(fields: [classSubjectId], references: [id], onDelete: Cascade)
+  lessons      Lesson[]
+
+  @@index([classSubjectId, isActive, sortOrder])
+}
+
+model Lesson {
+  id          String   @id @default(uuid()) @db.Uuid
+  chapterId   String   @db.Uuid
+  title       String
+  description String?
+  content     String?
+  videoUrl    String?
+  durationMin Int?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  chapter   Chapter          @relation(fields: [chapterId], references: [id], onDelete: Cascade)
+  materials StudyMaterial[]
+  progress  LessonProgress[]
+
+  @@index([chapterId, isPublished, sortOrder])
+}
+
+model StudyMaterial {
+  id          String   @id @default(uuid()) @db.Uuid
+  lessonId    String   @db.Uuid
+  title       String
+  materialType String
+  fileUrl     String
+  description String?
+  sortOrder   Int      @default(0)
+  isPublished Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, isPublished, sortOrder])
+}
+
+model StudentEnrollment {
+  id        String   @id @default(uuid()) @db.Uuid
+  userId    String   @db.Uuid
+  classId   String   @db.Uuid
+  sessionId String   @db.Uuid
+  status    String   @default("ACTIVE")
+  enrolledAt DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  academicClass AcademicClass @relation(fields: [classId], references: [id], onDelete: Restrict)
+  session AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Restrict)
+
+  @@unique([userId, sessionId])
+  @@index([classId, sessionId, status])
+  @@index([userId, status])
+}
+
+model LessonProgress {
+  id          String    @id @default(uuid()) @db.Uuid
+  userId      String    @db.Uuid
+  lessonId    String    @db.Uuid
+  completedAt DateTime?
+  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime  @default(now())
+
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, lessonId])
+  @@index([userId, completedAt])
 }

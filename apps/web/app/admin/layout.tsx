@@ -18,6 +18,7 @@ const navigation = [
       { href: "/admin/questions", label: "Question Bank", icon: "❖" },
       { href: "/admin/exams", label: "Exams & Posts", icon: "▣" },
       { href: "/admin/institutions", label: "Institutions", icon: "▤" },
+      { href: "/admin/academic", label: "Academic Management", icon: "▧" },
     ],
   },
   {

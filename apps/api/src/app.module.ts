@@ -23,6 +23,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { RbacModule } from './modules/rbac/rbac.module';
 import { UsersModule } from './modules/users/users.module';
 import { AuditModule } from './modules/audit/audit.module';
+import { AcademicModule } from './modules/academic/academic.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { AuditModule } from './modules/audit/audit.module';
     RbacModule,
     UsersModule,
     AuditModule,
+    AcademicModule,
   ],
   controllers: [
     HealthController,
