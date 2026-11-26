@@ -1593,6 +1593,8 @@ export class QuestionsService {
             examId?: string | null;
             postId?: string | null;
             sourceDocumentId?: string | null;
+            isPrimary?: boolean;
+            createdAt?: string | Date;
           }[];
         };
 
@@ -1608,6 +1610,22 @@ export class QuestionsService {
             'The selected history snapshot is invalid.',
           );
         }
+
+        // Preserve the historical Primary flag. Older snapshots may contain
+        // multiple Primary flags from before the database constraint existed;
+        // in that legacy case keep the earliest-created occurrence deterministically.
+        const primaryCandidates = snapshot.occurrences
+          .map((occurrence, index) => ({
+            index,
+            createdAt: occurrence.createdAt
+              ? Date.parse(String(occurrence.createdAt))
+              : Number.MAX_SAFE_INTEGER,
+          }))
+          .filter((candidate) => snapshot.occurrences[candidate.index].isPrimary === true)
+          .sort((left, right) =>
+            left.createdAt - right.createdAt || left.index - right.index,
+          );
+        const primaryOccurrenceIndex = primaryCandidates[0]?.index ?? -1;
 
         const latestHistory = await tx.questionHistory.findFirst({
           where: { questionId: id },
@@ -1669,7 +1687,7 @@ export class QuestionsService {
 
             occurrences: {
               deleteMany: {},
-              create: snapshot.occurrences.map((occurrence) => ({
+              create: snapshot.occurrences.map((occurrence, index) => ({
                 institution: occurrence.institution,
                 examName: occurrence.examName,
                 examYear: occurrence.examYear,
@@ -1683,6 +1701,7 @@ export class QuestionsService {
                 examId: occurrence.examId,
                 postId: occurrence.postId,
                 sourceDocumentId: occurrence.sourceDocumentId,
+                isPrimary: index === primaryOccurrenceIndex,
               })),
             },
           },

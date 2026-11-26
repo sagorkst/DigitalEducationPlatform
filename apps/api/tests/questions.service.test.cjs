@@ -1195,3 +1195,102 @@ test('Manual Question creation checks known years before yearless source rows', 
   );
   assert.equal(createCalled, false);
 });
+
+
+// ==========================================
+// HISTORY RESTORE PRESERVES PRIMARY OCCURRENCE
+// ==========================================
+
+function historySnapshotWithOccurrences(occurrences) {
+  return {
+    questionText: 'Historical question text',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    correctAnswer: 'A',
+    explanation: null,
+    difficulty: 'MEDIUM',
+    status: 'DRAFT',
+    options: validOptions,
+    occurrences,
+  };
+}
+
+function createHistoryRestoreHarness(snapshot) {
+  let updateArgs;
+  const tx = {
+    question: {
+      findFirst: async () => createExistingQuestion(),
+      update: async ({ data }) => {
+        updateArgs = data;
+        return { id: QUESTION_ID };
+      },
+    },
+    questionHistory: {
+      findUnique: async () => ({ snapshot }),
+      findFirst: async () => null,
+      create: async ({ data }) => data,
+    },
+  };
+  const service = createService({
+    $transaction: async (callback) => callback(tx),
+  });
+  return { service, getUpdateArgs: () => updateArgs };
+}
+
+test('history restore preserves the saved Primary Occurrence', async () => {
+  const { service, getUpdateArgs } = createHistoryRestoreHarness(
+    historySnapshotWithOccurrences([
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Computer Typist',
+        isPrimary: false,
+        createdAt: '2020-01-01T00:00:00.000Z',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2022-01-01T00:00:00.000Z',
+      },
+    ]),
+  );
+
+  await service.restoreHistory(QUESTION_ID, 1);
+  assert.deepEqual(
+    getUpdateArgs().occurrences.create.map((item) => item.isPrimary),
+    [false, true],
+  );
+});
+
+test('history restore normalizes legacy snapshots containing multiple Primary Occurrences without deleting rows', async () => {
+  const { service, getUpdateArgs } = createHistoryRestoreHarness(
+    historySnapshotWithOccurrences([
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2020-01-01T00:00:00.000Z',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2022-01-01T00:00:00.000Z',
+      },
+    ]),
+  );
+
+  await service.restoreHistory(QUESTION_ID, 1);
+  const restored = getUpdateArgs().occurrences.create;
+  assert.equal(restored.length, 2);
+  assert.deepEqual(restored.map((item) => item.isPrimary), [true, false]);
+});
