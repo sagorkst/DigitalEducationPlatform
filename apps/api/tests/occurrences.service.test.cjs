@@ -40,6 +40,7 @@ function createOccurrence(overrides = {}) {
     examId: null,
     postId: null,
     sourceDocumentId: null,
+    isPrimary: false,
     createdAt: new Date(),
     ...overrides,
   };
@@ -108,6 +109,7 @@ function createPrisma(overrides = {}) {
       findMany: async () => [],
       findUnique: async () => createOccurrence(),
       count: async () => 0,
+      updateMany: async () => ({ count: 0 }),
       create: async ({ data }) => createOccurrence(data),
       update: async ({ data }) => createOccurrence(data),
       delete: async () => createOccurrence(),
@@ -175,6 +177,33 @@ test('01 - creates occurrence successfully using legacy references', async () =>
   );
   assert.equal(createArgs.data.examName, legacyDto.examName);
   assert.equal(createArgs.data.examYear, 2025);
+});
+
+test('01b - creates a Primary Occurrence and demotes the previous primary', async () => {
+  const { service, prisma } = createService();
+  const calls = [];
+  prisma.questionOccurrence.updateMany = async (args) => {
+    calls.push({ type: 'demote', args });
+    return { count: 1 };
+  };
+  prisma.questionOccurrence.create = async ({ data }) => {
+    calls.push({ type: 'create', data });
+    return createOccurrence(data);
+  };
+
+  const result = await service.create(QUESTION_ID, {
+    ...legacyDto,
+    isPrimary: true,
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(calls[0].type, 'demote');
+  assert.deepEqual(calls[0].args.where, {
+    questionId: QUESTION_ID,
+    isPrimary: true,
+  });
+  assert.equal(calls[1].type, 'create');
+  assert.equal(calls[1].data.isPrimary, true);
 });
 
 test('02 - creates occurrence using selected Exam and its references', async () => {
@@ -689,6 +718,31 @@ test('27 - updates occurrence fields successfully', async () => {
     updateArgs.data.sourceUrl,
     'https://example.com/new.pdf',
   );
+});
+
+test('27b - setting an occurrence Primary demotes only the other primary rows', async () => {
+  const { service, prisma } = createService();
+  let demotion;
+  let updateArgs;
+  prisma.questionOccurrence.findUnique = async () => createOccurrence();
+  prisma.questionOccurrence.updateMany = async (args) => {
+    demotion = args;
+    return { count: 1 };
+  };
+  prisma.questionOccurrence.update = async (args) => {
+    updateArgs = args;
+    return createOccurrence(args.data);
+  };
+
+  const result = await service.update(OCCURRENCE_ID, { isPrimary: true });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(demotion.where, {
+    questionId: QUESTION_ID,
+    isPrimary: true,
+    id: { not: OCCURRENCE_ID },
+  });
+  assert.equal(updateArgs.data.isPrimary, true);
 });
 
 test('28 - rejects duplicate occurrence during update', async () => {
