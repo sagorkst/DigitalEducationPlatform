@@ -701,6 +701,32 @@ test('rollback refuses to delete an imported occurrence that was edited after th
   assert.equal(deleteCalled, false);
 });
 
+test('rollback rejects when a tracked newly created occurrence is missing', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['missing-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [],
+  });
+
+  await assert.rejects(
+    service.rollback('batch-001'),
+    ConflictException,
+  );
+});
+
 test('rollback removes a newly created linked occurrence when it is unchanged', async () => {
   const batch = createBatch({
     rows: [{
