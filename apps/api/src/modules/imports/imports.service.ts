@@ -467,92 +467,152 @@ export class ImportsService {
     data: ImportData,
   ): Promise<string[]> {
     const errors: string[] = [];
-    if (!Array.isArray(data.occurrences)) return errors;
 
-    for (let index = 0; index < data.occurrences.length; index++) {
-      const occurrence = data.occurrences[index];
-      if (!occurrence || typeof occurrence !== 'object' || Array.isArray(occurrence)) continue;
-      const item = occurrence as ImportData;
-      const hasExamId = typeof item.examId === 'string' &&
-        item.examId.trim() !== '' && this.isValidUuid(item.examId);
-
-      if (hasExamId) {
-        const exam = await this.prisma.exam.findUnique({
-          where: { id: item.examId as string },
-          select: {
-            id: true, institutionId: true, postId: true, name: true, examYear: true,
-            institution: { select: { id: true, name: true, isActive: true } },
-            post: { select: { id: true, name: true } },
-          },
-        });
-        if (!exam) {
-          errors.push(`Occurrence ${index + 1}: selected Exam does not exist.`);
-          continue;
-        }
-        if (exam.institution && !exam.institution.isActive) {
-          errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
-        }
-        if (item.institutionId && item.institutionId !== exam.institutionId) {
-          errors.push(`Occurrence ${index + 1}: Institution ID does not match the selected Exam.`);
-        }
-        if (item.postId && item.postId !== exam.postId) {
-          errors.push(`Occurrence ${index + 1}: Post ID does not match the selected Exam.`);
-        }
-        if (typeof item.institution === 'string' && item.institution.trim() &&
-            exam.institution?.name &&
-            OccurrenceIdentityService.normalize(item.institution) !==
-              OccurrenceIdentityService.normalize(exam.institution.name)) {
-          errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Exam.`);
-        }
-        if (typeof item.postName === 'string' && item.postName.trim() &&
-            exam.post?.name &&
-            OccurrenceIdentityService.normalize(item.postName) !==
-              OccurrenceIdentityService.normalize(exam.post.name)) {
-          errors.push(`Occurrence ${index + 1}: Post name does not match the selected Exam.`);
-        }
-        if (typeof item.examName === 'string' && item.examName.trim() &&
-            OccurrenceIdentityService.normalize(item.examName) !==
-              OccurrenceIdentityService.normalize(exam.name)) {
-          errors.push(`Occurrence ${index + 1}: Exam name does not match the selected Exam ID.`);
-        }
-        if (item.examYear !== undefined && item.examYear !== null &&
-            String(item.examYear).trim() !== '' && Number(item.examYear) !== exam.examYear) {
-          errors.push(`Occurrence ${index + 1}: Exam Year does not match the selected Exam.`);
-        }
-        continue;
-      }
-
-      if (typeof item.institutionId === 'string' && item.institutionId.trim() &&
-          this.isValidUuid(item.institutionId)) {
-        const institution = await this.prisma.institution.findUnique({
-          where: { id: item.institutionId },
+    if (data.subjectId !== undefined && data.subjectId !== null && data.subjectId !== '') {
+      if (!this.isValidUuid(data.subjectId)) {
+        errors.push('Invalid Subject ID.');
+      } else {
+        const subject = await this.prisma.subject.findFirst({
+          where: { id: data.subjectId, isActive: true },
           select: { id: true, name: true, isActive: true },
         });
-        if (!institution) {
-          errors.push(`Occurrence ${index + 1}: selected Institution does not exist.`);
+        if (!subject) {
+          errors.push('Selected Subject does not exist or is inactive.');
+        } else if (typeof data.subject === 'string' && data.subject.trim() &&
+            OccurrenceIdentityService.normalize(data.subject) !==
+              OccurrenceIdentityService.normalize(subject.name)) {
+          errors.push('Subject name does not match the selected Subject ID.');
+        }
+      }
+    }
+
+    if (data.topicId !== undefined && data.topicId !== null && data.topicId !== '') {
+      if (!this.isValidUuid(data.topicId)) {
+        errors.push('Invalid Topic ID.');
+      } else {
+        const topic = await this.prisma.topic.findFirst({
+          where: { id: data.topicId, isActive: true },
+          include: {
+            subject: { select: { id: true, name: true, isActive: true } },
+          },
+        });
+        if (!topic || !topic.subject.isActive) {
+          errors.push('Selected Topic does not exist or its Subject is inactive.');
         } else {
-          if (!institution.isActive) {
-            errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
+          if (data.subjectId && data.subjectId !== topic.subjectId) {
+            errors.push('Selected Topic does not belong to the selected Subject.');
           }
-          if (typeof item.institution === 'string' && item.institution.trim() &&
-              OccurrenceIdentityService.normalize(item.institution) !==
-                OccurrenceIdentityService.normalize(institution.name)) {
-            errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Institution ID.`);
+          if (typeof data.topic === 'string' && data.topic.trim() &&
+              OccurrenceIdentityService.normalize(data.topic) !==
+                OccurrenceIdentityService.normalize(topic.name)) {
+            errors.push('Topic name does not match the selected Topic ID.');
           }
         }
       }
+    }
 
-      if (typeof item.postId === 'string' && item.postId.trim() && this.isValidUuid(item.postId)) {
-        const post = await this.prisma.post.findUnique({
-          where: { id: item.postId },
-          select: { id: true, name: true },
-        });
-        if (!post) {
-          errors.push(`Occurrence ${index + 1}: selected Post does not exist.`);
-        } else if (typeof item.postName === 'string' && item.postName.trim() &&
-            OccurrenceIdentityService.normalize(item.postName) !==
-              OccurrenceIdentityService.normalize(post.name)) {
-          errors.push(`Occurrence ${index + 1}: Post name does not match the selected Post ID.`);
+    if (Array.isArray(data.occurrences)) {
+      for (let index = 0; index < data.occurrences.length; index++) {
+        const occurrence = data.occurrences[index];
+        if (!occurrence || typeof occurrence !== 'object' || Array.isArray(occurrence)) continue;
+        const item = occurrence as ImportData;
+        const hasExamId = typeof item.examId === 'string' &&
+          item.examId.trim() !== '' && this.isValidUuid(item.examId);
+
+        if (item.sourceDocumentId) {
+          if (!this.isValidUuid(item.sourceDocumentId)) {
+            errors.push(`Occurrence ${index + 1}: invalid Source Document ID.`);
+          } else {
+            const document = await this.prisma.sourceDocument.findUnique({
+              where: { id: item.sourceDocumentId },
+              select: { id: true },
+            });
+            if (!document) errors.push(`Occurrence ${index + 1}: selected Source Document does not exist.`);
+          }
+        }
+
+        if (hasExamId) {
+          const exam = await this.prisma.exam.findUnique({
+            where: { id: item.examId as string },
+            select: {
+              id: true,
+              institutionId: true,
+              postId: true,
+              name: true,
+              examYear: true,
+              institution: { select: { id: true, name: true, isActive: true } },
+              post: { select: { id: true, name: true } },
+            },
+          });
+          if (!exam) {
+            errors.push(`Occurrence ${index + 1}: selected Exam does not exist.`);
+            continue;
+          }
+          if (exam.institution && !exam.institution.isActive) {
+            errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
+          }
+          if (item.institutionId && item.institutionId !== exam.institutionId) {
+            errors.push(`Occurrence ${index + 1}: Institution ID does not match the selected Exam.`);
+          }
+          if (item.postId && item.postId !== exam.postId) {
+            errors.push(`Occurrence ${index + 1}: Post ID does not match the selected Exam.`);
+          }
+          if (typeof item.institution === 'string' && item.institution.trim() &&
+              exam.institution?.name &&
+              OccurrenceIdentityService.normalize(item.institution) !==
+                OccurrenceIdentityService.normalize(exam.institution.name)) {
+            errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Exam.`);
+          }
+          if (typeof item.postName === 'string' && item.postName.trim() &&
+              exam.post?.name &&
+              OccurrenceIdentityService.normalize(item.postName) !==
+                OccurrenceIdentityService.normalize(exam.post.name)) {
+            errors.push(`Occurrence ${index + 1}: Post name does not match the selected Exam.`);
+          }
+          if (typeof item.examName === 'string' && item.examName.trim() &&
+              OccurrenceIdentityService.normalize(item.examName) !==
+                OccurrenceIdentityService.normalize(exam.name)) {
+            errors.push(`Occurrence ${index + 1}: Exam name does not match the selected Exam ID.`);
+          }
+          if (item.examYear !== undefined && item.examYear !== null &&
+              String(item.examYear).trim() !== '' && Number(item.examYear) !== exam.examYear) {
+            errors.push(`Occurrence ${index + 1}: Exam Year does not match the selected Exam.`);
+          }
+          continue;
+        }
+
+        if (typeof item.institutionId === 'string' && item.institutionId.trim() &&
+            this.isValidUuid(item.institutionId)) {
+          const institution = await this.prisma.institution.findUnique({
+            where: { id: item.institutionId },
+            select: { id: true, name: true, isActive: true },
+          });
+          if (!institution) {
+            errors.push(`Occurrence ${index + 1}: selected Institution does not exist.`);
+          } else {
+            if (!institution.isActive) {
+              errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
+            }
+            if (typeof item.institution === 'string' && item.institution.trim() &&
+                OccurrenceIdentityService.normalize(item.institution) !==
+                  OccurrenceIdentityService.normalize(institution.name)) {
+              errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Institution ID.`);
+            }
+          }
+        }
+
+        if (typeof item.postId === 'string' && item.postId.trim() && this.isValidUuid(item.postId)) {
+          const post = await this.prisma.post.findUnique({
+            where: { id: item.postId },
+            select: { id: true, name: true },
+          });
+          if (!post) {
+            errors.push(`Occurrence ${index + 1}: selected Post does not exist.`);
+          } else if (typeof item.postName === 'string' && item.postName.trim() &&
+              OccurrenceIdentityService.normalize(item.postName) !==
+                OccurrenceIdentityService.normalize(post.name)) {
+            errors.push(`Occurrence ${index + 1}: Post name does not match the selected Post ID.`);
+          }
         }
       }
     }
@@ -571,7 +631,7 @@ export class ImportsService {
     const rawYear = occurrence.examYear;
     const examYear = String(rawYear ?? '').trim() === '' ? null : Number(rawYear);
 
-    let institution: { id: string; name: string } | null = null;
+    let institution: { id: string; name: string; isActive: boolean } | null = null;
     if (occurrence.institutionId) {
       institution = await tx.institution.findUnique({
         where: { id: occurrence.institutionId },
@@ -594,7 +654,7 @@ export class ImportsService {
         const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
         institution = await tx.institution.create({
           data: { name: institutionName, slug: `${slug}-${randomBytes(4).toString('hex')}`, isActive: true },
-          select: { id: true, name: true },
+          select: { id: true, name: true, isActive: true },
         });
       }
     }
