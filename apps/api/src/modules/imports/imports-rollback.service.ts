@@ -200,7 +200,11 @@ export class ImportsRollbackService {
             'Some Exam Occurrences were modified after import. Rollback cancelled.',
           );
         }
-        for (const snapshot of snapshotsToRestore) {
+        const restoreOrder = [
+          ...snapshotsToRestore.filter((snapshot) => snapshot.data.isPrimary !== true),
+          ...snapshotsToRestore.filter((snapshot) => snapshot.data.isPrimary === true),
+        ];
+        for (const snapshot of restoreOrder) {
           await tx.questionOccurrence.update({
             where: { id: snapshot.id },
             data: snapshot.data as any,
