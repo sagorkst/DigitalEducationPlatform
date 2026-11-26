@@ -53,7 +53,7 @@ export class ImportsController {
   ) {}
 
   private async persistEmbeddedImages(html: string): Promise<string> {
-    const pattern = /data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\\s]+)/gi;
+    const pattern = /data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)/gi;
     const matches = Array.from(html.matchAll(pattern));
     const stored = new Map<string, string>();
     const apiOrigin = new URL(
@@ -64,7 +64,7 @@ export class ImportsController {
       const dataUrl = match[0];
       if (stored.has(dataUrl)) continue;
 
-      const buffer = Buffer.from(match[2].replace(/\\s/g, ''), 'base64');
+      const buffer = Buffer.from(match[2].replace(/\s/g, ''), 'base64');
       const publicPath = await this.storage.saveQuestionImage(buffer);
       stored.set(dataUrl, new URL(publicPath, apiOrigin).toString());
     }

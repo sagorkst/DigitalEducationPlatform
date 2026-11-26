@@ -596,8 +596,16 @@ export class ImportsService {
         select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
       });
       if (!exam) throw new BadRequestException('Selected Exam does not exist.');
+      if (institutionName && institution &&
+          this.normalizeText(institutionName) !== this.normalizeText(institution.name)) {
+        throw new BadRequestException('Institution name does not match the selected Institution ID.');
+      }
       if (institution && exam.institutionId && exam.institutionId !== institution.id) {
         throw new BadRequestException('Institution does not match the selected Exam.');
+      }
+      if (occurrence.postName?.trim() && post &&
+          this.normalizeText(occurrence.postName) !== this.normalizeText(post.name)) {
+        throw new BadRequestException('Post name does not match the selected Post ID.');
       }
       if (post && exam.postId && exam.postId !== post.id) {
         throw new BadRequestException('Post does not match the selected Exam.');

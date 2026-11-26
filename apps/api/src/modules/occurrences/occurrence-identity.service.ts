@@ -54,8 +54,10 @@ export class OccurrenceIdentityService {
     const leftPostName = this.normalize(left.postName);
     const rightPostName = this.normalize(right.postName);
     if (leftPostId && rightPostId) return leftPostId === rightPostId;
-    if (!leftPostId && !rightPostId && !leftPostName && !rightPostName) return true;
-    return Boolean(leftPostName && rightPostName && leftPostName === rightPostName);
+    if (leftPostId && rightPostId) return leftPostId === rightPostId;
+    if (leftPostName && rightPostName) return leftPostName === rightPostName;
+    // Missing Post metadata is unknown, not a different Post. classify() rejects multiple candidates.
+    return !leftPostId || !rightPostId || !leftPostName || !rightPostName;
   }
 
   static classify(
@@ -71,7 +73,15 @@ export class OccurrenceIdentityService {
 
     if (incomingYear !== null) {
       const sameYear = sameCore.filter((candidate) => candidate.examYear === incomingYear);
-      if (sameYear.length === 1) return { kind: 'MATCH', occurrence: sameYear[0] };
+      if (sameYear.length === 1) {
+        const occurrence = sameYear[0];
+        const needsEnrichment = ['institution', 'examName', 'postName', 'institutionId', 'examId', 'postId']
+          .some((field) =>
+            (occurrence[field] === null || occurrence[field] === undefined || occurrence[field] === '') &&
+            incoming[field] !== null && incoming[field] !== undefined && incoming[field] !== '',
+          );
+        return { kind: needsEnrichment ? 'ENRICH' : 'MATCH', occurrence };
+      }
       if (sameYear.length > 1) return { kind: 'AMBIGUOUS', candidates: sameYear };
 
       const withoutYear = sameCore.filter((candidate) => candidate.examYear === null || candidate.examYear === undefined);
@@ -80,7 +90,15 @@ export class OccurrenceIdentityService {
       return { kind: 'CREATE' };
     }
 
-    if (sameCore.length === 1) return { kind: 'MATCH', occurrence: sameCore[0] };
+    if (sameCore.length === 1) {
+      const occurrence = sameCore[0];
+      const needsEnrichment = ['institution', 'examName', 'postName', 'institutionId', 'examId', 'postId']
+        .some((field) =>
+          (occurrence[field] === null || occurrence[field] === undefined || occurrence[field] === '') &&
+          incoming[field] !== null && incoming[field] !== undefined && incoming[field] !== '',
+        );
+      return { kind: needsEnrichment ? 'ENRICH' : 'MATCH', occurrence };
+    }
     if (sameCore.length > 1) return { kind: 'AMBIGUOUS', candidates: sameCore };
     return { kind: 'CREATE' };
   }
