@@ -292,13 +292,20 @@ export class ImportsService {
   private validateRow(data: ImportData): string[] {
     const errors: string[] = [];
 
-    const questionText = data.questionText;
+    let questionText = data.questionText;
     const subject = data.subject;
     const topic = data.topic;
 
     const questionImages = data.imageReferences;
     const hasQuestionImages = Array.isArray(questionImages) &&
       questionImages.some((item) => typeof item === 'string' && item.trim().length > 0);
+
+    // Prisma stores Question text as a required string even when the content
+    // is entirely graphical. Normalize an omitted text field to an empty string.
+    if ((questionText === undefined || questionText === null) && hasQuestionImages) {
+      questionText = '';
+      data.questionText = '';
+    }
 
     if (typeof questionText !== 'string' || (!questionText.trim() && !hasQuestionImages)) {
       errors.push('Question text or at least one question image is required.');
@@ -397,7 +404,15 @@ export class ImportsService {
           const optionImages = item.imageReferences;
           const hasOptionImages = Array.isArray(optionImages) &&
             optionImages.some((image) => typeof image === 'string' && image.trim().length > 0);
-          if ((typeof item.optionText !== 'string' || !item.optionText.trim()) && !hasOptionImages) {
+          if (item.optionText === undefined || item.optionText === null) {
+            if (hasOptionImages) {
+              item.optionText = '';
+            } else {
+              errors.push(`Option ${index + 1} requires option text or at least one image.`);
+            }
+          } else if (typeof item.optionText !== 'string') {
+            errors.push(`Option ${index + 1} text must be text.`);
+          } else if (!item.optionText.trim() && !hasOptionImages) {
             errors.push(`Option ${index + 1} requires option text or at least one image.`);
           }
           if (optionImages !== undefined && (!Array.isArray(optionImages) || optionImages.some((image) => typeof image !== 'string'))) {
@@ -418,6 +433,7 @@ export class ImportsService {
     }
 
     const occurrences = data.occurrences;
+    let primaryOccurrenceCount = 0;
     if (occurrences !== undefined && occurrences !== null && !Array.isArray(occurrences)) {
       errors.push('Occurrences must be an array.');
     } else if (Array.isArray(occurrences)) {
@@ -427,6 +443,11 @@ export class ImportsService {
           return;
         }
         const item = occurrence as ImportData;
+        if (item.isPrimary !== undefined && item.isPrimary !== null && typeof item.isPrimary !== 'boolean') {
+          errors.push(`Occurrence ${index + 1}: isPrimary must be a boolean.`);
+        } else if (item.isPrimary === true) {
+          primaryOccurrenceCount++;
+        }
         for (const [field, label] of [['institution', 'Institution'], ['examName', 'Exam name'], ['postName', 'Post name']] as const) {
           if (item[field] !== undefined && item[field] !== null && typeof item[field] !== 'string') {
             errors.push(`Occurrence ${index + 1}: ${label} must be text.`);
@@ -444,6 +465,9 @@ export class ImportsService {
           }
         }
       });
+      if (primaryOccurrenceCount > 1) {
+        errors.push('Only one Primary Occurrence can be selected for a Question.');
+      }
     }
 
     if (
