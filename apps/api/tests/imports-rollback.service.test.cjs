@@ -73,7 +73,7 @@ function createService(options = {}) {
         options.occurrenceUpdates?.push({ where, data });
         return { id: where.id, ...data };
       },
-      deleteMany: async () => ({ count: 0 }),
+      deleteMany: async () => ({ count: options.deleteCount ?? 0 }),
     },
 
     $transaction: async (callback) => callback(prisma),
@@ -662,6 +662,97 @@ test('rollback propagates transaction errors', async () => {
     service.rollback('batch-001'),
     /Transaction failed/,
   );
+});
+
+test('rollback refuses to delete an imported occurrence that was edited after the batch', async () => {
+  let deleteCalled = false;
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['created-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service, prisma } = createService({
+    batch,
+    questions: [],
+    occurrences: [{
+      id: 'created-occurrence',
+      createdAt: new Date('2026-01-01T10:10:00.000Z'),
+      updatedAt: new Date('2026-01-01T11:01:00.000Z'),
+    }],
+    deleteCount: 1,
+  });
+  prisma.questionOccurrence.deleteMany = async () => {
+    deleteCalled = true;
+    return { count: 1 };
+  };
+
+  await assert.rejects(
+    service.rollback('batch-001'),
+    ConflictException,
+  );
+  assert.equal(deleteCalled, false);
+});
+
+test('rollback removes a newly created linked occurrence when it is unchanged', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['created-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [{
+      id: 'created-occurrence',
+      createdAt: new Date('2026-01-01T10:10:00.000Z'),
+      updatedAt: new Date('2026-01-01T10:30:00.000Z'),
+    }],
+    deleteCount: 1,
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.rolledBackOccurrences, 1);
+});
+
+test('rollback marks a no-op imported batch as rolled back', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-noop',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: [],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.status, 'ROLLED_BACK');
+  assert.equal(result.data.rolledBackQuestions, 0);
+  assert.equal(result.data.rolledBackOccurrences, 0);
 });
 
 test('rollback restores the previous Primary only after demoting the newly selected Primary', async () => {
