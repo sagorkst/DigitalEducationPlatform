@@ -29,8 +29,10 @@ export class OccurrenceIdentityService {
     rightId: string | null | undefined,
     leftName: string | null | undefined,
     rightName: string | null | undefined,
+    allowNameFallback = false,
   ): boolean {
-    if (leftId && rightId) return leftId === rightId;
+    if (leftId && rightId && leftId === rightId) return true;
+    if (leftId && rightId && leftId !== rightId && !allowNameFallback) return false;
     const left = this.normalize(leftName);
     const right = this.normalize(rightName);
     return Boolean(left && right && left === right);
@@ -43,7 +45,7 @@ export class OccurrenceIdentityService {
     if (!this.sameReference(left.institutionId, right.institutionId, left.institution, right.institution)) {
       return false;
     }
-    if (!this.sameReference(left.examId, right.examId, left.examName, right.examName)) {
+    if (!this.sameReference(left.examId, right.examId, left.examName, right.examName, true)) {
       return false;
     }
 

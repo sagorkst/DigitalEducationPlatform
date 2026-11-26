@@ -1369,8 +1369,16 @@ export class ImportsService {
     if (!hasCommonMetadata && cleanOccurrences.length === 0) {
       throw new BadRequestException('Provide at least one metadata field or exam occurrence.');
     }
-    if (setAsPrimary && !common.examName && !cleanOccurrences.some((item) => cleanText(item.examName))) {
-      throw new BadRequestException('Exam name is required to set a primary occurrence.');
+    if (setAsPrimary) {
+      const primaryCandidate = { ...common, ...(cleanOccurrences[0] ?? {}) };
+      const hasInstitution = Boolean(primaryCandidate.institution || primaryCandidate.institutionId);
+      const hasExam = Boolean(primaryCandidate.examName || primaryCandidate.examId);
+      const hasPost = Boolean(primaryCandidate.postName || primaryCandidate.postId);
+      const hasYear = Number.isInteger(Number(primaryCandidate.examYear)) &&
+        Number(primaryCandidate.examYear) >= 1900 && Number(primaryCandidate.examYear) <= 2100;
+      if (!hasInstitution || !hasExam || !hasPost || !hasYear) {
+        throw new BadRequestException('Primary Occurrence-এর জন্য Institution, Exam, Post ও Year—চারটি তথ্যই প্রয়োজন।');
+      }
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -1420,57 +1428,55 @@ export class ImportsService {
             )
           : [];
 
-        if (cleanOccurrences.length > 0) {
-          for (const addition of cleanOccurrences) {
-            const next = { ...common, ...addition } as Record<string, unknown>;
-            const keyFor = (item: Record<string, unknown>): string | null => {
-              const institution = String(item.institution ?? '').trim();
-              const examName = String(item.examName ?? '').trim();
-              const postName = String(item.postName ?? '').trim();
-              const year = Number(item.examYear);
-              if (!institution || !examName || !postName || !Number.isInteger(year)) return null;
-              return [institution, examName, postName, String(year)]
-                .map((value) => this.normalizeText(value))
-                .join('|');
-            };
-            const key = keyFor(next);
-            const existing = key
-              ? existingOccurrences.find((item) => keyFor(item) === key)
-              : undefined;
-            if (existing) {
-              for (const [field, value] of Object.entries(next)) assignValue(existing, field, value);
-            } else {
-              existingOccurrences.push(next);
+        const additions = cleanOccurrences.length > 0
+          ? cleanOccurrences.map((item) => ({ ...common, ...item }) as Record<string, unknown>)
+          : [({ ...common } as Record<string, unknown>)];
+        let primaryTarget: Record<string, unknown> | null = null;
+
+        for (const addition of additions) {
+          const hasCore = Boolean(
+            (addition.institution || addition.institutionId) &&
+            (addition.examName || addition.examId),
+          );
+          let target: Record<string, unknown> | undefined;
+
+          if (hasCore) {
+            const match = OccurrenceIdentityService.classify(existingOccurrences, addition);
+            if (match.kind === 'AMBIGUOUS') {
+              throw new BadRequestException(
+                'এই Batch Metadata একাধিক Occurrence-এর সঙ্গে মিলে যাচ্ছে। Year বা Post নির্দিষ্ট করুন।',
+              );
+            }
+            if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+              target = match.occurrence;
+            }
+          } else if (existingOccurrences.length === 1) {
+            target = existingOccurrences[0];
+          } else if (existingOccurrences.length > 1) {
+            throw new BadRequestException(
+              'একাধিক Exam Occurrence থাকায় অসম্পূর্ণ Batch Metadata কোনটিতে প্রয়োগ হবে তা নির্ধারণ করা যাচ্ছে না।',
+            );
+          }
+
+          if (!target) {
+            target = { ...addition };
+            existingOccurrences.push(target);
+          } else {
+            for (const [field, value] of Object.entries(addition)) {
+              assignValue(target, field, value);
             }
           }
-        } else {
-          if (existingOccurrences.length === 0) existingOccurrences.push({});
-          const target = setAsPrimary && common.examName
-            ? (existingOccurrences.find((item) =>
-                this.normalizeText(String(item.examName ?? '')) === this.normalizeText(common.examName ?? '') &&
-                (common.examYear === undefined || Number(item.examYear) === common.examYear),
-              ) ?? existingOccurrences[0])
-            : existingOccurrences[0];
-          for (const [field, value] of Object.entries(common)) assignValue(target, field, value);
+
+          if (setAsPrimary && addition === additions[0]) primaryTarget = target;
         }
 
         if (setAsPrimary) {
-          const primaryCandidate = cleanOccurrences.length > 0
-            ? ({ ...common, ...cleanOccurrences[0] } as Record<string, unknown>)
-            : ({ ...common } as Record<string, unknown>);
-          const identityFields = ['institution', 'examName', 'postName', 'examYear']
-            .filter((field) => primaryCandidate[field] !== undefined && primaryCandidate[field] !== null && String(primaryCandidate[field]).trim() !== '');
-          const primaryIndex = existingOccurrences.findIndex((item) =>
-            identityFields.length > 0 && identityFields.every((field) => {
-              const left = primaryCandidate[field];
-              const right = item[field];
-              if (field === 'examYear') return Number(left) === Number(right);
-              return this.normalizeText(String(left ?? '')) === this.normalizeText(String(right ?? ''));
-            }),
-          );
-          if (primaryIndex < 0) existingOccurrences.push(primaryCandidate);
-          const resolvedPrimaryIndex = primaryIndex >= 0 ? primaryIndex : existingOccurrences.length - 1;
-          existingOccurrences.forEach((item, index) => { item.isPrimary = index === resolvedPrimaryIndex; });
+          if (!primaryTarget) {
+            throw new BadRequestException('Primary Occurrence নির্ধারণ করা যায়নি।');
+          }
+          for (const occurrence of existingOccurrences) {
+            occurrence.isPrimary = occurrence === primaryTarget;
+          }
         }
 
         data.occurrences = existingOccurrences;

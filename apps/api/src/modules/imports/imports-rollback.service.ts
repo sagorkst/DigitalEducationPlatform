@@ -47,6 +47,7 @@ export class ImportsRollbackService {
 
     const createdQuestionIds = new Set<string>();
     const linkedOccurrenceIds = new Set<string>();
+    const occurrenceSnapshots = new Map<string, { id: string; questionId: string; data: Record<string, unknown> }>();
 
     for (const row of batch.rows) {
       if (!row.questionId) continue;
@@ -70,6 +71,26 @@ export class ImportsRollbackService {
             (id): id is string => typeof id === 'string',
           )
         : [];
+      const snapshots = Array.isArray(tracking?.occurrenceSnapshots)
+        ? tracking.occurrenceSnapshots
+        : [];
+      for (const item of snapshots) {
+        if (!item || typeof item !== 'object' || Array.isArray(item)) continue;
+        const snapshot = item as Record<string, unknown>;
+        if (
+          typeof snapshot.id === 'string' &&
+          typeof snapshot.questionId === 'string' &&
+          snapshot.data && typeof snapshot.data === 'object' &&
+          !Array.isArray(snapshot.data) &&
+          !occurrenceSnapshots.has(snapshot.id)
+        ) {
+          occurrenceSnapshots.set(snapshot.id, {
+            id: snapshot.id,
+            questionId: snapshot.questionId,
+            data: snapshot.data as Record<string, unknown>,
+          });
+        }
+      }
 
       if (tracking?.action === 'LINKED_OCCURRENCE') {
         for (const id of occurrenceIds) {
@@ -89,7 +110,13 @@ export class ImportsRollbackService {
     const questionIds = [...createdQuestionIds];
     const occurrenceIds = [...linkedOccurrenceIds];
 
-    if (questionIds.length === 0 && occurrenceIds.length === 0) {
+    for (const id of occurrenceIds) occurrenceSnapshots.delete(id);
+    for (const [id, snapshot] of occurrenceSnapshots) {
+      if (createdQuestionIds.has(snapshot.questionId)) occurrenceSnapshots.delete(id);
+    }
+    const snapshotsToRestore = [...occurrenceSnapshots.values()];
+
+    if (questionIds.length === 0 && occurrenceIds.length === 0 && snapshotsToRestore.length === 0) {
       throw new BadRequestException(
         'No imported questions or linked occurrences found for rollback.',
       );
@@ -143,13 +170,42 @@ export class ImportsRollbackService {
       }
 
       let rolledBackOccurrences = 0;
+      let restoredOccurrences = 0;
 
       if (occurrenceIds.length > 0) {
         const deletedOccurrences = await tx.questionOccurrence.deleteMany({
           where: { id: { in: occurrenceIds } },
         });
-
         rolledBackOccurrences = deletedOccurrences.count;
+      }
+
+      if (snapshotsToRestore.length > 0) {
+        const currentOccurrences = await tx.questionOccurrence.findMany({
+          where: { id: { in: snapshotsToRestore.map((item) => item.id) } },
+          select: { id: true, updatedAt: true },
+        });
+        if (currentOccurrences.length !== snapshotsToRestore.length) {
+          throw new ConflictException(
+            'Some previously existing Exam Occurrences are missing. Rollback cancelled.',
+          );
+        }
+        const unsafeOccurrences = currentOccurrences.filter(
+          (occurrence) =>
+            occurrence.updatedAt < batch.startedAt! ||
+            occurrence.updatedAt > batch.completedAt!,
+        );
+        if (unsafeOccurrences.length > 0) {
+          throw new ConflictException(
+            'Some Exam Occurrences were modified after import. Rollback cancelled.',
+          );
+        }
+        for (const snapshot of snapshotsToRestore) {
+          await tx.questionOccurrence.update({
+            where: { id: snapshot.id },
+            data: snapshot.data,
+          });
+          restoredOccurrences++;
+        }
       }
 
       if (questionIds.length > 0) {
@@ -178,6 +234,7 @@ export class ImportsRollbackService {
           status: updatedBatch.status,
           rolledBackQuestions: questionIds.length,
           rolledBackOccurrences,
+          restoredOccurrences,
           rolledBackAt: updatedBatch.rolledBackAt,
         },
       };
