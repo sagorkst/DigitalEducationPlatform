@@ -5,6 +5,12 @@ const { BadRequestException } = require('@nestjs/common');
 const {
   ImportsController,
 } = require('../dist/modules/imports/imports.controller');
+const {
+  LocalStorageService,
+} = require('../dist/modules/users/local-storage.service');
+const sharp = require('sharp');
+const { readFile, unlink } = require('fs/promises');
+const path = require('path');
 
 function createController(storage) {
   return new ImportsController(
@@ -79,4 +85,47 @@ test('unresolved MHTML Content-ID references are rejected', async () => {
     controller.persistEmbeddedImages('<img src="cid:missing-attachment">'),
     BadRequestException,
   );
+});
+
+
+test('real question image storage converts static SVG and GIF inputs to WebP', async () => {
+  const storage = new LocalStorageService();
+  const savedPaths = [];
+
+  try {
+    const svg = Buffer.from(
+      '<svg xmlns="http://www.w3.org/2000/svg" width="8" height="8"><rect width="8" height="8" fill="#ffffff"/></svg>',
+    );
+    const gif = Buffer.from(
+      'R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
+      'base64',
+    );
+
+    savedPaths.push(await storage.saveQuestionImage(svg));
+    savedPaths.push(await storage.saveQuestionImage(gif));
+
+    for (const publicPath of savedPaths) {
+      const diskPath = path.resolve(
+        process.cwd(),
+        'uploads',
+        'questions',
+        path.basename(publicPath),
+      );
+      const metadata = await sharp(await readFile(diskPath)).metadata();
+      assert.equal(metadata.format, 'webp');
+    }
+  } finally {
+    await Promise.all(
+      savedPaths.map((publicPath) =>
+        unlink(
+          path.resolve(
+            process.cwd(),
+            'uploads',
+            'questions',
+            path.basename(publicPath),
+          ),
+        ).catch(() => undefined),
+      ),
+    );
+  }
 });
