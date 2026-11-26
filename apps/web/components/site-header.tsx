@@ -4,7 +4,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type AuthUser = {
   id?: string;
@@ -116,47 +116,13 @@ const links = [
 export default function SiteHeader() {
   const router = useRouter();
 
-  // null keeps the first server and client render identical.
-  const [pathname, setPathname] = useState<string | null>(null);
+  const pathname = usePathname();
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [logoutError, setLogoutError] = useState("");
-
-  useEffect(() => {
-    setPathname(window.location.pathname);
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target;
-
-      if (!(target instanceof Element)) return;
-
-      const anchor = target.closest("a[href]");
-
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      if (anchor.target === "_blank") return;
-
-      const destination = new URL(anchor.href, window.location.origin);
-
-      if (destination.origin === window.location.origin) {
-        setPathname(destination.pathname);
-      }
-    }
-
-    function handlePopState() {
-      setPathname(window.location.pathname);
-    }
-
-    document.addEventListener("click", handleDocumentClick);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      document.removeEventListener("click", handleDocumentClick);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -280,7 +246,6 @@ export default function SiteHeader() {
 
       setUser(null);
       setIsSuperAdmin(false);
-      setPathname("/");
 
       window.dispatchEvent(new Event("shikhasetu:auth-changed"));
       router.push("/");
