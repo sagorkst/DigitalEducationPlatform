@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateQuestionDto } from '../questions/dto/create-question.dto';
+import { OccurrenceIdentityService } from '../occurrences/occurrence-identity.service';
 
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
@@ -529,6 +530,14 @@ export class ImportsService {
           `Occurrence ${index + 1}: Post ID does not match the selected Exam.`,
         );
       }
+      if (item.examYear !== undefined && item.examYear !== null &&
+          String(item.examYear).trim() !== '' && Number(item.examYear) !== exam.examYear) {
+        errors.push(`Occurrence ${index + 1}: Exam Year does not match the selected Exam.`);
+      }
+      if (item.examName && OccurrenceIdentityService.normalize(item.examName) !==
+          OccurrenceIdentityService.normalize(exam.name)) {
+        errors.push(`Occurrence ${index + 1}: Exam name does not match the selected Exam ID.`);
+      }
     }
 
     return errors;
@@ -593,6 +602,12 @@ export class ImportsService {
       if (post && exam.postId && exam.postId !== post.id) {
         throw new BadRequestException('Post does not match the selected Exam.');
       }
+      if (examYear !== null && examYear !== exam.examYear) {
+        throw new BadRequestException('Exam Year does not match the selected Exam.');
+      }
+      if (examName && this.normalizeText(examName) !== this.normalizeText(exam.name)) {
+        throw new BadRequestException('Exam name does not match the selected Exam.');
+      }
       if (!institution && exam.institutionId) {
         institution = await tx.institution.findUnique({ where: { id: exam.institutionId }, select: { id: true, name: true } });
       }
@@ -644,55 +659,92 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     questionId: string,
     dto: CreateQuestionDto,
-  ): Promise<string[]> {
-    const occurrenceIds: string[] = [];
+  ): Promise<{ createdOccurrenceIds: string[]; occurrenceSnapshots: Record<string, unknown>[] }> {
+    const createdOccurrenceIds: string[] = [];
+    const snapshots = new Map<string, Record<string, unknown>>();
+    const snapshotFields = [
+      'institution', 'examName', 'examYear', 'postName', 'department',
+      'questionNumber', 'source', 'sourcePage', 'sourceUrl', 'institutionId',
+      'examId', 'postId', 'sourceDocumentId', 'isPrimary',
+    ];
+    const capture = (record: Record<string, any>) => {
+      if (snapshots.has(record.id)) return;
+      const data: Record<string, unknown> = {};
+      for (const field of snapshotFields) data[field] = record[field] ?? null;
+      snapshots.set(record.id, { id: record.id, questionId, data });
+    };
+    const demoteOtherPrimaries = async (keepId?: string) => {
+      const primaries = await tx.questionOccurrence.findMany({
+        where: { questionId, isPrimary: true },
+        select: {
+          id: true, questionId: true, institution: true, examName: true,
+          examYear: true, postName: true, department: true, questionNumber: true,
+          source: true, sourcePage: true, sourceUrl: true, institutionId: true,
+          examId: true, postId: true, sourceDocumentId: true, isPrimary: true,
+        },
+      });
+      for (const primary of primaries) {
+        if (primary.id === keepId) continue;
+        capture(primary);
+        await tx.questionOccurrence.update({ where: { id: primary.id }, data: { isPrimary: false } });
+      }
+    };
+
+    const primaryCount = (dto.occurrences ?? []).filter(
+      (item) => (item as typeof item & { isPrimary?: boolean }).isPrimary === true,
+    ).length;
+    if (primaryCount > 1) {
+      throw new BadRequestException('একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।');
+    }
+
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
-      const year = resolved.examYear;
-      const identityIsComplete = Boolean(
-        resolved.institution && resolved.examName && year !== null,
-      );
-      if (identityIsComplete) {
-        const existing = await tx.questionOccurrence.findMany({
-          where: { questionId },
-          select: { id: true, institution: true, examName: true, postName: true, examYear: true, isPrimary: true },
-        });
-        const same = existing.find((item) =>
-          item.examYear !== null &&
-          this.normalizeText(item.institution ?? '') === this.normalizeText(resolved.institution ?? '') &&
-          this.normalizeText(item.examName ?? '') === this.normalizeText(resolved.examName ?? '') &&
-          (!resolved.postName || this.normalizeText(item.postName ?? '') === this.normalizeText(resolved.postName)) &&
-          item.examYear === year,
+      if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+
+      const match = await OccurrenceIdentityService.findMatch(tx, questionId, resolved);
+      if (match.kind === 'AMBIGUOUS') {
+        throw new BadRequestException(
+          'এই প্রশ্নের জন্য একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। Preview-তে Institution, Exam, Post ও Year যাচাই করুন।',
         );
-        if (resolved.isPrimary) {
-          await tx.questionOccurrence.updateMany({
-            where: { questionId, isPrimary: true },
-            data: { isPrimary: false },
-          });
-        }
-        if (same) {
-          if (resolved.isPrimary) {
-            await tx.questionOccurrence.update({
-              where: { id: same.id },
-              data: { isPrimary: true },
-            });
-          }
-          continue;
-        }
-      } else if (resolved.isPrimary) {
-        await tx.questionOccurrence.updateMany({
-          where: { questionId, isPrimary: true },
-          data: { isPrimary: false },
-        });
       }
+
+      if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+        const existing = match.occurrence;
+        const patch: Record<string, unknown> = {};
+        const fillFields = [
+          'institution', 'examName', 'postName', 'institutionId', 'examId',
+          'postId', 'department', 'questionNumber', 'source', 'sourcePage',
+          'sourceUrl', 'sourceDocumentId',
+        ];
+        for (const field of fillFields) {
+          const current = existing[field];
+          const next = (resolved as Record<string, unknown>)[field];
+          if ((current === null || current === undefined || current === '') &&
+              next !== null && next !== undefined && next !== '') patch[field] = next;
+        }
+        if (match.kind === 'ENRICH' && resolved.examYear !== null) patch.examYear = resolved.examYear;
+        if (resolved.isPrimary) {
+          await demoteOtherPrimaries(existing.id);
+          if (existing.isPrimary !== true) patch.isPrimary = true;
+        }
+        if (Object.keys(patch).length > 0) {
+          capture(existing);
+          await tx.questionOccurrence.update({ where: { id: existing.id }, data: patch });
+        }
+        continue;
+      }
+
+      if (resolved.isPrimary) await demoteOtherPrimaries();
       const created = await tx.questionOccurrence.create({
         data: { questionId, ...resolved },
         select: { id: true },
       });
-      occurrenceIds.push(created.id);
+      createdOccurrenceIds.push(created.id);
     }
-    return occurrenceIds;
+
+    return { createdOccurrenceIds, occurrenceSnapshots: [...snapshots.values()] };
   }
+
   private async createQuestionInTransaction(
     tx: Prisma.TransactionClient,
     dto: CreateQuestionDto,
@@ -779,21 +831,34 @@ export class ImportsService {
 
     // Resolve all occurrence references inside the same transaction.
     const resolvedOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
-    const occurrenceKeys = new Set<string>();
     for (const occurrence of dto.occurrences ?? []) {
       const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
-      const year = resolved.examYear;
-      if (resolved.institution && resolved.examName && resolved.postName && year !== null) {
-        const key = [
-          resolved.institution,
-          resolved.examName,
-          resolved.postName,
-          String(year),
-        ].map((value) => this.normalizeText(value)).join('|');
-        if (occurrenceKeys.has(key)) continue;
-        occurrenceKeys.add(key);
+      if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+      const match = OccurrenceIdentityService.classify(resolvedOccurrences, resolved);
+      if (match.kind === 'AMBIGUOUS') {
+        throw new BadRequestException('একই প্রশ্নের জন্য একাধিক অস্পষ্ট Exam Occurrence পাওয়া গেছে।');
+      }
+      if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+        const target = match.occurrence as Record<string, unknown>;
+        for (const field of [
+          'institution', 'examName', 'postName', 'institutionId', 'examId',
+          'postId', 'department', 'questionNumber', 'source', 'sourcePage',
+          'sourceUrl', 'sourceDocumentId',
+        ]) {
+          if ((target[field] === null || target[field] === undefined || target[field] === '') &&
+              (resolved as Record<string, unknown>)[field] !== null &&
+              (resolved as Record<string, unknown>)[field] !== undefined) {
+            target[field] = (resolved as Record<string, unknown>)[field];
+          }
+        }
+        if (target.examYear === null || target.examYear === undefined) target.examYear = resolved.examYear;
+        target.isPrimary = target.isPrimary === true || resolved.isPrimary === true;
+        continue;
       }
       resolvedOccurrences.push(resolved);
+    }
+    if (resolvedOccurrences.filter((item) => item.isPrimary === true).length > 1) {
+      throw new BadRequestException('একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।');
     }
 
     return tx.question.create({
@@ -1723,6 +1788,7 @@ export class ImportsService {
           let action: 'CREATED_QUESTION' | 'LINKED_OCCURRENCE' =
             'LINKED_OCCURRENCE';
           let occurrenceIds: string[] = [];
+          let occurrenceSnapshots: Record<string, unknown>[] = [];
 
           if (!questionId) {
             const existingQuestion = normalizedText
@@ -1764,12 +1830,14 @@ export class ImportsService {
               (occurrence) => occurrence.id,
             );
           } else if (questionId) {
-            occurrenceIds =
+            const linked =
               await this.linkOccurrencesToExistingQuestionInTransaction(
                 tx,
                 questionId,
                 dto,
               );
+            occurrenceIds = linked.createdOccurrenceIds;
+            occurrenceSnapshots = linked.occurrenceSnapshots;
           }
 
           if (!questionId) {
@@ -1783,6 +1851,7 @@ export class ImportsService {
             _importTracking: {
               action,
               occurrenceIds,
+              occurrenceSnapshots,
             },
           } as Prisma.InputJsonValue;
 

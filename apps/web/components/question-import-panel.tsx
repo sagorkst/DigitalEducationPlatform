@@ -549,8 +549,8 @@ export default function QuestionImportPanel() {
       setAsPrimary,
     };
 
-    if (setAsPrimary && !body.examName) {
-      setError("Primary Occurrence নির্ধারণের জন্য Exam Name দিন।");
+    if (setAsPrimary && (!body.institution || !body.examName || !body.postName || !body.examYear)) {
+      setError("Primary Occurrence নির্ধারণের জন্য Institution, Exam, Post ও Year—চারটি তথ্যই দিন।");
       return;
     }
 
@@ -948,7 +948,7 @@ export default function QuestionImportPanel() {
                         <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
                         <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
                         <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
-                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.examName.trim()} title="Set as primary occurrence" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
+                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.institution.trim() || !batchMetadata.examName.trim() || !batchMetadata.postName.trim() || !batchMetadata.examYear.trim()} title="Set as primary occurrence (Institution, Exam, Post and Year required)" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
                     </div>
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">

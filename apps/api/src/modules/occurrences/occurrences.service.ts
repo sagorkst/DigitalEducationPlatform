@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CreateOccurrenceDto } from './dto/create-occurrence.dto';
 import { UpdateOccurrenceDto } from './dto/update-occurrence.dto';
+import { OccurrenceIdentityService } from './occurrence-identity.service';
 
 @Injectable()
 export class OccurrencesService {
@@ -253,62 +254,19 @@ export class OccurrencesService {
       institution?: string | null;
       examYear?: number | null;
       postName?: string | null;
+      institutionId?: string | null;
+      examId?: string | null;
+      postId?: string | null;
     },
     excludeId?: string,
     db: any = this.prisma,
   ) {
-    const normalizeIdentityText = (value: string | null | undefined) =>
-      (value ?? '').trim().replace(/\s+/g, ' ').toLowerCase();
-
-    // Incomplete metadata is allowed, but cannot establish duplicate identity.
-    const institution = normalizeIdentityText(data.institution);
-    const examName = normalizeIdentityText(data.examName);
-    const postName = normalizeIdentityText(data.postName);
-    const examYear = data.examYear;
-
-    if (
-      !institution ||
-      !examName ||
-      !postName ||
-      examYear === undefined ||
-      examYear === null
-    ) {
-      return;
-    }
-
-    // Compare all four identity fields in application code so legacy values
-    // with different casing or repeated whitespace are treated consistently.
-    const existingOccurrences = await db.questionOccurrence.findMany({
-      where: { questionId: data.questionId },
-      select: {
-        id: true,
-        institution: true,
-        examName: true,
-        postName: true,
-        examYear: true,
-      },
-    });
-
-    const duplicate = existingOccurrences.some((occurrence: {
-      id: string;
-      institution: string | null;
-      examName: string | null;
-      postName: string | null;
-      examYear: number | null;
-    }) => {
-      if (excludeId && occurrence.id === excludeId) return false;
-
-      return (
-        normalizeIdentityText(occurrence.institution) === institution &&
-        normalizeIdentityText(occurrence.examName) === examName &&
-        normalizeIdentityText(occurrence.postName) === postName &&
-        occurrence.examYear === examYear
-      );
-    });
-
-    if (duplicate) {
+    const match = await OccurrenceIdentityService.findMatch(db, data.questionId, data, excludeId);
+    if (match.kind !== 'CREATE') {
       throw new ConflictException(
-        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+        match.kind === 'AMBIGUOUS'
+          ? 'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।'
+          : 'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
       );
     }
   }
