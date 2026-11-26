@@ -289,14 +289,41 @@ export class OccurrencesService {
             tx,
           );
 
-          await this.ensureNoDuplicate(
-            {
-              questionId,
-              ...references,
-            },
-            undefined,
+          const match = await OccurrenceIdentityService.findMatch(
             tx,
+            questionId,
+            references,
           );
+          if (match.kind === 'AMBIGUOUS' || match.kind === 'MATCH') {
+            throw new ConflictException(
+              match.kind === 'AMBIGUOUS'
+                ? 'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।'
+                : 'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+            );
+          }
+
+          if (match.kind === 'ENRICH') {
+            const existing = match.occurrence;
+            const patch: Record<string, unknown> = {};
+            for (const field of [
+              'institution', 'examName', 'examYear', 'postName', 'institutionId',
+              'examId', 'postId', 'source', 'sourceDocumentId',
+            ]) {
+              if ((existing[field] === null || existing[field] === undefined || existing[field] === '') &&
+                  references[field] !== null && references[field] !== undefined && references[field] !== '') {
+                patch[field] = references[field];
+              }
+            }
+            if (existing.department == null && dto.department !== undefined) patch.department = dto.department;
+            if (existing.questionNumber == null && dto.questionNumber !== undefined) patch.questionNumber = dto.questionNumber;
+            if (existing.sourcePage == null && dto.sourcePage !== undefined) patch.sourcePage = dto.sourcePage;
+            if (existing.sourceUrl == null && dto.sourceUrl !== undefined) patch.sourceUrl = dto.sourceUrl;
+            return tx.questionOccurrence.update({
+              where: { id: existing.id },
+              data: patch,
+              include: this.occurrenceInclude,
+            });
+          }
 
           return tx.questionOccurrence.create({
             data: {

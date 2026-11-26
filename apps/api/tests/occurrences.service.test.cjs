@@ -791,3 +791,31 @@ test('32 - deletes occurrence successfully', async () => {
     'Question occurrence deleted successfully.',
   );
 });
+test('15d - enriches a single yearless legacy occurrence when a Year is supplied', async () => {
+  const { service, prisma } = createService();
+  const existing = createOccurrence({
+    id: 'yearless-occurrence',
+    examYear: null,
+    institutionId: null,
+    examId: null,
+    postId: null,
+  });
+  prisma.questionOccurrence.findMany = async () => [existing];
+
+  let updateArgs;
+  let createCalled = false;
+  prisma.questionOccurrence.update = async (args) => {
+    updateArgs = args;
+    return createOccurrence({ ...existing, ...args.data });
+  };
+  prisma.questionOccurrence.create = async () => {
+    createCalled = true;
+    return createOccurrence();
+  };
+
+  const result = await service.create(QUESTION_ID, legacyDto);
+  assert.equal(result.success, true);
+  assert.equal(updateArgs.where.id, 'yearless-occurrence');
+  assert.equal(updateArgs.data.examYear, 2025);
+  assert.equal(createCalled, false);
+});
