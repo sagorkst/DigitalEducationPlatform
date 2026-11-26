@@ -1321,3 +1321,60 @@ test('Question update with only Occurrence additions skips an empty Question upd
   assert.equal(calls.occurrenceCreates.length, 1);
   assert.equal(calls.questionUpdates.length, 0);
 });
+
+
+test('manual Question creation rejects a missing Institution reference without an Exam ID', async () => {
+  let questionCreated = false;
+  const service = createService({
+    $transaction: async (callback) => callback({
+      institution: { findUnique: async () => null },
+      question: { create: async () => { questionCreated = true; return { id: QUESTION_ID }; } },
+    }),
+  });
+
+  await assert.rejects(
+    service.create({
+      questionText: 'Reference validation question',
+      questionType: 'WRITTEN',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [{
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2024,
+        postName: 'Computer Typist',
+        institutionId: 'institution-missing',
+      }],
+    }),
+    BadRequestException,
+  );
+  assert.equal(questionCreated, false);
+});
+
+test('manual Question creation rejects mismatched Post text and Post ID without an Exam ID', async () => {
+  let questionCreated = false;
+  const service = createService({
+    $transaction: async (callback) => callback({
+      post: { findUnique: async () => ({ id: 'post-001', name: 'Assistant Director' }) },
+      question: { create: async () => { questionCreated = true; return { id: QUESTION_ID }; } },
+    }),
+  });
+
+  await assert.rejects(
+    service.create({
+      questionText: 'Reference validation question',
+      questionType: 'WRITTEN',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [{
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2024,
+        postName: 'Computer Typist',
+        postId: 'post-001',
+      }],
+    }),
+    BadRequestException,
+  );
+  assert.equal(questionCreated, false);
+});

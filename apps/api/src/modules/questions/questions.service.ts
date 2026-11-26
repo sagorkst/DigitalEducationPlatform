@@ -59,22 +59,89 @@ export class QuestionsService {
       isPrimary?: boolean;
     },
   ) {
+    if (
+      occurrence.examYear !== undefined &&
+      occurrence.examYear !== null &&
+      (!Number.isInteger(occurrence.examYear) ||
+        occurrence.examYear < 1900 ||
+        occurrence.examYear > 2100)
+    ) {
+      throw new BadRequestException('Exam Year must be between 1900 and 2100.');
+    }
+
+    let source = occurrence.source ?? null;
+    if (occurrence.sourceDocumentId) {
+      const document = await tx.sourceDocument.findUnique({
+        where: { id: occurrence.sourceDocumentId },
+        select: { id: true, title: true },
+      });
+      if (!document) {
+        throw new BadRequestException('Selected Source Document does not exist.');
+      }
+      source = document.title;
+    }
+
     if (!occurrence.examId) {
-      // Legacy text-based occurrence remains supported.
+      let institution = occurrence.institution?.trim() || null;
+      let postName = occurrence.postName?.trim() || null;
+
+      if (occurrence.institutionId) {
+        const institutionRecord = await tx.institution.findUnique({
+          where: { id: occurrence.institutionId },
+          select: { id: true, name: true, isActive: true },
+        });
+        if (!institutionRecord) {
+          throw new BadRequestException('Selected Institution does not exist.');
+        }
+        if (!institutionRecord.isActive) {
+          throw new BadRequestException('Selected Institution is inactive.');
+        }
+        if (
+          institution &&
+          OccurrenceIdentityService.normalize(institution) !==
+            OccurrenceIdentityService.normalize(institutionRecord.name)
+        ) {
+          throw new BadRequestException(
+            'The supplied Institution name does not match the selected Institution.',
+          );
+        }
+        institution = institutionRecord.name;
+      }
+
+      if (occurrence.postId) {
+        const post = await tx.post.findUnique({
+          where: { id: occurrence.postId },
+          select: { id: true, name: true },
+        });
+        if (!post) {
+          throw new BadRequestException('Selected Post does not exist.');
+        }
+        if (
+          postName &&
+          OccurrenceIdentityService.normalize(postName) !==
+            OccurrenceIdentityService.normalize(post.name)
+        ) {
+          throw new BadRequestException(
+            'The supplied Post name does not match the selected Post.',
+          );
+        }
+        postName = post.name;
+      }
+
       return {
-        institution: occurrence.institution,
-        examName: occurrence.examName,
-        examYear: occurrence.examYear,
-        postName: occurrence.postName,
-        department: occurrence.department,
-        questionNumber: occurrence.questionNumber,
-        source: occurrence.source,
-        sourcePage: occurrence.sourcePage,
-        sourceUrl: occurrence.sourceUrl,
-        institutionId: occurrence.institutionId,
+        institution,
+        examName: occurrence.examName?.trim() || null,
+        examYear: occurrence.examYear ?? null,
+        postName,
+        department: occurrence.department ?? null,
+        questionNumber: occurrence.questionNumber ?? null,
+        source,
+        sourcePage: occurrence.sourcePage ?? null,
+        sourceUrl: occurrence.sourceUrl ?? null,
+        institutionId: occurrence.institutionId ?? null,
         examId: undefined,
-        postId: occurrence.postId,
-        sourceDocumentId: occurrence.sourceDocumentId,
+        postId: occurrence.postId ?? null,
+        sourceDocumentId: occurrence.sourceDocumentId ?? null,
         isPrimary: occurrence.isPrimary ?? false,
       };
     }
@@ -90,18 +157,19 @@ export class QuestionsService {
         examYear: true,
         institutionId: true,
         postId: true,
-        institution: { select: { name: true } },
+        institution: { select: { name: true, isActive: true } },
         post: { select: { name: true } },
       },
     });
 
     if (!exam) {
-      throw new BadRequestException(
-        'Selected Exam does not exist.',
-      );
+      throw new BadRequestException('Selected Exam does not exist.');
     }
 
-    // Validate supplied Institution ID against the selected Exam.
+    if (exam.institution && !exam.institution.isActive) {
+      throw new BadRequestException('The selected Exam belongs to an inactive Institution.');
+    }
+
     if (
       occurrence.institutionId &&
       occurrence.institutionId !== exam.institutionId
@@ -111,7 +179,6 @@ export class QuestionsService {
       );
     }
 
-    // Validate supplied Post ID and text against the selected Exam.
     if (
       occurrence.postId &&
       occurrence.postId !== exam.postId
@@ -156,15 +223,12 @@ export class QuestionsService {
       postName: exam.post?.name ?? occurrence.postName,
       department: occurrence.department,
       questionNumber: occurrence.questionNumber,
-      source: occurrence.source,
+      source,
       sourcePage: occurrence.sourcePage,
       sourceUrl: occurrence.sourceUrl,
-
-      // These relations are derived from the selected Exam.
       institutionId: exam.institutionId,
       examId: exam.id,
       postId: exam.postId,
-
       sourceDocumentId: occurrence.sourceDocumentId,
       isPrimary: occurrence.isPrimary ?? false,
     };
