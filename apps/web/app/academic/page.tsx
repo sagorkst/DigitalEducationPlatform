@@ -1,13 +1,23 @@
-﻿import SectionPage from "../../components/section-page";
-
-export default function Page() {
-  return (
-    <SectionPage
-      title={"একাডেমিক শিক্ষা"}
-      subtitle={"ACADEMIC LEARNING"}
-      description={"স্কুল, কলেজ ও বিশ্ববিদ্যালয়ের শিক্ষার্থীদের জন্য পড়াশোনা, অনুশীলন ও শিক্ষাসামগ্রী।"}
-      icon={"🎓"}
-      features={["স্কুল পর্যায়ের শিক্ষা","কলেজ পর্যায়ের শিক্ষা","বিশ্ববিদ্যালয় শিক্ষা","বিষয়ভিত্তিক নোট","অনুশীলন ও মূল্যায়ন","শিক্ষা সহায়িকা"]}
-    />
-  );
+"use client";
+import { useEffect,useState } from "react";
+type Material={id:string;title:string;materialType:string;fileUrl:string};
+type Lesson={id:string;title:string;description?:string|null;content?:string|null;videoUrl?:string|null;durationMin?:number|null;materials:Material[]};
+type Chapter={id:string;name:string;description?:string|null;lessons:Lesson[]};
+type Subject={id:string;name:string;description?:string|null};
+type ClassSubject={id:string;subject:Subject;chapters:Chapter[]};
+type AcademicClass={id:string;name:string;description?:string|null;classSubjects:ClassSubject[]};
+async function load(path:string){const r=await fetch("/api/academic/"+path,{cache:"no-store"});const p=await r.json();if(!r.ok)throw new Error(p?.message||"তথ্য লোড করা যায়নি");return p?.data??p}
+export default function AcademicPage(){
+ const [classes,setClasses]=useState<AcademicClass[]>([]),[selected,setSelected]=useState(""),[detail,setDetail]=useState<AcademicClass|null>(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[lessonId,setLessonId]=useState("");
+ useEffect(()=>{load("classes").then((rows:AcademicClass[])=>{setClasses(rows);if(rows[0])setSelected(rows[0].id)}).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[]);
+ useEffect(()=>{if(!selected){setDetail(null);return}setLoading(true);load("classes/"+selected).then(setDetail).catch(e=>setError(e.message)).finally(()=>setLoading(false))},[selected]);
+ const lesson=detail?.classSubjects.flatMap(s=>s.chapters).flatMap(c=>c.lessons).find(l=>l.id===lessonId);
+ return <main className="min-h-screen bg-slate-50 px-4 py-8 sm:px-6"><div className="mx-auto max-w-7xl">
+ <header className="rounded-3xl bg-gradient-to-r from-indigo-950 via-blue-900 to-emerald-800 p-7 text-white sm:p-10"><p className="text-xs font-bold tracking-widest text-emerald-200">SHIKHASETU ACADEMIC</p><h1 className="mt-3 text-3xl font-extrabold sm:text-4xl">একাডেমিক শিক্ষা</h1><p className="mt-3 max-w-2xl text-sm leading-7 text-blue-100">শ্রেণি অনুযায়ী বিষয়, অধ্যায়, পাঠ ও প্রয়োজনীয় শিক্ষাসামগ্রী এক জায়গায় পড়ুন।</p></header>
+ {error&&<p role="alert" className="mt-5 rounded-xl bg-red-50 p-4 text-red-700">{error}</p>}
+ <section className="mt-7"><h2 className="mb-3 text-xl font-extrabold">শ্রেণি নির্বাচন করুন</h2>{loading&&!classes.length?<p className="rounded-xl bg-white p-5">লোড হচ্ছে...</p>:<div className="flex flex-wrap gap-2">{classes.map(c=><button key={c.id} onClick={()=>{setSelected(c.id);setLessonId("")}} className={`rounded-xl px-5 py-3 text-sm font-bold ${selected===c.id?"bg-blue-700 text-white":"bg-white text-slate-700 ring-1 ring-slate-200"}`}>{c.name}</button>)}</div>}</section>
+ {detail&&<section className="mt-7 grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_360px]"><div className="space-y-5"><div className="rounded-2xl border bg-white p-5"><h2 className="text-2xl font-extrabold">{detail.name}</h2><p className="mt-2 text-sm text-slate-500">{detail.description||"শ্রেণির বিষয় ও পাঠ্যসূচি"}</p></div>{detail.classSubjects.map(cs=><article key={cs.id} className="rounded-2xl border bg-white p-5"><h3 className="text-lg font-bold">{cs.subject.name}</h3>{cs.subject.description&&<p className="mt-1 text-sm text-slate-500">{cs.subject.description}</p>}<div className="mt-4 space-y-3">{cs.chapters.map((ch,i)=><div key={ch.id} className="rounded-xl bg-slate-50 p-4"><h4 className="font-bold">{i+1}. {ch.name}</h4>{ch.description&&<p className="mt-1 text-sm text-slate-500">{ch.description}</p>}<div className="mt-3 space-y-2">{ch.lessons.map(l=><button key={l.id} onClick={()=>setLessonId(l.id)} className={`block w-full rounded-lg p-3 text-left text-sm ${lessonId===l.id?"bg-blue-100 text-blue-900":"bg-white text-slate-700 hover:bg-blue-50"}`}>{l.title}{l.durationMin?" · "+l.durationMin+" মিনিট":""}</button>)}</div>{!ch.lessons.length&&<p className="mt-2 text-xs text-slate-400">এখনো কোনো প্রকাশিত পাঠ নেই।</p>}</div>)}</div></article>)}</div>
+ <aside className="sticky top-5 rounded-2xl border bg-white p-5"><h3 className="text-lg font-bold">পাঠের বিস্তারিত</h3>{lesson?<><h4 className="mt-4 font-bold">{lesson.title}</h4>{lesson.description&&<p className="mt-2 text-sm text-slate-600">{lesson.description}</p>}{lesson.videoUrl&&<a href={lesson.videoUrl} target="_blank" rel="noreferrer" className="mt-4 block rounded-lg bg-blue-700 p-3 text-center text-sm font-bold text-white">ভিডিও পাঠ দেখুন</a>}{lesson.content&&<div className="mt-4 whitespace-pre-wrap text-sm leading-7 text-slate-700">{lesson.content}</div>}<div className="mt-5 space-y-2"><h5 className="font-bold">শিক্ষাসামগ্রী</h5>{lesson.materials.map(m=><a key={m.id} href={m.fileUrl} target="_blank" rel="noreferrer" className="block rounded-lg border p-3 text-sm text-blue-700 hover:bg-blue-50">{m.title} · {m.materialType}</a>)}{!lesson.materials.length&&<p className="text-xs text-slate-400">কোনো রিসোর্স যুক্ত করা হয়নি।</p>}</div></>:<p className="mt-3 text-sm leading-6 text-slate-500">বিস্তারিত পড়ার জন্য একটি প্রকাশিত পাঠ নির্বাচন করুন।</p>}</aside></section>}
+ {!loading&&detail&&!detail.classSubjects.length&&<p className="mt-6 rounded-xl bg-white p-6 text-slate-500">এই শ্রেণিতে এখনো কোনো বিষয় যুক্ত করা হয়নি।</p>}
+ </div></main>
 }
