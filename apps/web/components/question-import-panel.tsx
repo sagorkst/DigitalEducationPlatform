@@ -1274,7 +1274,7 @@ export default function QuestionImportPanel() {
                                   {!String(raw.questionText ?? "").trim() && (!Array.isArray(raw.imageReferences) || raw.imageReferences.length === 0) && <span className="text-red-600">Question text/image missing</span>}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
                                     <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
-                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; isCorrect?: boolean }, index: number) => (
+                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; imageReferences?: string[]; isCorrect?: boolean }, index: number) => (
                                         <div
                                           key={`${option.label ?? index}-${index}`}
                                           className={`rounded-lg px-3 py-2 text-xs ${

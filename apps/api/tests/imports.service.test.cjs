@@ -244,7 +244,7 @@ test('09 - rejects rows with missing required fields', async () => {
 
   assert.ok(
     savedRows[0].errorMessages.includes(
-      'Question text is required.',
+      'Question text or at least one question image is required.',
     ),
   );
 });

@@ -335,7 +335,6 @@ export class OccurrencesService {
             {
               questionId,
               ...references,
-              questionNumber: dto.questionNumber,
             },
             undefined,
             tx,
@@ -623,7 +622,6 @@ export class OccurrencesService {
             {
               questionId: existing.questionId,
               ...references,
-              questionNumber,
             },
             id,
             tx,

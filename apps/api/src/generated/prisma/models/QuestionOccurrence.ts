@@ -41,6 +41,7 @@ export type QuestionOccurrenceSumAggregateOutputType = {
 export type QuestionOccurrenceMinAggregateOutputType = {
   id: string | null
   questionId: string | null
+  isPrimary: boolean | null
   institution: string | null
   examName: string | null
   examYear: number | null
@@ -61,6 +62,7 @@ export type QuestionOccurrenceMinAggregateOutputType = {
 export type QuestionOccurrenceMaxAggregateOutputType = {
   id: string | null
   questionId: string | null
+  isPrimary: boolean | null
   institution: string | null
   examName: string | null
   examYear: number | null
@@ -81,6 +83,7 @@ export type QuestionOccurrenceMaxAggregateOutputType = {
 export type QuestionOccurrenceCountAggregateOutputType = {
   id: number
   questionId: number
+  isPrimary: number
   institution: number
   examName: number
   examYear: number
@@ -115,6 +118,7 @@ export type QuestionOccurrenceSumAggregateInputType = {
 export type QuestionOccurrenceMinAggregateInputType = {
   id?: true
   questionId?: true
+  isPrimary?: true
   institution?: true
   examName?: true
   examYear?: true
@@ -135,6 +139,7 @@ export type QuestionOccurrenceMinAggregateInputType = {
 export type QuestionOccurrenceMaxAggregateInputType = {
   id?: true
   questionId?: true
+  isPrimary?: true
   institution?: true
   examName?: true
   examYear?: true
@@ -155,6 +160,7 @@ export type QuestionOccurrenceMaxAggregateInputType = {
 export type QuestionOccurrenceCountAggregateInputType = {
   id?: true
   questionId?: true
+  isPrimary?: true
   institution?: true
   examName?: true
   examYear?: true
@@ -262,9 +268,10 @@ export type QuestionOccurrenceGroupByArgs<ExtArgs extends runtime.Types.Extensio
 export type QuestionOccurrenceGroupByOutputType = {
   id: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary: boolean
+  institution: string | null
+  examName: string | null
+  examYear: number | null
   postName: string | null
   department: string | null
   questionNumber: number | null
@@ -305,9 +312,10 @@ export type QuestionOccurrenceWhereInput = {
   NOT?: Prisma.QuestionOccurrenceWhereInput | Prisma.QuestionOccurrenceWhereInput[]
   id?: Prisma.UuidFilter<"QuestionOccurrence"> | string
   questionId?: Prisma.UuidFilter<"QuestionOccurrence"> | string
-  institution?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examName?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examYear?: Prisma.IntFilter<"QuestionOccurrence"> | number
+  isPrimary?: Prisma.BoolFilter<"QuestionOccurrence"> | boolean
+  institution?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examYear?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
   postName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   department?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   questionNumber?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
@@ -330,9 +338,10 @@ export type QuestionOccurrenceWhereInput = {
 export type QuestionOccurrenceOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   questionId?: Prisma.SortOrder
-  institution?: Prisma.SortOrder
-  examName?: Prisma.SortOrder
-  examYear?: Prisma.SortOrder
+  isPrimary?: Prisma.SortOrder
+  institution?: Prisma.SortOrderInput | Prisma.SortOrder
+  examName?: Prisma.SortOrderInput | Prisma.SortOrder
+  examYear?: Prisma.SortOrderInput | Prisma.SortOrder
   postName?: Prisma.SortOrderInput | Prisma.SortOrder
   department?: Prisma.SortOrderInput | Prisma.SortOrder
   questionNumber?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -358,9 +367,10 @@ export type QuestionOccurrenceWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.QuestionOccurrenceWhereInput[]
   NOT?: Prisma.QuestionOccurrenceWhereInput | Prisma.QuestionOccurrenceWhereInput[]
   questionId?: Prisma.UuidFilter<"QuestionOccurrence"> | string
-  institution?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examName?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examYear?: Prisma.IntFilter<"QuestionOccurrence"> | number
+  isPrimary?: Prisma.BoolFilter<"QuestionOccurrence"> | boolean
+  institution?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examYear?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
   postName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   department?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   questionNumber?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
@@ -383,9 +393,10 @@ export type QuestionOccurrenceWhereUniqueInput = Prisma.AtLeast<{
 export type QuestionOccurrenceOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   questionId?: Prisma.SortOrder
-  institution?: Prisma.SortOrder
-  examName?: Prisma.SortOrder
-  examYear?: Prisma.SortOrder
+  isPrimary?: Prisma.SortOrder
+  institution?: Prisma.SortOrderInput | Prisma.SortOrder
+  examName?: Prisma.SortOrderInput | Prisma.SortOrder
+  examYear?: Prisma.SortOrderInput | Prisma.SortOrder
   postName?: Prisma.SortOrderInput | Prisma.SortOrder
   department?: Prisma.SortOrderInput | Prisma.SortOrder
   questionNumber?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -411,9 +422,10 @@ export type QuestionOccurrenceScalarWhereWithAggregatesInput = {
   NOT?: Prisma.QuestionOccurrenceScalarWhereWithAggregatesInput | Prisma.QuestionOccurrenceScalarWhereWithAggregatesInput[]
   id?: Prisma.UuidWithAggregatesFilter<"QuestionOccurrence"> | string
   questionId?: Prisma.UuidWithAggregatesFilter<"QuestionOccurrence"> | string
-  institution?: Prisma.StringWithAggregatesFilter<"QuestionOccurrence"> | string
-  examName?: Prisma.StringWithAggregatesFilter<"QuestionOccurrence"> | string
-  examYear?: Prisma.IntWithAggregatesFilter<"QuestionOccurrence"> | number
+  isPrimary?: Prisma.BoolWithAggregatesFilter<"QuestionOccurrence"> | boolean
+  institution?: Prisma.StringNullableWithAggregatesFilter<"QuestionOccurrence"> | string | null
+  examName?: Prisma.StringNullableWithAggregatesFilter<"QuestionOccurrence"> | string | null
+  examYear?: Prisma.IntNullableWithAggregatesFilter<"QuestionOccurrence"> | number | null
   postName?: Prisma.StringNullableWithAggregatesFilter<"QuestionOccurrence"> | string | null
   department?: Prisma.StringNullableWithAggregatesFilter<"QuestionOccurrence"> | string | null
   questionNumber?: Prisma.IntNullableWithAggregatesFilter<"QuestionOccurrence"> | number | null
@@ -430,9 +442,10 @@ export type QuestionOccurrenceScalarWhereWithAggregatesInput = {
 
 export type QuestionOccurrenceCreateInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -451,9 +464,10 @@ export type QuestionOccurrenceCreateInput = {
 export type QuestionOccurrenceUncheckedCreateInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -470,9 +484,10 @@ export type QuestionOccurrenceUncheckedCreateInput = {
 
 export type QuestionOccurrenceUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -491,9 +506,10 @@ export type QuestionOccurrenceUpdateInput = {
 export type QuestionOccurrenceUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -511,9 +527,10 @@ export type QuestionOccurrenceUncheckedUpdateInput = {
 export type QuestionOccurrenceCreateManyInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -530,9 +547,10 @@ export type QuestionOccurrenceCreateManyInput = {
 
 export type QuestionOccurrenceUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -546,9 +564,10 @@ export type QuestionOccurrenceUpdateManyMutationInput = {
 export type QuestionOccurrenceUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -576,6 +595,7 @@ export type QuestionOccurrenceOrderByRelationAggregateInput = {
 export type QuestionOccurrenceCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   questionId?: Prisma.SortOrder
+  isPrimary?: Prisma.SortOrder
   institution?: Prisma.SortOrder
   examName?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
@@ -602,6 +622,7 @@ export type QuestionOccurrenceAvgOrderByAggregateInput = {
 export type QuestionOccurrenceMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   questionId?: Prisma.SortOrder
+  isPrimary?: Prisma.SortOrder
   institution?: Prisma.SortOrder
   examName?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
@@ -622,6 +643,7 @@ export type QuestionOccurrenceMaxOrderByAggregateInput = {
 export type QuestionOccurrenceMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   questionId?: Prisma.SortOrder
+  isPrimary?: Prisma.SortOrder
   institution?: Prisma.SortOrder
   examName?: Prisma.SortOrder
   examYear?: Prisma.SortOrder
@@ -865,9 +887,10 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutSourceDocumentNestedInpu
 
 export type QuestionOccurrenceCreateWithoutInstitutionRefInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -885,9 +908,10 @@ export type QuestionOccurrenceCreateWithoutInstitutionRefInput = {
 export type QuestionOccurrenceUncheckedCreateWithoutInstitutionRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -933,9 +957,10 @@ export type QuestionOccurrenceScalarWhereInput = {
   NOT?: Prisma.QuestionOccurrenceScalarWhereInput | Prisma.QuestionOccurrenceScalarWhereInput[]
   id?: Prisma.UuidFilter<"QuestionOccurrence"> | string
   questionId?: Prisma.UuidFilter<"QuestionOccurrence"> | string
-  institution?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examName?: Prisma.StringFilter<"QuestionOccurrence"> | string
-  examYear?: Prisma.IntFilter<"QuestionOccurrence"> | number
+  isPrimary?: Prisma.BoolFilter<"QuestionOccurrence"> | boolean
+  institution?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
+  examYear?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
   postName?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   department?: Prisma.StringNullableFilter<"QuestionOccurrence"> | string | null
   questionNumber?: Prisma.IntNullableFilter<"QuestionOccurrence"> | number | null
@@ -952,9 +977,10 @@ export type QuestionOccurrenceScalarWhereInput = {
 
 export type QuestionOccurrenceCreateWithoutExamRefInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -972,9 +998,10 @@ export type QuestionOccurrenceCreateWithoutExamRefInput = {
 export type QuestionOccurrenceUncheckedCreateWithoutExamRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1016,9 +1043,10 @@ export type QuestionOccurrenceUpdateManyWithWhereWithoutExamRefInput = {
 
 export type QuestionOccurrenceCreateWithoutPostRefInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1036,9 +1064,10 @@ export type QuestionOccurrenceCreateWithoutPostRefInput = {
 export type QuestionOccurrenceUncheckedCreateWithoutPostRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1080,9 +1109,10 @@ export type QuestionOccurrenceUpdateManyWithWhereWithoutPostRefInput = {
 
 export type QuestionOccurrenceCreateWithoutQuestionInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1099,9 +1129,10 @@ export type QuestionOccurrenceCreateWithoutQuestionInput = {
 
 export type QuestionOccurrenceUncheckedCreateWithoutQuestionInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1144,9 +1175,10 @@ export type QuestionOccurrenceUpdateManyWithWhereWithoutQuestionInput = {
 
 export type QuestionOccurrenceCreateWithoutSourceDocumentInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1164,9 +1196,10 @@ export type QuestionOccurrenceCreateWithoutSourceDocumentInput = {
 export type QuestionOccurrenceUncheckedCreateWithoutSourceDocumentInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1209,9 +1242,10 @@ export type QuestionOccurrenceUpdateManyWithWhereWithoutSourceDocumentInput = {
 export type QuestionOccurrenceCreateManyInstitutionRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1227,9 +1261,10 @@ export type QuestionOccurrenceCreateManyInstitutionRefInput = {
 
 export type QuestionOccurrenceUpdateWithoutInstitutionRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1247,9 +1282,10 @@ export type QuestionOccurrenceUpdateWithoutInstitutionRefInput = {
 export type QuestionOccurrenceUncheckedUpdateWithoutInstitutionRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1266,9 +1302,10 @@ export type QuestionOccurrenceUncheckedUpdateWithoutInstitutionRefInput = {
 export type QuestionOccurrenceUncheckedUpdateManyWithoutInstitutionRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1285,9 +1322,10 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutInstitutionRefInput = {
 export type QuestionOccurrenceCreateManyExamRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1303,9 +1341,10 @@ export type QuestionOccurrenceCreateManyExamRefInput = {
 
 export type QuestionOccurrenceUpdateWithoutExamRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1323,9 +1362,10 @@ export type QuestionOccurrenceUpdateWithoutExamRefInput = {
 export type QuestionOccurrenceUncheckedUpdateWithoutExamRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1342,9 +1382,10 @@ export type QuestionOccurrenceUncheckedUpdateWithoutExamRefInput = {
 export type QuestionOccurrenceUncheckedUpdateManyWithoutExamRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1361,9 +1402,10 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutExamRefInput = {
 export type QuestionOccurrenceCreateManyPostRefInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1379,9 +1421,10 @@ export type QuestionOccurrenceCreateManyPostRefInput = {
 
 export type QuestionOccurrenceUpdateWithoutPostRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1399,9 +1442,10 @@ export type QuestionOccurrenceUpdateWithoutPostRefInput = {
 export type QuestionOccurrenceUncheckedUpdateWithoutPostRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1418,9 +1462,10 @@ export type QuestionOccurrenceUncheckedUpdateWithoutPostRefInput = {
 export type QuestionOccurrenceUncheckedUpdateManyWithoutPostRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1436,9 +1481,10 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutPostRefInput = {
 
 export type QuestionOccurrenceCreateManyQuestionInput = {
   id?: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1455,9 +1501,10 @@ export type QuestionOccurrenceCreateManyQuestionInput = {
 
 export type QuestionOccurrenceUpdateWithoutQuestionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1474,9 +1521,10 @@ export type QuestionOccurrenceUpdateWithoutQuestionInput = {
 
 export type QuestionOccurrenceUncheckedUpdateWithoutQuestionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1493,9 +1541,10 @@ export type QuestionOccurrenceUncheckedUpdateWithoutQuestionInput = {
 
 export type QuestionOccurrenceUncheckedUpdateManyWithoutQuestionInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1513,9 +1562,10 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutQuestionInput = {
 export type QuestionOccurrenceCreateManySourceDocumentInput = {
   id?: string
   questionId: string
-  institution: string
-  examName: string
-  examYear: number
+  isPrimary?: boolean
+  institution?: string | null
+  examName?: string | null
+  examYear?: number | null
   postName?: string | null
   department?: string | null
   questionNumber?: number | null
@@ -1531,9 +1581,10 @@ export type QuestionOccurrenceCreateManySourceDocumentInput = {
 
 export type QuestionOccurrenceUpdateWithoutSourceDocumentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1551,9 +1602,10 @@ export type QuestionOccurrenceUpdateWithoutSourceDocumentInput = {
 export type QuestionOccurrenceUncheckedUpdateWithoutSourceDocumentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1570,9 +1622,10 @@ export type QuestionOccurrenceUncheckedUpdateWithoutSourceDocumentInput = {
 export type QuestionOccurrenceUncheckedUpdateManyWithoutSourceDocumentInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionId?: Prisma.StringFieldUpdateOperationsInput | string
-  institution?: Prisma.StringFieldUpdateOperationsInput | string
-  examName?: Prisma.StringFieldUpdateOperationsInput | string
-  examYear?: Prisma.IntFieldUpdateOperationsInput | number
+  isPrimary?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  institution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  examYear?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
   postName?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   questionNumber?: Prisma.NullableIntFieldUpdateOperationsInput | number | null
@@ -1591,6 +1644,7 @@ export type QuestionOccurrenceUncheckedUpdateManyWithoutSourceDocumentInput = {
 export type QuestionOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   questionId?: boolean
+  isPrimary?: boolean
   institution?: boolean
   examName?: boolean
   examYear?: boolean
@@ -1616,6 +1670,7 @@ export type QuestionOccurrenceSelect<ExtArgs extends runtime.Types.Extensions.In
 export type QuestionOccurrenceSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   questionId?: boolean
+  isPrimary?: boolean
   institution?: boolean
   examName?: boolean
   examYear?: boolean
@@ -1641,6 +1696,7 @@ export type QuestionOccurrenceSelectCreateManyAndReturn<ExtArgs extends runtime.
 export type QuestionOccurrenceSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   questionId?: boolean
+  isPrimary?: boolean
   institution?: boolean
   examName?: boolean
   examYear?: boolean
@@ -1666,6 +1722,7 @@ export type QuestionOccurrenceSelectUpdateManyAndReturn<ExtArgs extends runtime.
 export type QuestionOccurrenceSelectScalar = {
   id?: boolean
   questionId?: boolean
+  isPrimary?: boolean
   institution?: boolean
   examName?: boolean
   examYear?: boolean
@@ -1683,7 +1740,7 @@ export type QuestionOccurrenceSelectScalar = {
   updatedAt?: boolean
 }
 
-export type QuestionOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "questionId" | "institution" | "examName" | "examYear" | "postName" | "department" | "questionNumber" | "source" | "sourcePage" | "sourceUrl" | "institutionId" | "examId" | "postId" | "sourceDocumentId" | "createdAt" | "updatedAt", ExtArgs["result"]["questionOccurrence"]>
+export type QuestionOccurrenceOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "questionId" | "isPrimary" | "institution" | "examName" | "examYear" | "postName" | "department" | "questionNumber" | "source" | "sourcePage" | "sourceUrl" | "institutionId" | "examId" | "postId" | "sourceDocumentId" | "createdAt" | "updatedAt", ExtArgs["result"]["questionOccurrence"]>
 export type QuestionOccurrenceInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   question?: boolean | Prisma.QuestionDefaultArgs<ExtArgs>
   institutionRef?: boolean | Prisma.QuestionOccurrence$institutionRefArgs<ExtArgs>
@@ -1718,9 +1775,10 @@ export type $QuestionOccurrencePayload<ExtArgs extends runtime.Types.Extensions.
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     questionId: string
-    institution: string
-    examName: string
-    examYear: number
+    isPrimary: boolean
+    institution: string | null
+    examName: string | null
+    examYear: number | null
     postName: string | null
     department: string | null
     questionNumber: number | null
@@ -2163,6 +2221,7 @@ export interface Prisma__QuestionOccurrenceClient<T, Null = never, ExtArgs exten
 export interface QuestionOccurrenceFieldRefs {
   readonly id: Prisma.FieldRef<"QuestionOccurrence", 'String'>
   readonly questionId: Prisma.FieldRef<"QuestionOccurrence", 'String'>
+  readonly isPrimary: Prisma.FieldRef<"QuestionOccurrence", 'Boolean'>
   readonly institution: Prisma.FieldRef<"QuestionOccurrence", 'String'>
   readonly examName: Prisma.FieldRef<"QuestionOccurrence", 'String'>
   readonly examYear: Prisma.FieldRef<"QuestionOccurrence", 'Int'>

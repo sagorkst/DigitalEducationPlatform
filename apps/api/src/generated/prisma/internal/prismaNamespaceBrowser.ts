@@ -321,6 +321,7 @@ export type QuestionOptionScalarFieldEnum = (typeof QuestionOptionScalarFieldEnu
 export const QuestionOccurrenceScalarFieldEnum = {
   id: 'id',
   questionId: 'questionId',
+  isPrimary: 'isPrimary',
   institution: 'institution',
   examName: 'examName',
   examYear: 'examYear',
