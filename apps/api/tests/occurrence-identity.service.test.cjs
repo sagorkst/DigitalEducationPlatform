@@ -65,6 +65,24 @@ test('missing Year is ambiguous when multiple yearly occurrences share the same 
   assert.equal(result.kind, 'AMBIGUOUS');
 });
 
+test('different Post names do not match when one Post ID is missing', () => {
+  const existing = occurrence(2020, { postId: null, postName: 'Assistant Director' });
+  const result = OccurrenceIdentityService.classify(
+    [existing],
+    { ...base, examYear: 2020, examId: 'exam-2020', postId: 'post-002', postName: 'Computer Typist' },
+  );
+  assert.equal(result.kind, 'CREATE');
+});
+
+test('different Post IDs never match even when labels are identical', () => {
+  const existing = occurrence(2020, { postId: 'post-001', postName: 'Assistant Director' });
+  const result = OccurrenceIdentityService.classify(
+    [existing],
+    { ...base, examYear: 2020, examId: 'exam-2020', postId: 'post-002', postName: 'Assistant Director' },
+  );
+  assert.equal(result.kind, 'CREATE');
+});
+
 test('a missing Post is enriched when exactly one Exam/Year match exists', () => {
   const existing = occurrence(2020, { postName: null, postId: null });
   const result = OccurrenceIdentityService.classify(
