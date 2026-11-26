@@ -28,6 +28,15 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # npm ci can omit platform-specific optional native packages when a
+      # Windows-generated lockfile is consumed on Linux. Install the exact
+      # Ubuntu x64 binaries explicitly in CI without changing package manifests.
+      - name: Install Linux native CSS bindings
+        run: >
+          npm install --workspace=web --no-save --include=optional
+          @tailwindcss/oxide-linux-x64-gnu@4.3.3
+          lightningcss-linux-x64-gnu@1.32.0
+
       - name: Validate Prisma schema
         run: npx prisma validate --config prisma7.config.ts
         env:
