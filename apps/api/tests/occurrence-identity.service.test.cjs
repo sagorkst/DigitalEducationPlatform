@@ -12,10 +12,10 @@ const base = {
 
 function occurrence(year, overrides = {}) {
   return {
-    id: \`occurrence-\${year}\`,
+    id: `occurrence-${year}`,
     ...base,
     examYear: year,
-    examId: \`exam-\${year}\`,
+    examId: `exam-${year}`,
     questionNumber: 10,
     ...overrides,
   };
