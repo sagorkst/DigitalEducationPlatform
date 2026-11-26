@@ -321,6 +321,28 @@ test('JSON export handles empty questions', async () => {
   assert.deepEqual(data.questions, []);
 });
 
+test('CSV and XLSX exports preserve nested image references and Primary Occurrence metadata', async () => {
+  const { service } = createService([createQuestion()]);
+
+  const csvResult = await service.exportQuestions('csv');
+  const csvWorkbook = XLSX.read(csvResult.buffer, { type: 'buffer' });
+  const csvRow = XLSX.utils.sheet_to_json(csvWorkbook.Sheets.Questions)[0];
+  const csvOptions = JSON.parse(csvRow.options);
+  const csvOccurrences = JSON.parse(csvRow.occurrences);
+  assert.deepEqual(csvOptions[0].imageReferences, ['/uploads/questions/option-a.webp']);
+  assert.deepEqual(csvRow.imageReferences, ['/uploads/questions/question-diagram.webp']);
+  assert.equal(csvOccurrences[0].isPrimary, true);
+
+  const xlsxResult = await service.exportQuestions('xlsx');
+  const xlsxWorkbook = XLSX.read(xlsxResult.buffer, { type: 'buffer' });
+  const xlsxRow = XLSX.utils.sheet_to_json(xlsxWorkbook.Sheets.Questions)[0];
+  const xlsxOptions = JSON.parse(xlsxRow.options);
+  const xlsxOccurrences = JSON.parse(xlsxRow.occurrences);
+  assert.deepEqual(xlsxOptions[0].imageReferences, ['/uploads/questions/option-a.webp']);
+  assert.deepEqual(xlsxRow.imageReferences, ['/uploads/questions/question-diagram.webp']);
+  assert.equal(xlsxOccurrences[0].isPrimary, true);
+});
+
 test('CSV export returns correct filename and content type', async () => {
   const { service } = createService([
     createQuestion(),
