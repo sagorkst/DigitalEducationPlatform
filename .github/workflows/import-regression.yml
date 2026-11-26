@@ -46,6 +46,7 @@ jobs:
           apps/api/tests/imports.commit.test.cjs
           apps/api/tests/occurrence-identity.service.test.cjs
           apps/api/tests/occurrences.service.test.cjs
+          apps/api/tests/imports.controller.test.cjs
           apps/api/tests/html-question-parser.service.test.cjs
           apps/api/tests/imports-rollback.service.test.cjs
           apps/api/tests/imports-export.service.test.cjs
