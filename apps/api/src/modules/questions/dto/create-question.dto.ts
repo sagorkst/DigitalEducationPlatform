@@ -123,6 +123,10 @@ export class QuestionOccurrenceDto {
   @IsOptional()
   @IsUUID()
   sourceDocumentId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
 }
 
 export class CreateQuestionDto {
