@@ -15,7 +15,10 @@
     "test:users": "node --test tests/users.service.test.cjs",
     "test:public-questions": "npm run build && node --test tests/public-questions.service.test.cjs",
     "test:questions-security": "node --test test/questions-security.integration.test.cjs",
-    "test:html-import": "npm run build && node --test tests/html-question-parser.service.test.cjs"
+    "test:html-import": "npm run build && node --test tests/html-question-parser.service.test.cjs",
+    "prebuild": "prisma generate --config ../../prisma7.config.ts",
+    "pretypecheck": "prisma generate --config ../../prisma7.config.ts",
+    "prestart:dev": "prisma generate --config ../../prisma7.config.ts"
   },
   "devDependencies": {
     "@nestjs/cli": "^12.0.11",
