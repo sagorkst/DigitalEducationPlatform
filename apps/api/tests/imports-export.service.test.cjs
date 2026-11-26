@@ -17,6 +17,7 @@ function createQuestion(overrides = {}) {
     id: 'question-1',
     questionCode: 'Q-001',
     questionText: 'What is the capital of Bangladesh?',
+    imageReferences: ['/uploads/questions/question-diagram.webp'],
     questionType: 'MCQ',
     subject: 'Geography',
     topic: 'Capital',
@@ -32,18 +33,21 @@ function createQuestion(overrides = {}) {
       {
         label: 'A',
         optionText: 'Dhaka',
+        imageReferences: ['/uploads/questions/option-a.webp'],
         isCorrect: true,
         sortOrder: 1,
       },
       {
         label: 'B',
         optionText: 'Chattogram',
+        imageReferences: [],
         isCorrect: false,
         sortOrder: 2,
       },
     ],
     occurrences: [
       {
+        isPrimary: true,
         institution: 'PSC',
         examName: 'Primary Exam',
         examYear: 2024,
@@ -257,6 +261,7 @@ test('JSON export includes question fields', async () => {
   assert.equal(question.topicId, 'topic-1');
   assert.equal(question.correctAnswer, 'Dhaka');
   assert.equal(question.status, 'VERIFIED');
+  assert.deepEqual(question.imageReferences, ['/uploads/questions/question-diagram.webp']);
 });
 
 test('JSON export includes question options', async () => {
@@ -273,12 +278,14 @@ test('JSON export includes question options', async () => {
       {
         label: 'A',
         optionText: 'Dhaka',
+        imageReferences: ['/uploads/questions/option-a.webp'],
         isCorrect: true,
         sortOrder: 1,
       },
       {
         label: 'B',
         optionText: 'Chattogram',
+        imageReferences: [],
         isCorrect: false,
         sortOrder: 2,
       },
@@ -301,6 +308,7 @@ test('JSON export includes occurrence data', async () => {
   assert.equal(occurrence.examYear, 2024);
   assert.equal(occurrence.questionNumber, 10);
   assert.equal(occurrence.examId, 'exam-1');
+  assert.equal(occurrence.isPrimary, true);
 });
 
 test('JSON export handles empty questions', async () => {
