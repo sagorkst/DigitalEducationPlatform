@@ -1474,12 +1474,15 @@ export class ImportsService {
       throw new BadRequestException('Provide at least one metadata field or exam occurrence.');
     }
     if (setAsPrimary) {
-      const primaryCandidate = { ...common, ...(cleanOccurrences[0] ?? {}) };
+      const primaryCandidate: Record<string, unknown> = {
+        ...common,
+        ...(cleanOccurrences[0] ?? {}),
+      };
       const hasInstitution = Boolean(primaryCandidate.institution || primaryCandidate.institutionId);
       const hasExam = Boolean(primaryCandidate.examName || primaryCandidate.examId);
       const hasPost = Boolean(primaryCandidate.postName || primaryCandidate.postId);
-      const hasYear = Number.isInteger(Number(primaryCandidate.examYear)) &&
-        Number(primaryCandidate.examYear) >= 1900 && Number(primaryCandidate.examYear) <= 2100;
+      const primaryYear = Number(primaryCandidate.examYear);
+      const hasYear = Number.isInteger(primaryYear) && primaryYear >= 1900 && primaryYear <= 2100;
       if (!hasInstitution || !hasExam || !hasPost || !hasYear) {
         throw new BadRequestException('Primary Occurrence-এর জন্য Institution, Exam, Post ও Year—চারটি তথ্যই প্রয়োজন।');
       }
