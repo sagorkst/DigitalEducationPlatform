@@ -231,6 +231,33 @@ test('07 - accepts JSON object containing questions array', async () => {
   assert.equal(result.data.summary.totalRows, 1);
 });
 
+test('CSV import restores JSON-encoded question image references as an array', async () => {
+  const { service, prisma } = createService();
+  let savedRows;
+
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const csv = [
+    'questionText,subject,topic,imageReferences',
+    '"Which component is shown?","General Knowledge","Electricity","[""/uploads/questions/diagram.webp""]"',
+  ].join('\n');
+
+  const result = await service.preview({
+    originalname: 'questions.csv',
+    buffer: Buffer.from(csv),
+    size: Buffer.byteLength(csv),
+  });
+
+  assert.equal(result.data.summary.validRows, 1);
+  assert.deepEqual(
+    savedRows[0].rawData.imageReferences,
+    ['/uploads/questions/diagram.webp'],
+  );
+});
+
 test('08 - rejects non-object row data', async () => {
   const { service } = createService();
 
