@@ -1542,7 +1542,30 @@ export class ImportsService {
       ) => {
         if (value === undefined) return;
         const current = target[key];
-        if (overwriteExisting || current === undefined || current === null || String(current).trim() === '') {
+        const currentIsEmpty =
+          current === undefined || current === null || String(current).trim() === '';
+        const identityChanged =
+          !currentIsEmpty &&
+          OccurrenceIdentityService.normalize(current) !==
+            OccurrenceIdentityService.normalize(value);
+
+        // The visible metadata fields are editable independently of stored IDs.
+        // When Replace changes an identity field, drop dependent IDs so commit
+        // resolves the new Institution/Post/Exam instead of failing against a
+        // stale reference that still points to the previous metadata.
+        if (overwriteExisting && identityChanged) {
+          if (key === 'institution') {
+            delete target.institutionId;
+            delete target.examId;
+          } else if (key === 'examName' || key === 'examYear') {
+            delete target.examId;
+          } else if (key === 'postName') {
+            delete target.postId;
+            delete target.examId;
+          }
+        }
+
+        if (overwriteExisting || currentIsEmpty) {
           target[key] = value;
         }
       };
