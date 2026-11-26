@@ -10,6 +10,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
+import { OccurrenceIdentityService } from '../occurrences/occurrence-identity.service';
 
 @Injectable()
 export class QuestionsService {
@@ -55,6 +56,7 @@ export class QuestionsService {
       examId?: string;
       postId?: string;
       sourceDocumentId?: string;
+      isPrimary?: boolean;
     },
   ) {
     if (!occurrence.examId) {
@@ -73,6 +75,7 @@ export class QuestionsService {
         examId: undefined,
         postId: occurrence.postId,
         sourceDocumentId: occurrence.sourceDocumentId,
+        isPrimary: occurrence.isPrimary ?? false,
       };
     }
 
@@ -87,6 +90,8 @@ export class QuestionsService {
         examYear: true,
         institutionId: true,
         postId: true,
+        institution: { select: { name: true } },
+        post: { select: { name: true } },
       },
     });
 
@@ -106,7 +111,7 @@ export class QuestionsService {
       );
     }
 
-    // Validate supplied Post ID against the selected Exam.
+    // Validate supplied Post ID and text against the selected Exam.
     if (
       occurrence.postId &&
       occurrence.postId !== exam.postId
@@ -116,12 +121,39 @@ export class QuestionsService {
       );
     }
 
+    if (
+      occurrence.institution?.trim() &&
+      exam.institution?.name &&
+      OccurrenceIdentityService.normalize(occurrence.institution) !==
+        OccurrenceIdentityService.normalize(exam.institution.name)
+    ) {
+      throw new BadRequestException(
+        'The supplied Institution name does not match the selected Exam.',
+      );
+    }
+
+    if (
+      occurrence.postName?.trim() &&
+      exam.post?.name &&
+      OccurrenceIdentityService.normalize(occurrence.postName) !==
+        OccurrenceIdentityService.normalize(exam.post.name)
+    ) {
+      throw new BadRequestException(
+        'The supplied Post name does not match the selected Exam.',
+      );
+    }
+
+    if (occurrence.examYear !== exam.examYear) {
+      throw new BadRequestException(
+        'The supplied Exam Year does not match the selected Exam.',
+      );
+    }
+
     return {
-      // Preserve the supplied text values, consistent with ImportsService.
-      institution: occurrence.institution,
+      institution: exam.institution?.name ?? occurrence.institution,
       examName: exam.name,
       examYear: exam.examYear,
-      postName: occurrence.postName,
+      postName: exam.post?.name ?? occurrence.postName,
       department: occurrence.department,
       questionNumber: occurrence.questionNumber,
       source: occurrence.source,
@@ -134,6 +166,7 @@ export class QuestionsService {
       postId: exam.postId,
 
       sourceDocumentId: occurrence.sourceDocumentId,
+      isPrimary: occurrence.isPrimary ?? false,
     };
   }
 
@@ -143,6 +176,16 @@ export class QuestionsService {
 
   async create(dto: CreateQuestionDto) {
     const questionType = dto.questionType ?? 'MCQ';
+    const questionText = String(dto.questionText ?? '').trim();
+    const hasQuestionImages = Array.isArray(dto.imageReferences) &&
+      dto.imageReferences.some((item) => typeof item === 'string' && item.trim().length > 0);
+
+    if (!questionText && !hasQuestionImages) {
+      throw new BadRequestException('Question text or at least one question image is required.');
+    }
+    if (questionText && questionText.length < 3) {
+      throw new BadRequestException('Question text must contain at least 3 characters.');
+    }
 
     if (
       questionType === 'MCQ' &&
@@ -239,12 +282,53 @@ export class QuestionsService {
           }
         }
 
-        // Resolve every occurrence inside the same transaction.
-        const occurrenceData = await Promise.all(
+        // Resolve and de-duplicate occurrence identities before creation.
+        // Question number is paper position metadata, never occurrence identity.
+        const resolvedOccurrences = await Promise.all(
           dto.occurrences.map((occurrence) =>
             this.resolveOccurrenceData(tx, occurrence),
           ),
         );
+        const occurrenceData: Array<Record<string, any>> = [];
+
+        for (const resolved of resolvedOccurrences) {
+          const match = OccurrenceIdentityService.classify(
+            occurrenceData,
+            resolved,
+          );
+
+          if (match.kind === 'AMBIGUOUS') {
+            throw new BadRequestException(
+              'একই প্রশ্নের জন্য একাধিক অস্পষ্ট Exam Occurrence দেওয়া হয়েছে। Institution, Exam, Post ও Year যাচাই করুন।',
+            );
+          }
+
+          if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+            const target = match.occurrence;
+            for (const field of [
+              'institution', 'examName', 'postName', 'institutionId',
+              'examId', 'postId', 'department', 'questionNumber',
+              'source', 'sourcePage', 'sourceUrl', 'sourceDocumentId',
+            ]) {
+              const current = target[field];
+              const incoming = (resolved as Record<string, unknown>)[field];
+              if ((current === null || current === undefined || current === '') &&
+                  incoming !== null && incoming !== undefined && incoming !== '') {
+                target[field] = incoming;
+              }
+            }
+            target.isPrimary = target.isPrimary === true || resolved.isPrimary === true;
+            continue;
+          }
+
+          occurrenceData.push(resolved);
+        }
+
+        if (occurrenceData.filter((item) => item.isPrimary === true).length > 1) {
+          throw new BadRequestException(
+            'একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।',
+          );
+        }
 
         return tx.question.create({
           data: {
