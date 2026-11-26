@@ -46,7 +46,8 @@ export class AcademicService {
   }
   async createClass(body: Data) {
     const name = this.text(body, 'name', true)!;
-    const code = (this.text(body, 'code') ?? name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')).toUpperCase();
+    const code = (this.text(body, 'code') ?? name.toLowerCase().replace(/[^\\p{L}\\p{N}]+/gu, '-').replace(/^-|-$/g, '')).toUpperCase();
+    if (!code) throw new BadRequestException('Class code is required when it cannot be generated from the class name.');
     try {
       const data = await this.db.academicClass.create({ data: { name, code, level: this.text(body, 'level'), description: this.text(body, 'description'), sortOrder: this.int(body, 'sortOrder'), isActive: this.bool(body, 'isActive') } });
       return { success: true, data };
