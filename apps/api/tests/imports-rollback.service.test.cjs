@@ -664,7 +664,7 @@ test('rollback propagates transaction errors', async () => {
   );
 });
 
-test('rollback restores the previous metadata and Primary flag of an existing Occurrence', async () => {
+test('rollback restores the previous Primary only after demoting the newly selected Primary', async () => {
   const occurrenceUpdates = [];
   const batch = createBatch({
     rows: [{
@@ -674,11 +674,18 @@ test('rollback restores the previous metadata and Primary flag of an existing Oc
         _importTracking: {
           action: 'LINKED_OCCURRENCE',
           occurrenceIds: [],
-          occurrenceSnapshots: [{
-            id: 'occurrence-primary',
-            questionId: 'question-linked',
-            data: { isPrimary: false, examYear: 2022 },
-          }],
+          occurrenceSnapshots: [
+            {
+              id: 'old-primary',
+              questionId: 'question-linked',
+              data: { isPrimary: true, examYear: 2020 },
+            },
+            {
+              id: 'new-primary',
+              questionId: 'question-linked',
+              data: { isPrimary: false, examYear: 2022 },
+            },
+          ],
         },
       },
     }],
@@ -686,18 +693,20 @@ test('rollback restores the previous metadata and Primary flag of an existing Oc
   const { service } = createService({
     batch,
     questions: [],
-    occurrences: [{
-      id: 'occurrence-primary',
-      updatedAt: new Date('2026-01-01T10:30:00.000Z'),
-    }],
+    occurrences: [
+      { id: 'old-primary', updatedAt: new Date('2026-01-01T10:30:00.000Z') },
+      { id: 'new-primary', updatedAt: new Date('2026-01-01T10:35:00.000Z') },
+    ],
     occurrenceUpdates,
   });
 
   const result = await service.rollback('batch-001');
   assert.equal(result.data.rolledBackQuestions, 0);
-  assert.equal(result.data.restoredOccurrences, 1);
-  assert.deepEqual(occurrenceUpdates, [{
-    where: { id: 'occurrence-primary' },
-    data: { isPrimary: false, examYear: 2022 },
-  }]);
+  assert.equal(result.data.restoredOccurrences, 2);
+  assert.deepEqual(
+    occurrenceUpdates.map((item) => item.where.id),
+    ['new-primary', 'old-primary'],
+  );
+  assert.equal(occurrenceUpdates[0].data.isPrimary, false);
+  assert.equal(occurrenceUpdates[1].data.isPrimary, true);
 });

@@ -88,6 +88,22 @@ function createPrisma(overrides = {}) {
       findFirst: async () => null,
       ...overrides.topic,
     },
+
+    institution: {
+      findUnique: async () => null,
+      findFirst: async () => null,
+      ...overrides.institution,
+    },
+
+    post: {
+      findUnique: async () => null,
+      ...overrides.post,
+    },
+
+    sourceDocument: {
+      findUnique: async () => null,
+      ...overrides.sourceDocument,
+    },
   };
 
   prisma.$transaction = async (operation) => {
@@ -783,4 +799,117 @@ test('image-only questions and image-only options validate without blank-text du
   assert.equal(savedRows[0].status, 'VALID');
   assert.equal(savedRows[1].status, 'DUPLICATE');
   assert.equal(imageLookups, 1);
+});
+
+
+test('preview rejects mismatched Institution, Exam, Post and Year metadata against a selected Exam ID', async () => {
+  const { service, prisma } = createService();
+  const examId = '123e4567-e89b-42d3-a456-426614174000';
+  const institutionId = '123e4567-e89b-42d3-a456-426614174001';
+  const postId = '123e4567-e89b-42d3-a456-426614174002';
+  let savedRows = [];
+
+  prisma.exam.findUnique = async () => ({
+    id: examId,
+    institutionId,
+    postId,
+    name: 'BPSC Recruitment Examination',
+    examYear: 2022,
+    institution: {
+      id: institutionId,
+      name: 'Bangladesh Public Service Commission',
+      isActive: true,
+    },
+    post: { id: postId, name: 'Computer Typist' },
+  });
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      occurrences: [{
+        institution: 'Wrong Institution',
+        institutionId,
+        examName: 'Wrong Exam',
+        examId,
+        examYear: 2020,
+        postName: 'Wrong Post',
+        postId,
+      }],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.invalidRows, 1);
+  assert.equal(savedRows[0].status, 'INVALID');
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Institution name does not match the selected Exam.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Post name does not match the selected Exam.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Exam name does not match the selected Exam ID.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Exam Year does not match the selected Exam.',
+  ));
+});
+
+test('Primary Batch Metadata creates a new Year occurrence and preserves the previous occurrence', async () => {
+  const { service, prisma } = createService();
+  const row = {
+    id: 'row-primary',
+    status: 'VALID',
+    rawData: validRow({
+      occurrences: [{
+        institution: 'BPSC',
+        examName: 'Recruitment Examination',
+        postName: 'Computer Typist',
+        examYear: 2020,
+        isPrimary: true,
+      }],
+    }),
+  };
+
+  prisma.importBatch.findUnique = async () => ({ id: BATCH_ID, status: 'REVIEW' });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.findMany = async () => [row];
+  prisma.importRow.update = async ({ data }) => {
+    if (data.rawData !== undefined) row.rawData = data.rawData;
+    if (data.status !== undefined) row.status = data.status;
+    return row;
+  };
+
+  const result = await service.applyBatchMetadata(BATCH_ID, {
+    institution: 'BPSC',
+    examName: 'Recruitment Examination',
+    postName: 'Computer Typist',
+    examYear: 2022,
+    setAsPrimary: true,
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(row.rawData.occurrences.length, 2);
+  const oldOccurrence = row.rawData.occurrences.find((item) => item.examYear === 2020);
+  const newOccurrence = row.rawData.occurrences.find((item) => item.examYear === 2022);
+  assert.ok(oldOccurrence);
+  assert.ok(newOccurrence);
+  assert.equal(oldOccurrence.isPrimary, false);
+  assert.equal(newOccurrence.isPrimary, true);
+});
+
+test('Primary Batch Metadata rejects missing Institution, Exam, Post or Year', async () => {
+  const { service } = createService();
+
+  await assert.rejects(
+    service.applyBatchMetadata(BATCH_ID, {
+      institution: 'BPSC',
+      examName: 'Recruitment Examination',
+      postName: 'Computer Typist',
+      setAsPrimary: true,
+    }),
+    BadRequestException,
+  );
 });

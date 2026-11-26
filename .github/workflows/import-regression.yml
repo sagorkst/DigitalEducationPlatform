@@ -1,0 +1,60 @@
+name: Import and Occurrence Regression
+
+on:
+  push:
+    branches:
+      - feature/import-preview-full-edit-2026-11-23
+  pull_request:
+    branches:
+      - feature/import-preview-full-edit-2026-11-23
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  import-regression:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Validate Prisma schema
+        run: npx prisma validate --config prisma7.config.ts
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/shikhasetu_ci?schema=public
+
+      - name: Build API
+        run: npm --prefix apps/api run build
+
+      - name: Typecheck API
+        run: npm --prefix apps/api run typecheck
+
+      - name: Run Import, Occurrence and Rollback tests
+        run: >
+          node --test
+          apps/api/tests/imports.service.test.cjs
+          apps/api/tests/imports.commit.test.cjs
+          apps/api/tests/occurrence-identity.service.test.cjs
+          apps/api/tests/occurrences.service.test.cjs
+          apps/api/tests/html-question-parser.service.test.cjs
+          apps/api/tests/imports-rollback.service.test.cjs
+          apps/api/tests/imports-export.service.test.cjs
+          apps/api/tests/imports-error-report.service.test.cjs
+
+      - name: Lint Frontend
+        run: npm run lint --workspace=web
+
+      - name: Build Frontend
+        run: npm run build --workspace=web
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
