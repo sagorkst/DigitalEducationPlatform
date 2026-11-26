@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState, FormEvent } from "react";
 
-type Row = {id:string; name?:string; code?:string; level?:string|null; isActive?:boolean; isCurrent?:boolean; subject?:{id:string;name:string}; subjectId?:string; chapters?:Row[]; lessons?:Row[]; materials?:Row[]; title?:string; _count?:{classSubjects?:number;lessons?:number}};
+type Row = {id:string; name?:string; code?:string; level?:string|null; isActive?:boolean; isCurrent?:boolean; isPublished?:boolean; fileUrl?:string; subject?:{id:string;name:string}; subjectId?:string; chapters?:Row[]; lessons?:Row[]; materials?:Row[]; title?:string; _count?:{classSubjects?:number;lessons?:number}};
 async function request(path:string, init?:RequestInit) {
  const r=await fetch("/api/admin/academic/"+path,{...init,cache:"no-store",headers:{...(init?.body?{"Content-Type":"application/json"}:{}),...init?.headers}});
  const p=await r.json().catch(()=>null); if(!r.ok) throw new Error(p?.message||"Request failed"); return p?.data??p;
