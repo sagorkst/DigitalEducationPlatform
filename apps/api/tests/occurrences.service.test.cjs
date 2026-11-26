@@ -720,6 +720,34 @@ test('27 - updates occurrence fields successfully', async () => {
   );
 });
 
+test('27a - update rejects an existing identity even when question number differs', async () => {
+  const { service, prisma } = createService();
+  prisma.questionOccurrence.findUnique = async () => createOccurrence();
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'occurrence-duplicate', questionNumber: 99 }),
+  ];
+
+  await assert.rejects(
+    service.update(OCCURRENCE_ID, { questionNumber: 15 }),
+    ConflictException,
+  );
+});
+
+test('27aa - update rejects an ambiguous yearless occurrence identity', async () => {
+  const { service, prisma } = createService();
+  prisma.questionOccurrence.findUnique = async () =>
+    createOccurrence({ examYear: null });
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'occurrence-2020', examYear: 2020 }),
+    createOccurrence({ id: 'occurrence-2022', examYear: 2022 }),
+  ];
+
+  await assert.rejects(
+    service.update(OCCURRENCE_ID, { department: 'Administration' }),
+    ConflictException,
+  );
+});
+
 test('27b - setting an occurrence Primary demotes only the other primary rows', async () => {
   const { service, prisma } = createService();
   let demotion;
