@@ -64,7 +64,7 @@ export class AcademicService {
     catch (error) { if ((error as any)?.code === 'P2002') throw new ConflictException('Class code already exists.'); throw error; }
   }
   async deleteClass(id: string) { await this.exists(this.db.academicClass, id, 'Academic class'); await this.db.academicClass.delete({ where: { id } }); return { success: true }; }
-  async listSessions() { return { success: true, data: await this.db.academicSession.findMany({ orderBy: [{ isCurrent: 'desc' }, { name: 'desc' }] }) }; }
+  async listSessions() { return { success: true, data: await this.db.academicSession.findMany({ where: { isActive: true }, orderBy: [{ isCurrent: 'desc' }, { name: 'desc' }] }) }; }
   async createSession(body: Data) {
     const name = this.text(body, 'name', true)!;
     const startsAt = this.text(body, 'startsAt');

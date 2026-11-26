@@ -3,14 +3,14 @@ import { NextRequest, NextResponse } from "next/server";
 const API_BASE_URL=(process.env.API_BASE_URL||"http://localhost:4000/api").replace(/\/+$/,"");
 type Context={params:Promise<{path:string[]}>};
 function allowed(path:string[],method:string){
- if(method==="GET") return (path.length===1&&path[0]==="classes")||(path.length===2&&path[0]==="classes")||(path.length===1&&["my-enrollment","my-progress"].includes(path[0]));
+ if(method==="GET") return (path.length===1&&path[0]==="classes")||(path.length===2&&path[0]==="classes")||(path.length===1&&["my-enrollment","my-progress","sessions"].includes(path[0]));
  if(method==="POST") return path.length===1&&path[0]==="enroll"||path.length===3&&path[0]==="lessons"&&path[2]==="progress";
  return false;
 }
 async function proxy(request:NextRequest,context:Context,method:"GET"|"POST"){
  const {path}=await context.params;
  if(!Array.isArray(path)||!allowed(path,method)||path.some(s=>!s||s==="."||s===".."||s.includes("\\"))) return NextResponse.json({success:false,message:"Invalid academic path."},{status:400});
- const privateRoute=path[0]==="my-enrollment"||path[0]==="my-progress"||method==="POST";
+ const privateRoute=path[0]==="my-enrollment"||path[0]==="my-progress"||path[0]==="sessions"||method==="POST";
  const store=await cookies();const token=store.get("shikhasetu_session")?.value;
  if(privateRoute&&!token)return NextResponse.json({success:false,message:"Authentication required."},{status:401});
  const headers:Record<string,string>={Accept:"application/json"};
