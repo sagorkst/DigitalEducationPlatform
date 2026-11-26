@@ -253,6 +253,7 @@ export class OccurrencesService {
 
   async create(questionId: string, dto: CreateOccurrenceDto) {
     try {
+      let occurrenceWasPromoted = false;
       const occurrence = await this.prisma.$transaction(
         async (tx) => {
           await this.ensureQuestionExists(questionId, tx);
@@ -270,12 +271,35 @@ export class OccurrencesService {
             questionId,
             references,
           );
-          if (match.kind === 'AMBIGUOUS' || match.kind === 'MATCH') {
+          if (match.kind === 'AMBIGUOUS') {
             throw new ConflictException(
-              match.kind === 'AMBIGUOUS'
-                ? 'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।'
-                : 'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+              'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।',
             );
+          }
+
+          if (match.kind === 'MATCH') {
+            if (dto.isPrimary !== true) {
+              throw new ConflictException(
+                'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+              );
+            }
+
+            // Promote the existing occurrence; do not create a duplicate row.
+            await tx.questionOccurrence.updateMany({
+              where: {
+                questionId,
+                isPrimary: true,
+                id: { not: match.occurrence.id },
+              },
+              data: { isPrimary: false },
+            });
+
+            occurrenceWasPromoted = true;
+            return tx.questionOccurrence.update({
+              where: { id: match.occurrence.id },
+              data: { isPrimary: true },
+              include: this.occurrenceInclude,
+            });
           }
 
           if (match.kind === 'ENRICH') {
@@ -343,7 +367,9 @@ export class OccurrencesService {
 
       return {
         success: true,
-        message: 'Question occurrence created successfully.',
+        message: occurrenceWasPromoted
+          ? 'Existing Question occurrence promoted to Primary successfully.'
+          : 'Question occurrence created successfully.',
         data: occurrence,
       };
     } catch (error) {

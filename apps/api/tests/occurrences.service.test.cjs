@@ -901,3 +901,30 @@ test('15d - enriches a single yearless legacy occurrence when a Year is supplied
   assert.equal(updateArgs.data.examYear, 2025);
   assert.equal(createCalled, false);
 });
+
+
+test('create promotes an existing matching Occurrence when Primary is requested instead of duplicating it', async () => {
+  const { service, prisma } = createService();
+  const matching = createOccurrence({ id: 'matching-occurrence', examYear: 2025, isPrimary: false });
+  const previousPrimary = createOccurrence({ id: 'previous-primary', examYear: 2020, isPrimary: true });
+  let demotionArgs;
+  let updateArgs;
+  let createCalled = false;
+
+  prisma.questionOccurrence.findMany = async () => [matching, previousPrimary];
+  prisma.questionOccurrence.updateMany = async (args) => { demotionArgs = args; return { count: 1 }; };
+  prisma.questionOccurrence.update = async (args) => { updateArgs = args; return { ...matching, ...args.data }; };
+  prisma.questionOccurrence.create = async () => { createCalled = true; return createOccurrence(); };
+
+  const result = await service.create(QUESTION_ID, { ...legacyDto, isPrimary: true });
+
+  assert.equal(result.success, true);
+  assert.equal(result.message, 'Existing Question occurrence promoted to Primary successfully.');
+  assert.deepEqual(demotionArgs.where, {
+    questionId: QUESTION_ID, isPrimary: true, id: { not: 'matching-occurrence' },
+  });
+  assert.deepEqual(updateArgs.where, { id: 'matching-occurrence' });
+  assert.equal(updateArgs.data.isPrimary, true);
+  assert.equal(result.data.id, 'matching-occurrence');
+  assert.equal(createCalled, false);
+});

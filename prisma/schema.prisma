@@ -413,7 +413,8 @@ model QuestionOccurrence {
   sourceDocument SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
 
   @@index([questionId])
-  // Partial unique index enforcing one Primary Occurrence per Question is maintained by migration SQL.
+  // Partial unique indexes for occurrence identity exclude questionNumber;
+  // Primary and occurrence identity constraints are maintained by SQL migrations.
   @@index([institution, examYear])
   @@index([institutionId, examYear])
   @@index([examId, examYear])

@@ -127,6 +127,10 @@ export class UpdateQuestionOccurrenceDto {
   @IsOptional()
   @IsUUID()
   sourceDocumentId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
 }
 
 @ValidatorConstraint({

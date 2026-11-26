@@ -289,6 +289,15 @@ export class QuestionsService {
             this.resolveOccurrenceData(tx, occurrence),
           ),
         );
+
+        // Resolve known years first so a yearless row cannot be assigned
+        // arbitrarily when the same Question occurs in multiple years.
+        resolvedOccurrences.sort(
+          (left, right) =>
+            Number(right.examYear !== null && right.examYear !== undefined) -
+            Number(left.examYear !== null && left.examYear !== undefined),
+        );
+
         const occurrenceData: Array<Record<string, any>> = [];
 
         for (const resolved of resolvedOccurrences) {
@@ -1286,14 +1295,95 @@ export class QuestionsService {
             : {}),
         };
 
-        // Resolve new occurrences before updating.
-        const occurrenceData = dto.addOccurrences?.length
+        // Use the shared identity engine for every occurrence added by
+        // Question Edit, just as Import and Manual Add do.
+        const incomingOccurrences = dto.addOccurrences?.length
           ? await Promise.all(
               dto.addOccurrences.map((occurrence) =>
                 this.resolveOccurrenceData(tx, occurrence),
               ),
             )
           : [];
+
+        incomingOccurrences.sort(
+          (left, right) =>
+            Number(right.examYear !== null && right.examYear !== undefined) -
+            Number(left.examYear !== null && left.examYear !== undefined),
+        );
+
+        if (incomingOccurrences.filter((item) => item.isPrimary === true).length > 1) {
+          throw new BadRequestException(
+            'একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।',
+          );
+        }
+
+        for (const resolved of incomingOccurrences) {
+          const match = await OccurrenceIdentityService.findMatch(tx, id, resolved);
+
+          if (match.kind === 'AMBIGUOUS') {
+            throw new BadRequestException(
+              'এই প্রশ্নের জন্য একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। Institution, Exam, Post ও Year যাচাই করুন।',
+            );
+          }
+
+          if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+            const current = match.occurrence;
+            const patch: Record<string, unknown> = {};
+
+            for (const field of [
+              'institution', 'examName', 'postName', 'institutionId',
+              'examId', 'postId', 'department', 'questionNumber',
+              'source', 'sourcePage', 'sourceUrl', 'sourceDocumentId',
+            ]) {
+              const currentValue = current[field];
+              const incomingValue = (resolved as Record<string, unknown>)[field];
+              if (
+                (currentValue === null || currentValue === undefined || currentValue === '') &&
+                incomingValue !== null && incomingValue !== undefined && incomingValue !== ''
+              ) {
+                patch[field] = incomingValue;
+              }
+            }
+
+            if (
+              (current.examYear === null || current.examYear === undefined) &&
+              resolved.examYear !== null && resolved.examYear !== undefined
+            ) {
+              patch.examYear = resolved.examYear;
+            }
+
+            if (resolved.isPrimary === true) {
+              await tx.questionOccurrence.updateMany({
+                where: {
+                  questionId: id,
+                  isPrimary: true,
+                  id: { not: current.id },
+                },
+                data: { isPrimary: false },
+              });
+              if (current.isPrimary !== true) patch.isPrimary = true;
+            }
+
+            if (Object.keys(patch).length > 0) {
+              await tx.questionOccurrence.update({
+                where: { id: current.id },
+                data: patch as any,
+              });
+            }
+            continue;
+          }
+
+          if (resolved.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId: id, isPrimary: true },
+              data: { isPrimary: false },
+            });
+          }
+
+          await tx.questionOccurrence.create({
+            data: { questionId: id, ...resolved },
+          });
+        }
 
         await tx.question.update({
           where: { id },
@@ -1315,13 +1405,6 @@ export class QuestionsService {
                 }
               : {}),
 
-            ...(occurrenceData.length
-              ? {
-                  occurrences: {
-                    create: occurrenceData,
-                  },
-                }
-              : {}),
           },
         });
 
