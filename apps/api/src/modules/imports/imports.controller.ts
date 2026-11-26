@@ -53,7 +53,9 @@ export class ImportsController {
   ) {}
 
   private async persistEmbeddedImages(html: string): Promise<string> {
-    const pattern = /data:image\/(jpeg|jpg|png|webp);base64,([A-Za-z0-9+/=\s]+)/gi;
+    // Common inline formats plus SVG/GIF are normalized to WebP by storage.
+    // Whitespace is accepted because MIME-encoded MHTML frequently wraps Base64.
+    const pattern = /data:image\/(jpeg|jpg|png|webp|gif|svg\+xml);base64,([A-Za-z0-9+/=\s]+)/gi;
     const matches = Array.from(html.matchAll(pattern));
     const stored = new Map<string, string>();
     const apiOrigin = new URL(
@@ -64,7 +66,11 @@ export class ImportsController {
       const dataUrl = match[0];
       if (stored.has(dataUrl)) continue;
 
-      const buffer = Buffer.from(match[2].replace(/\s/g, ''), 'base64');
+      const encoded = match[2].replace(/\s/g, '');
+      const buffer = Buffer.from(encoded, 'base64');
+      if (buffer.length === 0) {
+        throw new BadRequestException('An embedded HTML image contains invalid Base64 data.');
+      }
       const publicPath = await this.storage.saveQuestionImage(buffer);
       stored.set(dataUrl, new URL(publicPath, apiOrigin).toString());
     }
@@ -73,6 +79,19 @@ export class ImportsController {
     for (const [dataUrl, publicUrl] of stored) {
       result = result.split(dataUrl).join(publicUrl);
     }
+
+    // Never persist large Base64 blobs or unresolved CID references in ImportRow JSON.
+    if (/data:image\//i.test(result)) {
+      throw new BadRequestException(
+        'HTML contains an unsupported or non-Base64 embedded image. Use JPEG, PNG, WebP, static GIF or SVG images.',
+      );
+    }
+    if (/\bcid:[^"'()\s>]+/i.test(result)) {
+      throw new BadRequestException(
+        'MHTML references an image attachment that is missing from the archive.',
+      );
+    }
+
     return result;
   }
 
