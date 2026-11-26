@@ -33,6 +33,11 @@ jobs:
         env:
           DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/shikhasetu_ci?schema=public
 
+      - name: Generate Prisma Client
+        run: npx prisma generate --config prisma7.config.ts
+        env:
+          DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/shikhasetu_ci?schema=public
+
       - name: Build API
         run: npm --prefix apps/api run build
 
