@@ -40,7 +40,34 @@ export class AcademicService {
     return { success: true, data: rows };
   }
   async getClass(id: string) {
-    const row = await this.db.academicClass.findFirst({ where: { id, isActive: true }, include: { classSubjects: { where: { isActive: true }, include: { subject: true, chapters: { where: { isActive: true }, orderBy: { sortOrder: 'asc' }, include: { lessons: { where: { isPublished: true }, orderBy: { sortOrder: 'asc' }, include: { materials: { where: { isPublished: true }, orderBy: { sortOrder: 'asc' } } } } } }, orderBy: { sortOrder: 'asc' } } } });
+    const row = await this.db.academicClass.findFirst({
+      where: { id, isActive: true },
+      include: {
+        classSubjects: {
+          where: { isActive: true },
+          orderBy: { sortOrder: 'asc' },
+          include: {
+            subject: true,
+            chapters: {
+              where: { isActive: true },
+              orderBy: { sortOrder: 'asc' },
+              include: {
+                lessons: {
+                  where: { isPublished: true },
+                  orderBy: { sortOrder: 'asc' },
+                  include: {
+                    materials: {
+                      where: { isPublished: true },
+                      orderBy: { sortOrder: 'asc' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
     if (!row) throw new NotFoundException('Academic class not found.');
     return { success: true, data: row };
   }
