@@ -326,7 +326,8 @@ test('CSV and XLSX exports preserve nested image references and Primary Occurren
 
   const csvResult = await service.exportQuestions('csv');
   const csvWorkbook = XLSX.read(csvResult.buffer, { type: 'buffer' });
-  const csvRow = XLSX.utils.sheet_to_json(csvWorkbook.Sheets.Questions)[0];
+  const csvSheet = csvWorkbook.Sheets[csvWorkbook.SheetNames[0]];
+  const csvRow = XLSX.utils.sheet_to_json(csvSheet)[0];
   const csvOptions = JSON.parse(csvRow.options);
   const csvOccurrences = JSON.parse(csvRow.occurrences);
   assert.deepEqual(csvOptions[0].imageReferences, ['/uploads/questions/option-a.webp']);
