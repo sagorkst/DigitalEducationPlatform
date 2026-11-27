@@ -93,10 +93,10 @@ export class ImportImageStandardizationService {
           // Conservative replacement gate: OCR alone is not enough to prove that
           // a diagram, graph, formula layout or illustration is absent.
           const textOnly =
-            confidence >= 92 &&
-            extractedText.replace(/\s/g, '').length >= 24 &&
-            wordCount >= 4 &&
-            textCoverage >= 0.18;
+            confidence >= 97 &&
+            extractedText.replace(/\s/g, '').length >= 30 &&
+            wordCount >= 5 &&
+            textCoverage >= 0.25;
 
           results.push({
             source,
@@ -134,11 +134,10 @@ export class ImportImageStandardizationService {
     references: string[],
     analyses: ImageStandardizationResult[],
   ): { text: string; imageReferences: string[]; replacements: ImageStandardizationResult[] } {
-    const currentText = String(text ?? '').trim();
+    let currentText = String(text ?? '').trim();
     const bySource = new Map(analyses.map((item) => [item.source, item]));
     const replacements: ImageStandardizationResult[] = [];
     const retained: string[] = [];
-
 
     for (const source of references ?? []) {
       const analysis = bySource.get(source);
@@ -147,15 +146,20 @@ export class ImportImageStandardizationService {
         continue;
       }
 
-      // OCR is only offered as a suggestion when the target text field is empty.
-      // The original image remains attached until a reviewer explicitly accepts it.
-      if (!currentText && analysis.kind === 'TEXT_ONLY' && analysis.extractedText) {
-        replacements.push({ ...analysis, status: 'REVIEW' });
-        // Keep the original reference until a reviewer confirms the OCR.
-        retained.push(source);
-      } else {
-        retained.push(source);
+      // Automatically replace only an empty field with very-high-confidence,
+      // text-dominant OCR. Existing text and uncertain/visual images stay intact.
+      if (
+        !currentText &&
+        analysis.kind === 'TEXT_ONLY' &&
+        analysis.confidence >= 97 &&
+        analysis.extractedText.trim()
+      ) {
+        currentText = analysis.extractedText.trim();
+        replacements.push({ ...analysis, status: 'REPLACED' });
+        continue;
       }
+
+      retained.push(source);
     }
 
     return {
