@@ -83,17 +83,16 @@ export class LocalStorageService {
 
     try {
       const image = sharp(buffer, {
-        limitInputPixels: 40_000_000,
+        limitInputPixels: 100_000_000,
         failOn: 'error',
       });
       const metadata = await image.metadata();
 
-      if (
-        !metadata.format ||
-        !['jpeg', 'png', 'webp', 'gif', 'svg'].includes(metadata.format)
-      ) {
+      // Accept every format this Sharp/libvips build can decode, then normalize
+      // it to WebP. MHTML MIME labels do not always match the actual image bytes.
+      if (!metadata.format) {
         throw new BadRequestException(
-          'Only JPEG, PNG, WebP, GIF and SVG images are allowed.',
+          'The uploaded content does not contain a recognizable image format.',
         );
       }
 
@@ -118,7 +117,7 @@ export class LocalStorageService {
       }
 
       throw new BadRequestException(
-        'The uploaded file is not a valid supported image.',
+        'The image could not be decoded. It may be corrupt, truncated, unsupported by the installed image codecs, or exceed the 100-megapixel safety limit.',
       );
     }
 
