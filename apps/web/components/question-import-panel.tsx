@@ -512,6 +512,52 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => current.filter((_, i) => i !== index).map((option, i) => ({ ...option, sortOrder: i })));
   }
 
+  function useOcrSuggestion(row: ImportRow, source: string, extractedText: string) {
+    const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
+    const questionImages = Array.isArray(raw.imageReferences) ? raw.imageReferences.filter((value): value is string => typeof value === "string") : [];
+    let applied = false;
+
+    if (questionImages.includes(source)) {
+      raw.questionText = String(raw.questionText ?? "").trim() || extractedText;
+      raw.imageReferences = questionImages.filter((value) => value !== source);
+      applied = true;
+    } else if (Array.isArray(raw.options)) {
+      raw.options = raw.options.map((value) => {
+        if (!isRecord(value)) return value;
+        const imageReferences = Array.isArray(value.imageReferences) ? value.imageReferences.filter((item): item is string => typeof item === "string") : [];
+        if (!imageReferences.includes(source)) return value;
+        applied = true;
+        return {
+          ...value,
+          optionText: String(value.optionText ?? value.text ?? "").trim() || extractedText,
+          imageReferences: imageReferences.filter((item) => item !== source),
+        };
+      });
+      const correct = (raw.options as unknown[]).find((value) => isRecord(value) && value.isCorrect === true);
+      if (isRecord(correct)) raw.correctAnswer = String(correct.optionText ?? raw.correctAnswer ?? "");
+    }
+
+    if (!applied) return;
+    setEditingRowId(row.id);
+    setEditingData(raw);
+    setEditingOptions(
+      Array.isArray(raw.options)
+        ? raw.options.map((value: unknown, index: number) => {
+            const option = isRecord(value) ? value : {};
+            return {
+              label: String(option.label ?? String.fromCharCode(65 + index)),
+              optionText: String(option.optionText ?? option.text ?? ""),
+              imageReferences: Array.isArray(option.imageReferences) ? option.imageReferences.filter((item): item is string => typeof item === "string") : [],
+              isCorrect: Boolean(option.isCorrect),
+              sortOrder: Number(option.sortOrder ?? index),
+            };
+          })
+        : [],
+    );
+    setError("");
+    setMessage("OCR text সম্পাদনার জন্য নেওয়া হয়েছে। Save করার আগে লেখা যাচাই করুন; মূল ছবি metadata-তে সংরক্ষিত আছে।");
+  }
+
   function startManualImportEdit(row: ImportRow) {
     const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
 
@@ -1223,6 +1269,9 @@ export default function QuestionImportPanel() {
                             const raw = row.rawData ?? {};
                             const errors = getErrors(row);
                             const htmlMetadata = isRecord(raw.htmlImportMetadata) ? raw.htmlImportMetadata : {};
+                            const imageAnalyses = isRecord(htmlMetadata.imageStandardization) && Array.isArray((htmlMetadata.imageStandardization as Record<string, unknown>).analyses)
+                              ? ((htmlMetadata.imageStandardization as Record<string, unknown>).analyses as unknown[]).filter(isRecord)
+                              : [];
                             const parserWarnings = Array.isArray(htmlMetadata.warnings)
                               ? htmlMetadata.warnings.filter((warning): warning is string =>
                                   typeof warning === "string" && !/Explanation was not found/i.test(warning),
@@ -1272,6 +1321,20 @@ export default function QuestionImportPanel() {
                                       </p>
                                     )}
                                   {String(raw.questionText ?? "")}
+                                  {imageAnalyses.filter((analysis) => typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
+                                    <div key={String(analysis.source ?? index)} className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-slate-700">
+                                      <p className="font-semibold text-blue-800">OCR suggestion · Confidence {Number(analysis.confidence ?? 0)}%</p>
+                                      <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
+                                      <p className="mb-2 text-[10px] text-slate-600">মূল ছবি এখনো সংযুক্ত আছে। OCR লেখা যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
+                                      <button
+                                        type="button"
+                                        onClick={() => useOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))}
+                                        className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100"
+                                      >
+                                        এই লেখা দিয়ে ছবি প্রতিস্থাপন করুন
+                                      </button>
+                                    </div>
+                                  ))}
                                   {parserWarnings.length > 0 && (
                                     <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] font-medium text-amber-700">
                                       {parserWarnings.map((warning, index) => (
