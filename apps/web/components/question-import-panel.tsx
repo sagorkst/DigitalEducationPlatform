@@ -1222,6 +1222,12 @@ export default function QuestionImportPanel() {
                           {rows.map((row) => {
                             const raw = row.rawData ?? {};
                             const errors = getErrors(row);
+                            const htmlMetadata = isRecord(raw.htmlImportMetadata) ? raw.htmlImportMetadata : {};
+                            const parserWarnings = Array.isArray(htmlMetadata.warnings)
+                              ? htmlMetadata.warnings.filter((warning): warning is string =>
+                                  typeof warning === "string" && !/Explanation was not found/i.test(warning),
+                                )
+                              : [];
                             const selectable = [
                               "VALID",
                               "INVALID",
@@ -1266,6 +1272,13 @@ export default function QuestionImportPanel() {
                                       </p>
                                     )}
                                   {String(raw.questionText ?? "")}
+                                  {parserWarnings.length > 0 && (
+                                    <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] font-medium text-amber-700">
+                                      {parserWarnings.map((warning, index) => (
+                                        <li key={index}>{warning}</li>
+                                      ))}
+                                    </ul>
+                                  )}
                                   {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
                                     <div className="mt-2 flex flex-wrap gap-2">
                                       {raw.imageReferences.map((source: unknown, index: number) => typeof source === "string" ? <img key={index} src={source} alt={`Question image ${index + 1}`} loading="lazy" className="max-h-36 max-w-full rounded border border-slate-200 object-contain" /> : null)}
@@ -1323,9 +1336,9 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="px-2 py-1.5 text-slate-700">
-                                  {String(raw.subject ?? "â€”")}
+                                  {String(raw.subject ?? "—")}
                                   <p className="mt-1 text-xs text-slate-400">
-                                    {String(raw.topic ?? "â€”")}
+                                    {String(raw.topic ?? "—")}
                                   </p>
                                 </td>
 
