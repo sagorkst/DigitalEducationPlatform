@@ -238,11 +238,23 @@ export class ImportsController {
           option.label.toUpperCase() ===
           (question.correctAnswer ?? '').toUpperCase(),
       );
+      const replacedImageSources = new Set([
+        ...questionReplacement.replacements.map((item) => item.source),
+        ...question.options.flatMap((option, index) =>
+          option.imageReferences.filter(
+            (source) => !options[index]?.imageReferences.includes(source),
+          ),
+        ),
+      ]);
       const imageStandardizationWarnings = [
         ...questionReplacement.replacements,
-        ...question.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+        ...question.imageReferences
+          .filter((source) => !replacedImageSources.has(source))
+          .map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
         ...question.options.flatMap((option) =>
-          option.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+          option.imageReferences
+            .filter((source) => !replacedImageSources.has(source))
+            .map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
         ),
       ].filter((item) => item && item.status !== 'REPLACED');
 
@@ -288,7 +300,7 @@ export class ImportsController {
             ...imageStandardizationWarnings.map((item: any) => item.reason),
           ],
           imageStandardization: {
-            policy: 'CONSERVATIVE_OCR_REVIEW',
+            policy: 'HIGH_CONFIDENCE_TEXT_AUTO_CONVERSION',
             analyses: [
               ...questionReplacement.replacements,
               ...question.options.flatMap((option) =>
