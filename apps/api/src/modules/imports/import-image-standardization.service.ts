@@ -18,7 +18,7 @@ type LocalImage = { path: string; source: string };
 @Injectable()
 export class ImportImageStandardizationService {
   private readonly maxImagesPerBatch = 500;
-  private readonly maxImageBytes = 12 * 1024 * 1024;
+  private readonly maxImageBytes = 12 *  1024 * 1024;
 
   private resolveLocalImage(source: string): LocalImage | null {
     try {
@@ -76,7 +76,10 @@ export class ImportImageStandardizationService {
           worker ??= await createWorker('eng+ben');
           const ocr = await worker.recognize(buffer);
           const data = ocr.data as any;
-          const extractedText = String(data.text ?? '').replace(/[ \t]+/g, ' ').replace(/\n{3,}/g, '\n\n').trim();
+          const extractedText = String(data.text ?? '')
+            .replace(/[ \t]+/g, ' ')
+            .replace(/\n{3,}/g, '\n\n')
+            .trim();
           const confidence = Math.max(0, Math.min(100, Math.round(Number(data.confidence) || 0)));
           const words = Array.isArray(data.words) ? data.words : [];
           const wordArea = words.reduce((sum: number, word: any) => {
@@ -89,24 +92,32 @@ export class ImportImageStandardizationService {
           const imageArea = metadata.width * metadata.height;
           const textCoverage = Math.min(1, wordArea / imageArea);
           const wordCount = words.filter((word: any) => String(word?.text ?? '').trim()).length;
+          const compactLength = extractedText.replace(/\s/g, '').length;
 
-          // Conservative replacement gate: OCR alone is not enough to prove that
-          // a diagram, graph, formula layout or illustration is absent.
+          // A text-only image can be replaced at a lower, still conservative threshold.
+          // OCR from mixed/uncertain images is also retained as editable text, but the
+          // original image stays attached so diagrams, charts and formulas are not lost.
           const textOnly =
-            confidence >= 97 &&
-            extractedText.replace(/\s/g, '').length >= 30 &&
-            wordCount >= 5 &&
-            textCoverage >= 0.25;
+            confidence >= 88 &&
+            compactLength >= 20 &&
+            wordCount >= 4 &&
+            textCoverage >= 0.12;
+          const usableOcrText =
+            confidence >= 55 &&
+            compactLength >= 6 &&
+            wordCount >= 2;
 
           results.push({
             source,
             kind: textOnly ? 'TEXT_ONLY' : 'VISUAL_OR_UNCERTAIN',
             status: textOnly ? 'REVIEW' : 'KEPT',
-            extractedText: textOnly ? extractedText : '',
+            extractedText: usableOcrText ? extractedText : '',
             confidence,
             reason: textOnly
-              ? 'Text-dense image detected. OCR suggestion is ready, but the source must be visually checked before replacing it.'
-              : 'Image may contain a diagram, formula, chart or mixed visual content. Original retained to prevent meaning loss.',
+              ? 'Text-dense image detected; OCR text can replace the image.'
+              : usableOcrText
+                ? 'Readable text was extracted, but the original image is retained because it may also contain a diagram, formula or chart.'
+                : 'No sufficiently reliable text was detected. Original image retained.',
           });
         } catch {
           results.push({
@@ -134,12 +145,20 @@ export class ImportImageStandardizationService {
     references: string[],
     analyses: ImageStandardizationResult[],
   ): { text: string; imageReferences: string[]; replacements: ImageStandardizationResult[] } {
-    const currentText = String(text ?? '').trim();
-    const canUseOcrText = currentText.length === 0;
-    const ocrTextParts: string[] = [];
+    let outputText = String(text ?? '').trim();
     const bySource = new Map(analyses.map((item) => [item.source, item]));
     const replacements: ImageStandardizationResult[] = [];
     const retained: string[] = [];
+
+    const appendIfNew = (candidate: string) => {
+      const value = candidate.trim();
+      if (!value) return;
+      const normalize = (input: string) => input.toLocaleLowerCase().replace(/[\s\p{P}\p{S}]+/gu, '');
+      const normalizedValue = normalize(value);
+      const normalizedCurrent = normalize(outputText);
+      if (!normalizedValue || normalizedCurrent.includes(normalizedValue)) return;
+      outputText = outputText ? `${outputText}\n${value}` : value;
+    };
 
     for (const source of references ?? []) {
       const analysis = bySource.get(source);
@@ -148,28 +167,23 @@ export class ImportImageStandardizationService {
         continue;
       }
 
-      // Convert every qualifying text-only image when the field has no source text.
-      // Existing text and uncertain/visual images are never overwritten or discarded.
+      if (analysis.extractedText.trim() && analysis.confidence >= 55) {
+        appendIfNew(analysis.extractedText);
+      }
+
       if (
-        canUseOcrText &&
         analysis.kind === 'TEXT_ONLY' &&
-        analysis.confidence >= 97 &&
+        analysis.confidence >= 88 &&
         analysis.extractedText.trim()
       ) {
-        ocrTextParts.push(analysis.extractedText.trim());
         replacements.push({ ...analysis, status: 'REPLACED' });
         continue;
       }
 
+      // Mixed/uncertain images contribute OCR text but remain attached.
       retained.push(source);
     }
 
-    return {
-      text: canUseOcrText && ocrTextParts.length > 0
-        ? ocrTextParts.join('\n')
-        : currentText,
-      imageReferences: retained,
-      replacements,
-    };
+    return { text: outputText, imageReferences: retained, replacements };
   }
 }
