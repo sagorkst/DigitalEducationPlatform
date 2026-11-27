@@ -89,14 +89,18 @@ test('embedded SVG and static GIF references are persisted instead of left as Ba
   assert.match(result, /image-2\.webp/);
 });
 
-test('unsupported embedded image data is rejected instead of being saved in ImportRow JSON', async () => {
+test('embedded image decoder errors are propagated instead of persisting invalid data URIs', async () => {
   const controller = createController({
-    saveQuestionImage: async () => '/uploads/questions/unexpected.webp',
+    saveQuestionImage: async () => {
+      throw new BadRequestException('The image could not be decoded.');
+    },
   });
 
   await assert.rejects(
     controller.persistEmbeddedImages('<img src="data:image/bmp;base64,Qk0=">'),
-    BadRequestException,
+    (error) =>
+      error instanceof BadRequestException &&
+      error.message === 'The image could not be decoded.',
   );
 });
 
