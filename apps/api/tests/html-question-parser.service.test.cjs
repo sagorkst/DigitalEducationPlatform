@@ -134,3 +134,89 @@ test('HTML parser preserves both question text and its accompanying image', () =
     'https://cdn.example.test/questions/component.png',
   ]);
 });
+
+
+test('HTML parser extracts SVG image hrefs and does not turn card badges into question text', () => {
+  const parser = new HtmlQuestionParserService();
+  const imageUrl = 'https://cdn.example.test/questions/image-only-mcq.jpg';
+  const html = `
+    <div class="question-item" data-question-id="4470" data-correct-option="ক">
+      <div class="flex items-center justify-between">
+        <span class="q-index-badge">৮৯</span>
+        <span>🎯 MCQ</span>
+        <span class="q-subject-pill">গণিত</span>
+        <span class="q-topic-pill">মানসিক দক্ষতা</span>
+        <span>↳ ভাষাগত যৌক্তিক বিচার</span>
+      </div>
+      <h2 class="question-text-el">
+        <a class="question-text-content">
+          <svg xmlns="http://www.w3.org/2000/svg" width="450" height="330">
+            <image href="${imageUrl}" width="450" height="330" />
+          </svg>
+        </a>
+      </h2>
+    </div>
+  `;
+
+  const result = parser.parse(html, 'image-only-mcq.mhtml');
+  const question = result.questions[0];
+
+  assert.equal(result.totalCandidates, 1);
+  assert.equal(result.extractedCount, 1);
+  assert.equal(result.skippedCount, 0);
+  assert.equal(question.questionText, '');
+  assert.deepEqual(question.imageReferences, [imageUrl]);
+  assert.equal(question.questionType, 'MCQ');
+  assert.equal(question.correctAnswer, 'ক');
+  assert.equal(question.confidence, 'LOW');
+  assert.ok(question.warnings.some((warning) => warning.includes('image-only')));
+  assert.ok(question.warnings.some((warning) => warning.includes('MCQ choices')));
+});
+
+test('HTML parser preserves readable question text and extracts an inline SVG diagram', () => {
+  const parser = new HtmlQuestionParserService();
+  const imageUrl = 'https://cdn.example.test/questions/balance-scale.jpg';
+  const html = `
+    <div class="question-item" data-question-id="4467" data-correct-option="খ">
+      <h2 class="question-text-el">
+        <a class="question-text-content">
+          ভারসাম্য রক্ষা করতে নির্দেশিত স্থানে কত কেজি ওজন রাখতে হবে?
+          <svg xmlns="http://www.w3.org/2000/svg">
+            <image href="${imageUrl}" />
+          </svg>
+        </a>
+      </h2>
+      <div class="option-item" data-option-label="ক" data-is-correct="0">১২০</div>
+      <div class="option-item" data-option-label="খ" data-is-correct="1">১৪০</div>
+      <div class="option-item" data-option-label="গ" data-is-correct="0">১৬০</div>
+      <div class="option-item" data-option-label="ঘ" data-is-correct="0">৮০</div>
+    </div>
+  `;
+
+  const result = parser.parse(html, 'text-and-svg-image.mhtml');
+  const question = result.questions[0];
+
+  assert.equal(question.questionText, 'ভারসাম্য রক্ষা করতে নির্দেশিত স্থানে কত কেজি ওজন রাখতে হবে?');
+  assert.deepEqual(question.imageReferences, [imageUrl]);
+  assert.equal(question.options.length, 4);
+  assert.equal(question.questionType, 'MCQ');
+});
+
+test('HTML parser does not count an empty question card as extracted when it has only card metadata', () => {
+  const parser = new HtmlQuestionParserService();
+  const html = `
+    <div class="question-item" data-question-id="empty-card">
+      <span class="q-index-badge">৫৩</span>
+      <span>🎯 MCQ</span>
+      <span class="q-subject-pill">গণিত</span>
+    </div>
+  `;
+
+  const result = parser.parse(html, 'empty-card.html');
+
+  assert.equal(result.totalCandidates, 1);
+  assert.equal(result.extractedCount, 0);
+  assert.equal(result.skippedCount, 1);
+  assert.equal(result.questions[0].questionText, '');
+  assert.deepEqual(result.questions[0].imageReferences, []);
+});
