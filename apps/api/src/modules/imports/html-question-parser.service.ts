@@ -432,7 +432,12 @@ export class HtmlQuestionParserService {
       'nav',
     ].join(', ')).remove();
 
-    return this.normalize(clone.text());
+    const fallbackText = this.normalize(clone.text());
+    if (/^(?:[০-৯0-9]{1,3}\s*)?(?:🎯\s*)?MCQ(?:\s*↳.*)?(?:\s*[✓✔]\s*[কখগঘA-D]\)?)?$/iu.test(fallbackText)) {
+      return '';
+    }
+
+    return fallbackText;
   }
 
   private extractOptions(
