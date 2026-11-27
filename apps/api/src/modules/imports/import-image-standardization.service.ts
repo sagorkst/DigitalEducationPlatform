@@ -138,7 +138,7 @@ export class ImportImageStandardizationService {
     const bySource = new Map(analyses.map((item) => [item.source, item]));
     const replacements: ImageStandardizationResult[] = [];
     const retained: string[] = [];
-    const additions: string[] = [];
+
 
     for (const source of references ?? []) {
       const analysis = bySource.get(source);
@@ -151,7 +151,6 @@ export class ImportImageStandardizationService {
       // exists, OCR is retained as a suggestion and the image remains attached.
       if (!currentText && analysis.kind === 'TEXT_ONLY' && analysis.extractedText) {
         replacements.push({ ...analysis, status: 'REVIEW' });
-        additions.push(analysis.extractedText);
         // Keep the original reference until a reviewer confirms the OCR.
         retained.push(source);
       } else {
@@ -160,7 +159,7 @@ export class ImportImageStandardizationService {
     }
 
     return {
-      text: currentText || additions.join('\n'),
+      text: currentText,
       imageReferences: retained,
       replacements,
     };
