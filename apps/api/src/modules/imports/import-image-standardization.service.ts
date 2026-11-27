@@ -6,7 +6,7 @@ import { basename, resolve, sep } from 'path';
 
 export type ImageStandardizationResult = {
   source: string;
-  kind: 'TEXT_ONLY' | 'DIAGRAM_OR_MIXED' | 'UNAVAILABLE' | 'UNSUPPORTED';
+  kind: 'TEXT_ONLY' | 'VISUAL_OR_UNCERTAIN' | 'UNAVAILABLE' | 'UNSUPPORTED';
   status: 'REPLACED' | 'KEPT' | 'REVIEW';
   extractedText: string;
   confidence: number;
@@ -100,7 +100,7 @@ export class ImportImageStandardizationService {
 
           results.push({
             source,
-            kind: textOnly ? 'TEXT_ONLY' : 'DIAGRAM_OR_MIXED',
+            kind: textOnly ? 'TEXT_ONLY' : 'VISUAL_OR_UNCERTAIN',
             status: textOnly ? 'REVIEW' : 'KEPT',
             extractedText: textOnly ? extractedText : '',
             confidence,
