@@ -91,7 +91,6 @@ export default function QuestionImportPanel() {
   const [selectAllBatch, setSelectAllBatch] = useState(false);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [showAllDetails, setShowAllDetails] = useState(false);
   const [detailOverrides, setDetailOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
@@ -142,6 +141,7 @@ export default function QuestionImportPanel() {
   }
 
   async function loadRows(id: string, _pageNumber = 1) {
+    void _pageNumber;
     const firstResponse = await fetch(`/api/imports/${id}/rows?page=1&limit=${PAGE_SIZE}`, { cache: "no-store" });
     const firstResult = await firstResponse.json();
     if (!firstResponse.ok || !firstResult.success) throw new Error(firstResult.message || "Import rows load failed.");
@@ -159,7 +159,6 @@ export default function QuestionImportPanel() {
     }
     setRows(allRows);
     setPage(1);
-    setTotalPages(1);
   }
 
   async function previewImport() {
@@ -1321,18 +1320,12 @@ export default function QuestionImportPanel() {
                                       </p>
                                     )}
                                   {String(raw.questionText ?? "")}
-                                  {imageAnalyses.filter((analysis) => typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
+                                  {imageAnalyses.filter((analysis) => Array.isArray(raw.imageReferences) && raw.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
                                     <div key={String(analysis.source ?? index)} className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-slate-700">
-                                      <p className="font-semibold text-blue-800">OCR suggestion · Confidence {Number(analysis.confidence ?? 0)}%</p>
+                                      <p className="font-semibold text-blue-800">Question image OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
                                       <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
-                                      <p className="mb-2 text-[10px] text-slate-600">মূল ছবি এখনো সংযুক্ত আছে। OCR লেখা যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
-                                      <button
-                                        type="button"
-                                        onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))}
-                                        className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100"
-                                      >
-                                        এই লেখা দিয়ে ছবি প্রতিস্থাপন করুন
-                                      </button>
+                                      <p className="mb-2 text-[10px] text-slate-600">মূল প্রশ্নের ছবি এখনো সংযুক্ত আছে। যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
+                                      <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে প্রশ্নের ছবি প্রতিস্থাপন করুন</button>
                                     </div>
                                   ))}
                                   {parserWarnings.length > 0 && (
@@ -1363,6 +1356,14 @@ export default function QuestionImportPanel() {
                                             {option.label ?? String.fromCharCode(65 + index)}.
                                           </span>
                                           {option.optionText ?? option.text ?? ""}
+                                          {imageAnalyses.filter((analysis) => Array.isArray(option.imageReferences) && option.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, analysisIndex) => (
+                                            <div key={String(analysis.source ?? analysisIndex)} className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-2 font-normal text-slate-700">
+                                              <p className="font-semibold text-blue-800">Option {option.label ?? index + 1} OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
+                                              <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
+                                              <p className="mb-2 text-[10px] text-slate-600">এই Option-এর মূল ছবি এখনো সংযুক্ত আছে।</p>
+                                              <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে Option-এর ছবি প্রতিস্থাপন করুন</button>
+                                            </div>
+                                          ))}
                                           {Array.isArray(option.imageReferences) && option.imageReferences.length > 0 && (
                                             <div className="mt-2 flex flex-wrap gap-1">
                                               {option.imageReferences.map((source: unknown, imageIndex: number) => typeof source === "string" ? <img key={imageIndex} src={source} alt={`Option ${option.label ?? index} image ${imageIndex + 1}`} loading="lazy" className="max-h-24 max-w-full rounded border border-slate-200 object-contain" /> : null)}
