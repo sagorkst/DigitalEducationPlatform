@@ -147,8 +147,8 @@ export class ImportImageStandardizationService {
         continue;
       }
 
-      // Only an empty text field can be populated automatically. If text already
-      // exists, OCR is retained as a suggestion and the image remains attached.
+      // OCR is only offered as a suggestion when the target text field is empty.
+      // The original image remains attached until a reviewer explicitly accepts it.
       if (!currentText && analysis.kind === 'TEXT_ONLY' && analysis.extractedText) {
         replacements.push({ ...analysis, status: 'REVIEW' });
         // Keep the original reference until a reviewer confirms the OCR.
