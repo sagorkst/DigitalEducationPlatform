@@ -74,6 +74,7 @@ export type QuestionCountAggregateOutputType = {
   id: number
   questionCode: number
   questionText: number
+  imageReferences: number
   questionType: number
   optionA: number
   optionB: number
@@ -145,6 +146,7 @@ export type QuestionCountAggregateInputType = {
   id?: true
   questionCode?: true
   questionText?: true
+  imageReferences?: true
   questionType?: true
   optionA?: true
   optionB?: true
@@ -241,6 +243,7 @@ export type QuestionGroupByOutputType = {
   id: string
   questionCode: string
   questionText: string
+  imageReferences: runtime.JsonValue | null
   questionType: $Enums.QuestionType
   optionA: string | null
   optionB: string | null
@@ -285,6 +288,7 @@ export type QuestionWhereInput = {
   id?: Prisma.UuidFilter<"Question"> | string
   questionCode?: Prisma.StringFilter<"Question"> | string
   questionText?: Prisma.StringFilter<"Question"> | string
+  imageReferences?: Prisma.JsonNullableFilter<"Question">
   questionType?: Prisma.EnumQuestionTypeFilter<"Question"> | $Enums.QuestionType
   optionA?: Prisma.StringNullableFilter<"Question"> | string | null
   optionB?: Prisma.StringNullableFilter<"Question"> | string | null
@@ -317,6 +321,7 @@ export type QuestionOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   questionCode?: Prisma.SortOrder
   questionText?: Prisma.SortOrder
+  imageReferences?: Prisma.SortOrderInput | Prisma.SortOrder
   questionType?: Prisma.SortOrder
   optionA?: Prisma.SortOrderInput | Prisma.SortOrder
   optionB?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -352,6 +357,7 @@ export type QuestionWhereUniqueInput = Prisma.AtLeast<{
   OR?: Prisma.QuestionWhereInput[]
   NOT?: Prisma.QuestionWhereInput | Prisma.QuestionWhereInput[]
   questionText?: Prisma.StringFilter<"Question"> | string
+  imageReferences?: Prisma.JsonNullableFilter<"Question">
   questionType?: Prisma.EnumQuestionTypeFilter<"Question"> | $Enums.QuestionType
   optionA?: Prisma.StringNullableFilter<"Question"> | string | null
   optionB?: Prisma.StringNullableFilter<"Question"> | string | null
@@ -384,6 +390,7 @@ export type QuestionOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   questionCode?: Prisma.SortOrder
   questionText?: Prisma.SortOrder
+  imageReferences?: Prisma.SortOrderInput | Prisma.SortOrder
   questionType?: Prisma.SortOrder
   optionA?: Prisma.SortOrderInput | Prisma.SortOrder
   optionB?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -413,6 +420,7 @@ export type QuestionScalarWhereWithAggregatesInput = {
   id?: Prisma.UuidWithAggregatesFilter<"Question"> | string
   questionCode?: Prisma.StringWithAggregatesFilter<"Question"> | string
   questionText?: Prisma.StringWithAggregatesFilter<"Question"> | string
+  imageReferences?: Prisma.JsonNullableWithAggregatesFilter<"Question">
   questionType?: Prisma.EnumQuestionTypeWithAggregatesFilter<"Question"> | $Enums.QuestionType
   optionA?: Prisma.StringNullableWithAggregatesFilter<"Question"> | string | null
   optionB?: Prisma.StringNullableWithAggregatesFilter<"Question"> | string | null
@@ -436,6 +444,7 @@ export type QuestionCreateInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -466,6 +475,7 @@ export type QuestionUncheckedCreateInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -496,6 +506,7 @@ export type QuestionUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -526,6 +537,7 @@ export type QuestionUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -556,6 +568,7 @@ export type QuestionCreateManyInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -579,6 +592,7 @@ export type QuestionUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -600,6 +614,7 @@ export type QuestionUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -633,6 +648,7 @@ export type QuestionCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   questionCode?: Prisma.SortOrder
   questionText?: Prisma.SortOrder
+  imageReferences?: Prisma.SortOrder
   questionType?: Prisma.SortOrder
   optionA?: Prisma.SortOrder
   optionB?: Prisma.SortOrder
@@ -901,6 +917,7 @@ export type QuestionCreateWithoutSubjectRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -930,6 +947,7 @@ export type QuestionUncheckedCreateWithoutSubjectRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -988,6 +1006,7 @@ export type QuestionScalarWhereInput = {
   id?: Prisma.UuidFilter<"Question"> | string
   questionCode?: Prisma.StringFilter<"Question"> | string
   questionText?: Prisma.StringFilter<"Question"> | string
+  imageReferences?: Prisma.JsonNullableFilter<"Question">
   questionType?: Prisma.EnumQuestionTypeFilter<"Question"> | $Enums.QuestionType
   optionA?: Prisma.StringNullableFilter<"Question"> | string | null
   optionB?: Prisma.StringNullableFilter<"Question"> | string | null
@@ -1011,6 +1030,7 @@ export type QuestionCreateWithoutTopicRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1040,6 +1060,7 @@ export type QuestionUncheckedCreateWithoutTopicRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1095,6 +1116,7 @@ export type QuestionCreateWithoutOptionsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1124,6 +1146,7 @@ export type QuestionUncheckedCreateWithoutOptionsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1169,6 +1192,7 @@ export type QuestionUpdateWithoutOptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1198,6 +1222,7 @@ export type QuestionUncheckedUpdateWithoutOptionsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1227,6 +1252,7 @@ export type QuestionCreateWithoutOccurrencesInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1256,6 +1282,7 @@ export type QuestionUncheckedCreateWithoutOccurrencesInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1301,6 +1328,7 @@ export type QuestionUpdateWithoutOccurrencesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1330,6 +1358,7 @@ export type QuestionUncheckedUpdateWithoutOccurrencesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1359,6 +1388,7 @@ export type QuestionCreateWithoutHistoriesInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1388,6 +1418,7 @@ export type QuestionUncheckedCreateWithoutHistoriesInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1433,6 +1464,7 @@ export type QuestionUpdateWithoutHistoriesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1462,6 +1494,7 @@ export type QuestionUncheckedUpdateWithoutHistoriesInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1491,6 +1524,7 @@ export type QuestionCreateWithoutDuplicateAsAInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1520,6 +1554,7 @@ export type QuestionUncheckedCreateWithoutDuplicateAsAInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1554,6 +1589,7 @@ export type QuestionCreateWithoutDuplicateAsBInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1583,6 +1619,7 @@ export type QuestionUncheckedCreateWithoutDuplicateAsBInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1628,6 +1665,7 @@ export type QuestionUpdateWithoutDuplicateAsAInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1657,6 +1695,7 @@ export type QuestionUncheckedUpdateWithoutDuplicateAsAInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1697,6 +1736,7 @@ export type QuestionUpdateWithoutDuplicateAsBInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1726,6 +1766,7 @@ export type QuestionUncheckedUpdateWithoutDuplicateAsBInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1755,6 +1796,7 @@ export type QuestionCreateWithoutTagsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1784,6 +1826,7 @@ export type QuestionUncheckedCreateWithoutTagsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1829,6 +1872,7 @@ export type QuestionUpdateWithoutTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1858,6 +1902,7 @@ export type QuestionUncheckedUpdateWithoutTagsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1887,6 +1932,7 @@ export type QuestionCreateWithoutReviewsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1916,6 +1962,7 @@ export type QuestionUncheckedCreateWithoutReviewsInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -1961,6 +2008,7 @@ export type QuestionUpdateWithoutReviewsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1990,6 +2038,7 @@ export type QuestionUncheckedUpdateWithoutReviewsInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2019,6 +2068,7 @@ export type QuestionCreateManySubjectRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -2041,6 +2091,7 @@ export type QuestionUpdateWithoutSubjectRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2070,6 +2121,7 @@ export type QuestionUncheckedUpdateWithoutSubjectRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2099,6 +2151,7 @@ export type QuestionUncheckedUpdateManyWithoutSubjectRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2121,6 +2174,7 @@ export type QuestionCreateManyTopicRefInput = {
   id?: string
   questionCode: string
   questionText: string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: $Enums.QuestionType
   optionA?: string | null
   optionB?: string | null
@@ -2143,6 +2197,7 @@ export type QuestionUpdateWithoutTopicRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2172,6 +2227,7 @@ export type QuestionUncheckedUpdateWithoutTopicRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2201,6 +2257,7 @@ export type QuestionUncheckedUpdateManyWithoutTopicRefInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   questionCode?: Prisma.StringFieldUpdateOperationsInput | string
   questionText?: Prisma.StringFieldUpdateOperationsInput | string
+  imageReferences?: Prisma.NullableJsonNullValueInput | runtime.InputJsonValue
   questionType?: Prisma.EnumQuestionTypeFieldUpdateOperationsInput | $Enums.QuestionType
   optionA?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   optionB?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -2308,6 +2365,7 @@ export type QuestionSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   id?: boolean
   questionCode?: boolean
   questionText?: boolean
+  imageReferences?: boolean
   questionType?: boolean
   optionA?: boolean
   optionB?: boolean
@@ -2341,6 +2399,7 @@ export type QuestionSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   questionCode?: boolean
   questionText?: boolean
+  imageReferences?: boolean
   questionType?: boolean
   optionA?: boolean
   optionB?: boolean
@@ -2366,6 +2425,7 @@ export type QuestionSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Exte
   id?: boolean
   questionCode?: boolean
   questionText?: boolean
+  imageReferences?: boolean
   questionType?: boolean
   optionA?: boolean
   optionB?: boolean
@@ -2391,6 +2451,7 @@ export type QuestionSelectScalar = {
   id?: boolean
   questionCode?: boolean
   questionText?: boolean
+  imageReferences?: boolean
   questionType?: boolean
   optionA?: boolean
   optionB?: boolean
@@ -2410,7 +2471,7 @@ export type QuestionSelectScalar = {
   deletedAt?: boolean
 }
 
-export type QuestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "questionCode" | "questionText" | "questionType" | "optionA" | "optionB" | "optionC" | "optionD" | "correctAnswer" | "subject" | "topic" | "explanation" | "difficulty" | "repeatGroupId" | "status" | "subjectId" | "topicId" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["question"]>
+export type QuestionOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "questionCode" | "questionText" | "imageReferences" | "questionType" | "optionA" | "optionB" | "optionC" | "optionD" | "correctAnswer" | "subject" | "topic" | "explanation" | "difficulty" | "repeatGroupId" | "status" | "subjectId" | "topicId" | "createdAt" | "updatedAt" | "deletedAt", ExtArgs["result"]["question"]>
 export type QuestionInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   subjectRef?: boolean | Prisma.Question$subjectRefArgs<ExtArgs>
   topicRef?: boolean | Prisma.Question$topicRefArgs<ExtArgs>
@@ -2449,6 +2510,7 @@ export type $QuestionPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     id: string
     questionCode: string
     questionText: string
+    imageReferences: runtime.JsonValue | null
     questionType: $Enums.QuestionType
     optionA: string | null
     optionB: string | null
@@ -2901,6 +2963,7 @@ export interface QuestionFieldRefs {
   readonly id: Prisma.FieldRef<"Question", 'String'>
   readonly questionCode: Prisma.FieldRef<"Question", 'String'>
   readonly questionText: Prisma.FieldRef<"Question", 'String'>
+  readonly imageReferences: Prisma.FieldRef<"Question", 'Json'>
   readonly questionType: Prisma.FieldRef<"Question", 'QuestionType'>
   readonly optionA: Prisma.FieldRef<"Question", 'String'>
   readonly optionB: Prisma.FieldRef<"Question", 'String'>

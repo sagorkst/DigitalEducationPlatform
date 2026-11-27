@@ -18,6 +18,12 @@ type ImportRow = {
   rawData?: Record<string, unknown>;
   errorMessages?: string[] | string;
 };
+type BatchMetadataSuggestions = {
+  institutions: string[];
+  examNames: string[];
+  postNames: string[];
+  years: string[];
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -51,8 +57,44 @@ function statusStyle(status: string) {
   }
 }
 
-function getBatchSuggestions(rows: ImportRow[], field: string) {
-  return Array.from(new Set(rows.map((row) => String(row.rawData?.[field] ?? "").trim()).filter(Boolean))).slice(0, 50);
+function getBatchSuggestions(
+  rows: ImportRow[],
+  field: string,
+  existingValues: string[] = [],
+) {
+  const seen = new Set<string>();
+
+  return [...existingValues, ...rows.map((row) => String(row.rawData?.[field] ?? ""))]
+    .map((value) => String(value ?? "").trim())
+    .filter((value) => {
+      const key = value.toLocaleLowerCase();
+      if (!value || seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    })
+    .slice(0, 100);
+}
+
+function buildBatchExamName(metadata: {
+  institution: string;
+  postName: string;
+  examYear: string;
+}) {
+  const institution = metadata.institution.trim();
+  const postName = metadata.postName.trim();
+  const examYear = metadata.examYear.trim();
+
+  if (
+    !institution ||
+    !postName ||
+    !/^\d{4}$/.test(examYear) ||
+    Number(examYear) < 1900 ||
+    Number(examYear) > 2100
+  ) {
+    return "";
+  }
+
+  return `${institution} - ${postName} - ${examYear}`;
 }
 
 function FileIcon({ type }: { type: string }) {
@@ -103,6 +145,13 @@ export default function QuestionImportPanel() {
     postName: "",
   });
   const [batchOverwriteExisting, setBatchOverwriteExisting] = useState(false);
+  const [metadataSuggestions, setMetadataSuggestions] = useState<BatchMetadataSuggestions>({
+    institutions: [],
+    examNames: [],
+    postNames: [],
+    years: [],
+  });
+  const [examNameManuallyEdited, setExamNameManuallyEdited] = useState(false);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
   const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; imageReferences: string[]; isCorrect: boolean; sortOrder: number }>>([]);
@@ -110,8 +159,85 @@ export default function QuestionImportPanel() {
   const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
-    if (editingData) document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (editingData) {
+      document.getElementById("manual-question-edit-form")?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+    }
   }, [editingData]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadMetadataSuggestions() {
+      try {
+        const response = await fetch("/api/imports/metadata-suggestions", {
+          cache: "no-store",
+        });
+
+        if (!response.ok) return;
+
+        const result = await response.json();
+        const data = result?.data;
+
+        if (cancelled || !isRecord(data)) return;
+
+        const toStringArray = (value: unknown): string[] =>
+          Array.isArray(value)
+            ? value.filter((item): item is string => typeof item === "string")
+            : [];
+
+        setMetadataSuggestions({
+          institutions: toStringArray(data.institutions),
+          examNames: toStringArray(data.examNames),
+          postNames: toStringArray(data.postNames),
+          years: toStringArray(data.years),
+        });
+      } catch {
+        // Batch suggestions and manual typing remain available.
+      }
+    }
+
+    void loadMetadataSuggestions();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  function updateBatchMetadataField(
+    field: "institution" | "examName" | "postName" | "examYear",
+    value: string,
+  ) {
+    if (field === "examName") {
+      if (value.trim()) {
+        setExamNameManuallyEdited(true);
+        setBatchMetadata((current) => ({
+          ...current,
+          examName: value,
+        }));
+      } else {
+        setExamNameManuallyEdited(false);
+        setBatchMetadata((current) => ({
+          ...current,
+          examName: buildBatchExamName(current),
+        }));
+      }
+
+      return;
+    }
+
+    setBatchMetadata((current) => {
+      const next = { ...current, [field]: value };
+
+      if (!examNameManuallyEdited) {
+        next.examName = buildBatchExamName(next);
+      }
+
+      return next;
+    });
+  }
 
   function validateFile(selectedFile: File | null) {
     if (!selectedFile) return;
@@ -979,18 +1105,30 @@ export default function QuestionImportPanel() {
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-2">
                       <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Batch Metadata</h3>
                       <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
-                        <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
-                        <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
-                        <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
-                        <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <div className="batch-metadata-marquee-field">
+                          <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => updateBatchMetadataField("institution", e.target.value)} placeholder="Institution" title={batchMetadata.institution} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.institution.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
+                          {batchMetadata.institution.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.institution}</span><span>{batchMetadata.institution}</span></div></div>}
+                        </div>
+                        <div className="batch-metadata-marquee-field">
+                          <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => updateBatchMetadataField("examName", e.target.value)} placeholder="Exam Name" title={examNameManuallyEdited ? "Manually entered Exam Name" : "Auto-generated from Institution, Post Name and Year; editable"} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.examName.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
+                          {batchMetadata.examName.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.examName}</span><span>{batchMetadata.examName}</span></div></div>}
+                        </div>
+                        <div className="batch-metadata-marquee-field">
+                          <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => updateBatchMetadataField("postName", e.target.value)} placeholder="Post Name" title={batchMetadata.postName} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.postName.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
+                          {batchMetadata.postName.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.postName}</span><span>{batchMetadata.postName}</span></div></div>}
+                        </div>
+                        <div className="batch-metadata-marquee-field">
+                          <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => updateBatchMetadataField("examYear", e.target.value)} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.examYear.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
+                          {batchMetadata.examYear.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.examYear}</span><span>{batchMetadata.examYear}</span></div></div>}
+                        </div>
                       </div>
-                      <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution").map((value) => <option key={value} value={value} />)}</datalist>
-                      <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName").map((value) => <option key={value} value={value} />)}</datalist>
-                      <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear").map((value) => <option key={value} value={value} />)}</datalist>
-                      <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution", metadataSuggestions.institutions).map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName", metadataSuggestions.examNames).map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear", metadataSuggestions.years).map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName", metadataSuggestions.postNames).map((value) => <option key={value} value={value} />)}</datalist>
                       <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
                         <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
-                        <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
+                        <div className="inline-flex h-8 min-w-[88px] shrink-0 items-center justify-center whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-2 text-[10px] font-semibold text-slate-600">{selectAllBatch ? `${rows.filter((row) => ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)).length} selected` : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</div>
                         <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
                         <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.institution.trim() || !batchMetadata.examName.trim() || !batchMetadata.postName.trim() || !/^\d{4}$/.test(batchMetadata.examYear) || Number(batchMetadata.examYear) < 1900 || Number(batchMetadata.examYear) > 2100} title="Set as primary occurrence (Institution, Exam, Post and a valid Year required)" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
                       </div>
@@ -1011,12 +1149,12 @@ export default function QuestionImportPanel() {
                         ))}
                       </div>
                       <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
-                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
-                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="flex-1 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 disabled:opacity-40">✓ Pass Selected Duplicates</button>
-                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
-                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
-                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="flex-1 rounded border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
-                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
+                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
+                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-2 text-[10px] font-semibold text-amber-800 disabled:opacity-40">✓ Pass All</button>
+                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
+                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-emerald-300 bg-emerald-50 px-2 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
+                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-red-200 px-2 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
+                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
                       </div>
                     </div>
                   </section>

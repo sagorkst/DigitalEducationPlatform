@@ -2741,6 +2741,7 @@ export const QuestionScalarFieldEnum = {
   id: 'id',
   questionCode: 'questionCode',
   questionText: 'questionText',
+  imageReferences: 'imageReferences',
   questionType: 'questionType',
   optionA: 'optionA',
   optionB: 'optionB',
@@ -2768,6 +2769,7 @@ export const QuestionOptionScalarFieldEnum = {
   questionId: 'questionId',
   label: 'label',
   optionText: 'optionText',
+  imageReferences: 'imageReferences',
   isCorrect: 'isCorrect',
   sortOrder: 'sortOrder',
   createdAt: 'createdAt'

@@ -1,4 +1,4 @@
-﻿
+
 @import "tailwindcss";
 
 /* ========================================
@@ -256,3 +256,125 @@ img {
   }
 }
 
+
+
+/* BATCH-METADATA-AUTO-MARQUEE */
+.batch-metadata-marquee-field {
+  position: relative;
+  min-width: 0;
+  width: 100%;
+}
+
+.batch-metadata-marquee-input {
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+  color: transparent;
+  caret-color: #0f172a;
+}
+
+.batch-metadata-marquee-input:focus {
+  color: #0f172a;
+  background: white !important;
+}
+
+.batch-metadata-marquee-viewport {
+  position: absolute;
+  z-index: 2;
+  inset: 1px 2px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  pointer-events: none;
+  border-radius: 5px;
+  background: white;
+}
+
+.batch-metadata-marquee-track {
+  display: flex;
+  width: max-content;
+  white-space: nowrap;
+  animation: batch-metadata-marquee 14s linear infinite;
+  will-change: transform;
+}
+
+.batch-metadata-marquee-track span {
+  flex: none;
+  padding-right: 3rem;
+  font-size: 12px;
+  color: #334155;
+}
+
+.batch-metadata-marquee-field:focus-within .batch-metadata-marquee-viewport {
+  display: none;
+}
+
+@keyframes batch-metadata-marquee {
+  0%, 10% {
+    transform: translateX(0);
+  }
+  90%, 100% {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .batch-metadata-marquee-track {
+    animation: none;
+  }
+}
+/* END BATCH-METADATA-AUTO-MARQUEE */
+
+/* BATCH-MARQUEE-POSITION-FIX */
+.batch-metadata-marquee-field {
+  position: relative !important;
+  display: block !important;
+  width: 100% !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  overflow: hidden !important;
+}
+
+.batch-metadata-marquee-field > input {
+  position: absolute !important;
+  inset: 0 !important;
+  display: block !important;
+  width: 100% !important;
+  height: 44px !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+}
+
+.batch-metadata-marquee-field > .batch-metadata-marquee-viewport {
+  position: absolute !important;
+  top: 2px !important;
+  right: 3px !important;
+  bottom: 2px !important;
+  left: 3px !important;
+  z-index: 5 !important;
+  display: flex !important;
+  align-items: center !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  white-space: nowrap !important;
+  background: #fff !important;
+}
+
+.batch-metadata-marquee-field:focus-within > .batch-metadata-marquee-viewport {
+  display: none !important;
+}
+
+.batch-metadata-marquee-track {
+  display: flex !important;
+  align-items: center !important;
+  width: max-content !important;
+  flex-wrap: nowrap !important;
+  animation: batch-metadata-marquee 14s linear infinite !important;
+}
+
+.batch-metadata-marquee-track span {
+  display: block !important;
+  flex: 0 0 auto !important;
+  white-space: nowrap !important;
+}
+/* END BATCH-MARQUEE-POSITION-FIX */
