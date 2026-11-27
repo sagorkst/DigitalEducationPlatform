@@ -311,6 +311,16 @@ export class HtmlQuestionParserService {
       warnings.push(
         'Question text could not be extracted. This source record was retained for manual review.',
       );
+    } else if (!questionText.trim() && imageReferences.length > 0) {
+      warnings.push(
+        'Question content is image-only. Verify the image visually before importing.',
+      );
+    }
+
+    if (sourceSaysMcq && options.length < 2) {
+      warnings.push(
+        'MCQ choices were not extracted as text; they may be embedded in the question image and require visual review.',
+      );
     }
 
     if (options.length > 0 && !explicitCorrect && !containerCorrect) {
@@ -329,12 +339,20 @@ export class HtmlQuestionParserService {
       options.length === 2 &&
       options.some((o) => /^(true|false|সত্য|মিথ্যা)$/i.test(o.text));
 
+    // BDNiyog often embeds the entire MCQ (including choices) in an SVG image.
+    // Preserve the source question type even when no text options can be extracted.
+    const sourceCardText = this.normalize(container.text());
+    const sourceSaysMcq =
+      /(?:🎯\s*)?MCQ\b/i.test(sourceCardText) ||
+      /\bMCQ\b/i.test(this.firstAttribute(container, ['data-question-type', 'data-type']) ?? '');
     const questionType: HtmlImportedQuestionType =
       options.length >= 2
         ? isTrueFalse
           ? 'TRUE_FALSE'
           : 'MCQ'
-        : 'WRITTEN';
+        : sourceSaysMcq
+          ? 'MCQ'
+          : 'WRITTEN';
 
     let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
 
@@ -345,7 +363,7 @@ export class HtmlQuestionParserService {
           ? 'MEDIUM'
           : 'LOW';
     } else if (questionText || imageReferences.length > 0) {
-      confidence = 'MEDIUM';
+      confidence = sourceSaysMcq && options.length < 2 ? 'LOW' : 'MEDIUM';
     }
 
     return {
@@ -369,21 +387,30 @@ export class HtmlQuestionParserService {
   }
 
   private extractQuestionText($: CheerioAPI, container: any): string {
+    let explicitQuestionElementFound = false;
+
     for (const selector of this.textSelectors) {
       const element = container.find(selector).first();
 
       if (!element.length) continue;
 
+      explicitQuestionElementFound = true;
       const text = this.cleanElement($, element);
 
       if (text.length >= 3) return text;
     }
+
+    // An explicit question element containing only an SVG is an image-only
+    // question. Do not fall back to the whole card: that would turn badges,
+    // row numbers and topic labels into fake question text.
+    if (explicitQuestionElementFound) return '';
 
     const clone = container.clone();
 
     clone.find([
       ...this.optionSelectors,
       ...this.explanationSelectors,
+      '.q-index-badge',
       '.q-subject-pill',
       '.q-topic-pill',
       '.q-exam-ref',
@@ -395,6 +422,9 @@ export class HtmlQuestionParserService {
       '.exam',
       '.metadata',
       '.question-meta',
+      '.question-header',
+      '.question-badges',
+      'header',
       'button',
       'script',
       'style',
@@ -525,6 +555,15 @@ export class HtmlQuestionParserService {
         for (const candidate of srcset.split(',')) {
           add(candidate.trim().split(/\s+/)[0]);
         }
+      }
+    });
+
+    // BDNiyog exports diagrams and image-based MCQs as SVG <image> nodes,
+    // not HTML <img> tags. Read both modern and legacy SVG href attributes.
+    container.find('svg image, image').each((_index: number, element: any) => {
+      const image = $(element);
+      for (const attribute of ['href', 'xlink:href', 'src', 'data-src']) {
+        add(image.attr(attribute));
       }
     });
 
