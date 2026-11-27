@@ -134,7 +134,7 @@ export default function QuestionImportPanel() {
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
   const [showAllDetails, setShowAllDetails] = useState(false);
-  const [detailOverrides, setDetailOverrides] = useState<Record<string, boolean>>({});
+
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -854,23 +854,23 @@ export default function QuestionImportPanel() {
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm sm:p-5">
           <div className={`flex w-full flex-col overflow-hidden bg-slate-50 shadow-2xl ${summary ? "max-h-[96vh] max-w-[98vw] rounded-xl" : "max-h-[95vh] max-w-6xl rounded-2xl"}`}>
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
-              <div className="flex items-center gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
+              <div className="flex min-w-0 flex-1 items-center gap-3">
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
                   <svg viewBox="0 0 24 24" fill="none" className="h-6 w-6">
                     <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900 sm:text-xl">
-                    Question Import Center
-                  </h2>
-                  <p className="mt-0.5 text-xs text-slate-500">
-                    Bulk upload and manage your question data
-                  </p>
+                <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+                  <h2 className="text-lg font-bold text-slate-900 sm:text-xl">Question Import Center</h2>
+                  {summary && (
+                    <>
+                      <span className="text-sm font-semibold text-blue-700">Preview Questions</span>
+                      <span className="text-[10px] font-semibold text-slate-500">Batch: {batchId.slice(0, 8)}</span>
+                      <span className="max-w-[min(45vw,420px)] truncate text-[10px] font-medium text-slate-500" title={file?.name ?? ""}>{file?.name ?? "Uploaded file"}</span>
+                    </>
+                  )}
                 </div>
-              </div>
-
-              <button
+              </div><button
                 type="button"
                 onClick={closePanel}
                 disabled={loading}
@@ -1110,16 +1110,16 @@ export default function QuestionImportPanel() {
                           {batchMetadata.institution.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.institution}</span><span>{batchMetadata.institution}</span></div></div>}
                         </div>
                         <div className="batch-metadata-marquee-field">
-                          <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => updateBatchMetadataField("examName", e.target.value)} placeholder="Exam Name" title={examNameManuallyEdited ? "Manually entered Exam Name" : "Auto-generated from Institution, Post Name and Year; editable"} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.examName.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
-                          {batchMetadata.examName.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.examName}</span><span>{batchMetadata.examName}</span></div></div>}
-                        </div>
-                        <div className="batch-metadata-marquee-field">
                           <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => updateBatchMetadataField("postName", e.target.value)} placeholder="Post Name" title={batchMetadata.postName} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.postName.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
                           {batchMetadata.postName.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.postName}</span><span>{batchMetadata.postName}</span></div></div>}
                         </div>
                         <div className="batch-metadata-marquee-field">
                           <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => updateBatchMetadataField("examYear", e.target.value)} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.examYear.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
                           {batchMetadata.examYear.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.examYear}</span><span>{batchMetadata.examYear}</span></div></div>}
+                        </div>
+                        <div className="batch-metadata-marquee-field">
+                          <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => updateBatchMetadataField("examName", e.target.value)} placeholder="Exam Name" title={examNameManuallyEdited ? "Manually entered Exam Name" : "Auto-generated from Institution, Post Name and Year; editable"} className={`h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs ${batchMetadata.examName.length > 18 ? "batch-metadata-marquee-input" : ""}`} />
+                          {batchMetadata.examName.length > 18 && <div className="batch-metadata-marquee-viewport" aria-hidden="true"><div className="batch-metadata-marquee-track"><span>{batchMetadata.examName}</span><span>{batchMetadata.examName}</span></div></div>}
                         </div>
                       </div>
                       <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution", metadataSuggestions.institutions).map((value) => <option key={value} value={value} />)}</datalist>
@@ -1134,27 +1134,27 @@ export default function QuestionImportPanel() {
                       </div>
                     </div>
                     <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">
-                      <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
-                      <div className="grid flex-1 grid-cols-2 gap-3 xl:grid-cols-4">
+                      <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2"><h3 className="text-sm font-bold text-slate-800">Statistics</h3><button type="button" onClick={() => setShowAllDetails((current) => !current)} className="rounded-md border border-blue-200 px-3 py-1.5 text-[10px] font-semibold text-blue-700 transition hover:border-blue-400 hover:bg-blue-50 active:bg-blue-100">{showAllDetails ? "Hide Details" : "Show Details"}</button></div>
+                      <div className="grid flex-1 grid-cols-2 gap-2 xl:grid-cols-4">
                         {[
                           { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
                           { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
                           { label: "Invalid", value: summary.invalidRows, icon: "!", color: "text-red-700" },
                           { label: "Duplicates", value: summary.duplicateRows, icon: "⧉", color: "text-amber-700" },
                         ].map((item) => (
-                          <div key={item.label} className="flex min-h-[54px] items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
-                            <span className="min-w-0 text-[10px] font-medium leading-tight text-slate-500">{item.label}</span>
-                            <span className={`shrink-0 text-base font-black tabular-nums ${item.color}`}><span className="mr-1 text-xs">{item.icon}</span>{item.value.toLocaleString("en-US")}</span>
+                          <div key={item.label} className="flex min-h-[62px] flex-col items-center justify-center gap-2 rounded-md border border-slate-200 bg-white px-2 py-2 text-center transition hover:border-blue-300">
+                            <span className="text-center text-[10px] font-medium leading-tight text-slate-500">{item.label}</span>
+                            <span className={`text-center text-base font-black tabular-nums ${item.color}`}><span className="mr-1 text-xs">{item.icon}</span>{item.value.toLocaleString("en-US")}</span>
                           </div>
                         ))}
                       </div>
-                      <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
-                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
-                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-amber-300 bg-amber-50 px-2 text-[10px] font-semibold text-amber-800 disabled:opacity-40">✓ Pass All</button>
-                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
-                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-emerald-300 bg-emerald-50 px-2 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
-                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-red-200 px-2 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
-                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="inline-flex h-8 min-h-8 flex-1 items-center justify-center whitespace-nowrap rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
+                      <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-2">
+                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 text-[10px] font-semibold text-slate-700 disabled:opacity-40 transition hover:brightness-95 active:scale-[0.98]">☑ Select All</button>
+                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-amber-300 bg-amber-50 px-2 text-[10px] font-semibold text-amber-800 disabled:opacity-40 transition hover:brightness-95 active:scale-[0.98]">✓ Pass All</button>
+                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 text-[10px] font-semibold text-slate-600 disabled:opacity-40 transition hover:brightness-95 active:scale-[0.98]">✕ Clear</button>
+                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-emerald-300 bg-emerald-50 px-2 text-[10px] font-semibold text-emerald-700 disabled:opacity-40 transition hover:brightness-95 active:scale-[0.98]">✓ Commit</button>
+                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-red-200 px-2 text-[10px] font-semibold text-red-600 disabled:opacity-40 transition hover:brightness-95 active:scale-[0.98]">↷ Skip</button>
+                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="inline-flex h-9 min-h-9 flex-1 items-center justify-center gap-1 whitespace-nowrap rounded-md border border-slate-300 px-2 text-[10px] font-semibold text-slate-700 transition hover:brightness-95 active:scale-[0.98]">⇩ Error Report</a>
                       </div>
                     </div>
                   </section>
@@ -1379,14 +1379,7 @@ export default function QuestionImportPanel() {
               )}
               {summary && (
                 <>
-                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">Import Preview <span className="font-normal text-slate-400">/</span> <span className="text-blue-700">Extracted Questions</span></h3><span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Batch: {batchId.slice(0, 8)}</span></div>
-
-
-
-
-
-
-                  <div className="mb-1 flex justify-end"><button type="button" onClick={() => { setShowAllDetails((current) => !current); setDetailOverrides({}); }} className="rounded px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">{showAllDetails ? "Hide Details" : "Show Details"}</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+<div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
                       <table className="w-full min-w-[980px] text-left text-xs">
                         <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
@@ -1449,36 +1442,36 @@ export default function QuestionImportPanel() {
                                 </td>
 
                                 <td className="whitespace-normal px-2 py-1.5 font-medium text-slate-800">
-                                  {Boolean(raw.htmlImportMetadata) &&
+                                  {showAllDetails && (Boolean(raw.htmlImportMetadata) &&
                                     typeof raw.htmlImportMetadata === "object" &&
                                     typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
                                       <p className="mb-1 text-[10px] font-semibold text-blue-700">
                                         Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
                                       </p>
-                                    )}
+                                    ))}
                                   {String(raw.questionText ?? "")}
-                                  {imageAnalyses.filter((analysis) => Array.isArray(raw.imageReferences) && raw.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
+                                  {showAllDetails && (imageAnalyses.filter((analysis) => Array.isArray(raw.imageReferences) && raw.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
                                     <div key={String(analysis.source ?? index)} className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-slate-700">
                                       <p className="font-semibold text-blue-800">Question image OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
                                       <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
                                       <p className="mb-2 text-[10px] text-slate-600">মূল প্রশ্নের ছবি এখনো সংযুক্ত আছে। যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
                                       <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে প্রশ্নের ছবি প্রতিস্থাপন করুন</button>
                                     </div>
-                                  ))}
-                                  {parserWarnings.length > 0 && (
+                                  )))}
+                                  {showAllDetails && (parserWarnings.length > 0 && (
                                     <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] font-medium text-amber-700">
                                       {parserWarnings.map((warning, index) => (
                                         <li key={index}>{warning}</li>
                                       ))}
                                     </ul>
-                                  )}
+                                  ))}
                                   {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
                                     <div className="mt-2 flex flex-wrap gap-2">
                                       {raw.imageReferences.map((source: unknown, index: number) => typeof source === "string" ? <img key={index} src={source} alt={`Question image ${index + 1}`} loading="lazy" className="max-h-36 max-w-full rounded border border-slate-200 object-contain" /> : null)}
                                     </div>
                                   )}
                                   {!String(raw.questionText ?? "").trim() && (!Array.isArray(raw.imageReferences) || raw.imageReferences.length === 0) && <span className="text-red-600">Question text/image missing</span>}
-                                  {Array.isArray(raw.options) && raw.options.length > 0 && (
+                                  {showAllDetails && (Array.isArray(raw.options) && raw.options.length > 0 && (
                                     <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
                                       {raw.options.map((option: { label?: string; optionText?: string; text?: string; imageReferences?: string[]; isCorrect?: boolean }, index: number) => (
                                         <div
@@ -1512,10 +1505,10 @@ export default function QuestionImportPanel() {
                                         </div>
                                       ))}
                                     </div>
-                                  )}
+                                  ))}
 
-                                  <details open={detailOverrides[row.id] ?? showAllDetails} onToggle={(event) => { const isOpen = event.currentTarget.open; setDetailOverrides((current) => ({ ...current, [row.id]: isOpen })); }} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                    <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</summary>
+                                  {showAllDetails && (<div className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <p className="mb-1 text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</p>
                                     <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
                                       {raw.correctAnswer != null && <p className="text-[11px] font-semibold text-emerald-700"><strong>Correct Answer:</strong> {String(raw.correctAnswer)}</p>}
                                       {raw.questionType != null && <p className="text-[11px]"><strong>Type:</strong> {String(raw.questionType)}</p>}
@@ -1533,7 +1526,7 @@ export default function QuestionImportPanel() {
                                       {Array.isArray(raw.occurrences) && raw.occurrences.map((occurrence: unknown, index: number) => { const item = isRecord(occurrence) ? occurrence : {}; return <p key={index} className="text-[11px]"><strong>{String(item.examName ?? "Exam")}:</strong> {[item.examYear, item.postName, item.department, item.isPrimary ? "Primary" : "Additional"].filter(Boolean).map(String).join(" · ")}</p>; })}
                                       {Object.entries(raw).filter(([key, value]) => !["questionText","options","correctAnswer","explanation","subject","topic","questionType","difficulty","status","institution","examName","examYear","postName","department","source","sourcePage","sourceUrl","occurrences","repeatGroupId","htmlImportMetadata"].includes(key) && value !== null && value !== undefined && value !== "").map(([key,value]) => <p key={key} className="break-words text-[11px]"><strong>{key}:</strong> {typeof value === "object" ? JSON.stringify(value) : String(value)}</p>)}
                                     </div>
-                                  </details>
+                                  </div>)}
                                 </td>
 
                                 <td className="px-2 py-1.5 text-slate-700">
@@ -1558,37 +1551,39 @@ export default function QuestionImportPanel() {
                                   )}
                                 </td>
                                 <td className="px-2 py-1.5">
-                                  {row.status === "DUPLICATE" && (
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    {row.status === "DUPLICATE" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => void reviewDuplicateRows([row.id], "PASS")}
+                                        disabled={loading}
+                                        className="inline-flex h-8 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-40"
+                                      >
+                                        Pass
+                                      </button>
+                                    )}
+                                    {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
+                                      <button
+                                        type="button"
+                                        onClick={() => void reviewDuplicateRows([row.id], "RECHECK")}
+                                        disabled={loading}
+                                        className="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
+                                      >
+                                        Undo Pass
+                                      </button>
+                                    )}
                                     <button
                                       type="button"
-                                      onClick={() => void reviewDuplicateRows([row.id], "PASS")}
-                                      disabled={loading}
-                                      className="mb-1 inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+                                      onClick={() => {
+                                        startManualImportEdit(row);
+                                        document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                      }}
+                                      disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
+                                      className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
                                     >
-                                      Pass Anyway
+                                      Edit
                                     </button>
-                                  )}
-                                  {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
-                                    <button
-                                      type="button"
-                                      onClick={() => void reviewDuplicateRows([row.id], "RECHECK")}
-                                      disabled={loading}
-                                      className="mb-1 inline-flex items-center rounded-lg border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
-                                    >
-                                      Undo Pass
-                                    </button>
-                                  )}
-                                  <button
-                                    type="button"
-                                    onClick={() => {
-                                      startManualImportEdit(row);
-                                      document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                    }}
-                                    disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
-                                    className="inline-flex items-center gap-1 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                  >
-                                    Edit
-                                  </button>
+                                  </div>
                                 </td>
                               </tr>
                             );
