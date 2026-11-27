@@ -23,6 +23,21 @@ test('very-high-confidence text-only images are converted to text automatically'
   assert.equal(result.replacements[0].status, 'REPLACED');
 });
 
+test('multiple high-confidence text images are combined while visual images stay attached', () => {
+  const service = new ImportImageStandardizationService();
+  const textA = 'https://api.example.test/uploads/questions/123e4567-e89b-12d3-a456-426614174010.webp';
+  const diagram = 'https://api.example.test/uploads/questions/123e4567-e89b-12d3-a456-426614174011.webp';
+  const textB = 'https://api.example.test/uploads/questions/123e4567-e89b-12d3-a456-426614174012.webp';
+  const result = service.applySafeTextReplacement('', [textA, diagram, textB], [
+    { source: textA, kind: 'TEXT_ONLY', status: 'REVIEW', extractedText: 'প্রথম অংশ', confidence: 98, reason: 'Text-only.' },
+    { source: diagram, kind: 'VISUAL_OR_UNCERTAIN', status: 'KEPT', extractedText: '', confidence: 60, reason: 'Diagram retained.' },
+    { source: textB, kind: 'TEXT_ONLY', status: 'REVIEW', extractedText: 'দ্বিতীয় অংশ', confidence: 99, reason: 'Text-only.' },
+  ]);
+  assert.equal(result.text, 'প্রথম অংশ\nদ্বিতীয় অংশ');
+  assert.deepEqual(result.imageReferences, [diagram]);
+  assert.equal(result.replacements.length, 2);
+});
+
 test('lower-confidence OCR is not auto-converted and keeps its source image', () => {
   const service = new ImportImageStandardizationService();
   const source = 'https://api.example.test/uploads/questions/123e4567-e89b-12d3-a456-426614174003.webp';
