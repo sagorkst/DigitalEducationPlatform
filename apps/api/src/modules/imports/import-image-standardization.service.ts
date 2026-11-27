@@ -134,7 +134,9 @@ export class ImportImageStandardizationService {
     references: string[],
     analyses: ImageStandardizationResult[],
   ): { text: string; imageReferences: string[]; replacements: ImageStandardizationResult[] } {
-    let currentText = String(text ?? '').trim();
+    const currentText = String(text ?? '').trim();
+    const canUseOcrText = currentText.length === 0;
+    const ocrTextParts: string[] = [];
     const bySource = new Map(analyses.map((item) => [item.source, item]));
     const replacements: ImageStandardizationResult[] = [];
     const retained: string[] = [];
@@ -146,15 +148,15 @@ export class ImportImageStandardizationService {
         continue;
       }
 
-      // Automatically replace only an empty field with very-high-confidence,
-      // text-dominant OCR. Existing text and uncertain/visual images stay intact.
+      // Convert every qualifying text-only image when the field has no source text.
+      // Existing text and uncertain/visual images are never overwritten or discarded.
       if (
-        !currentText &&
+        canUseOcrText &&
         analysis.kind === 'TEXT_ONLY' &&
         analysis.confidence >= 97 &&
         analysis.extractedText.trim()
       ) {
-        currentText = analysis.extractedText.trim();
+        ocrTextParts.push(analysis.extractedText.trim());
         replacements.push({ ...analysis, status: 'REPLACED' });
         continue;
       }
@@ -163,7 +165,9 @@ export class ImportImageStandardizationService {
     }
 
     return {
-      text: currentText,
+      text: canUseOcrText && ocrTextParts.length > 0
+        ? ocrTextParts.join('\n')
+        : currentText,
       imageReferences: retained,
       replacements,
     };
