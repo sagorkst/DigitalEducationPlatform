@@ -277,9 +277,13 @@ export class ImportsController {
           imageStandardization: {
             policy: 'CONSERVATIVE_OCR_REVIEW',
             analyses: [
-              ...question.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+              ...questionReplacement.replacements,
               ...question.options.flatMap((option) =>
-                option.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+                this.imageStandardizationService.applySafeTextReplacement(
+                  option.text,
+                  option.imageReferences,
+                  imageAnalyses,
+                ).replacements,
               ),
             ],
           },
