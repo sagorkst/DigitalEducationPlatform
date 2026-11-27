@@ -940,3 +940,72 @@ test('Primary Batch Metadata rejects missing Institution, Exam, Post or Year', a
     BadRequestException,
   );
 });
+
+
+test('preview rejects mojibake question and option text instead of counting rows as valid', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({ questionText: 'αª¿αª┐αªÜαºçαª░ αªòαºïαª¿αªƒα' }),
+    validRow({
+      options: [
+        { label: 'A', optionText: 'αª¿αª┐', isCorrect: true },
+        { label: 'B', optionText: 'Valid option', isCorrect: false },
+      ],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.totalRows, 2);
+  assert.equal(result.data.summary.validRows, 0);
+  assert.equal(result.data.summary.invalidRows, 2);
+  assert.ok(savedRows.every((row) => row.status === 'INVALID'));
+  assert.ok(savedRows[0].errorMessages.some((message) => message.includes('corrupted character encoding')));
+  assert.ok(savedRows[1].errorMessages.some((message) => message.includes('Option 1')));
+});
+
+test('preview rejects source-card badge text even when an image is attached', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      questionText: '৮৯ 🎯 MCQ ↳ ভাষাগত যৌক্তিক বিচার ✓ ক)',
+      imageReferences: ['https://cdn.example.test/question-image.jpg'],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.totalRows, 1);
+  assert.equal(result.data.summary.validRows, 0);
+  assert.equal(result.data.summary.invalidRows, 1);
+  assert.equal(savedRows[0].status, 'INVALID');
+  assert.ok(savedRows[0].errorMessages.some((message) => message.includes('source-card labels')));
+});
+
+test('preview continues to accept intentional image-only questions with empty question text', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      questionText: '',
+      imageReferences: ['https://cdn.example.test/image-only-question.jpg'],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(savedRows[0].status, 'VALID');
+});
