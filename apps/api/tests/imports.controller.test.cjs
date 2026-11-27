@@ -26,6 +26,29 @@ function createController(storage) {
   );
 }
 
+test('escaped literal \n sequences in MHTML Base64 are normalized', async () => {
+  const saved = [];
+  const controller = createController({
+    saveQuestionImage: async (buffer) => {
+      saved.push(Buffer.from(buffer));
+      return '/uploads/questions/escaped.webp';
+    },
+  });
+  const result = await controller.persistEmbeddedImages(
+    '<img src="data:image/png;base64,AQID\\nBA==">',
+  );
+  assert.deepEqual(saved[0], Buffer.from([1, 2, 3, 4]));
+  assert.match(result, /escaped\.webp/);
+});
+
+test('stylesheet Content-ID links are not mistaken for missing image attachments', async () => {
+  const controller = createController({
+    saveQuestionImage: async () => '/uploads/questions/unexpected.webp',
+  });
+  const html = '<link rel="stylesheet" href="cid:styles@example.test"><div class="question">Test question</div>';
+  assert.equal(await controller.persistEmbeddedImages(html), html);
+});
+
 test('embedded HTML Base64 images are stored once and line-wrapped Base64 is normalized', async () => {
   const saved = [];
   const controller = createController({
