@@ -112,7 +112,7 @@ test('unresolved MHTML Content-ID references are rejected', async () => {
 });
 
 
-test('real question image storage converts static SVG and GIF inputs to WebP', async () => {
+test('real question image storage converts SVG, GIF and TIFF inputs to WebP', async () => {
   const storage = new LocalStorageService();
   const savedPaths = [];
 
@@ -124,9 +124,13 @@ test('real question image storage converts static SVG and GIF inputs to WebP', a
       'R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=',
       'base64',
     );
+    const tiff = await sharp({ create: { width: 16, height: 16, channels: 3, background: '#ffffff' } })
+      .tiff()
+      .toBuffer();
 
     savedPaths.push(await storage.saveQuestionImage(svg));
     savedPaths.push(await storage.saveQuestionImage(gif));
+    savedPaths.push(await storage.saveQuestionImage(tiff));
 
     for (const publicPath of savedPaths) {
       const diskPath = path.resolve(
