@@ -512,7 +512,7 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => current.filter((_, i) => i !== index).map((option, i) => ({ ...option, sortOrder: i })));
   }
 
-  function useOcrSuggestion(row: ImportRow, source: string, extractedText: string) {
+  function handleOcrSuggestion(row: ImportRow, source: string, extractedText: string) {
     const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
     const questionImages = Array.isArray(raw.imageReferences) ? raw.imageReferences.filter((value): value is string => typeof value === "string") : [];
     let applied = false;
@@ -1328,7 +1328,7 @@ export default function QuestionImportPanel() {
                                       <p className="mb-2 text-[10px] text-slate-600">মূল ছবি এখনো সংযুক্ত আছে। OCR লেখা যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
                                       <button
                                         type="button"
-                                        onClick={() => useOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))}
+                                        onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))}
                                         className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100"
                                       >
                                         এই লেখা দিয়ে ছবি প্রতিস্থাপন করুন
