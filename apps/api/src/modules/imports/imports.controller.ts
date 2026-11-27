@@ -57,7 +57,7 @@ export class ImportsController {
   private async persistEmbeddedImages(html: string): Promise<string> {
     // Common inline formats plus SVG/GIF are normalized to WebP by storage.
     // Whitespace is accepted because MIME-encoded MHTML frequently wraps Base64.
-    const pattern = /data:image\/(jpeg|jpg|png|webp|gif|svg\+xml);base64,([A-Za-z0-9+/=\\\s]+)/gi;
+    const pattern = /data:image\/[a-z0-9.+-]+;base64,([A-Za-z0-9+/=\\\s]+)/gi;
     const matches = Array.from(html.matchAll(pattern));
     const stored = new Map<string, string>();
     const apiOrigin = new URL(
