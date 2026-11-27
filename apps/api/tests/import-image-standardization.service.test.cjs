@@ -29,7 +29,7 @@ test('images containing diagrams or mixed content are retained without OCR repla
   const source = 'https://api.example.test/uploads/questions/123e4567-e89b-12d3-a456-426614174001.webp';
   const result = service.applySafeTextReplacement('', [source], [{
     source,
-    kind: 'DIAGRAM_OR_MIXED',
+    kind: 'VISUAL_OR_UNCERTAIN',
     status: 'KEPT',
     extractedText: '',
     confidence: 63,
