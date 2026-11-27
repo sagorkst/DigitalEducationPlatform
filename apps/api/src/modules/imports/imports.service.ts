@@ -289,6 +289,16 @@ export class ImportsService {
     });
   }
 
+  private hasMojibake(value: string): boolean {
+    // Common UTF-8/legacy-codepage corruption signatures seen in imported Bengali.
+    return /αª|ΓÇ|â€|ï¿½|�|Ã[\u0080-\u00BF]|Â[\u0080-\u00BF]/u.test(value);
+  }
+
+  private isQuestionCardMetadata(value: string): boolean {
+    const text = value.replace(/\s+/g, ' ').trim();
+    return /^(?:[০-৯0-9]{1,3}\s*)?🎯\s*MCQ\s+↳.+[✓✔]\s*[কখগঘA-D]\)?$/iu.test(text);
+  }
+
   private validateRow(data: ImportData): string[] {
     const errors: string[] = [];
 
@@ -306,6 +316,15 @@ export class ImportsService {
       errors.push('Question text must contain at least 3 characters.');
     } else if (questionText.length > 1000) {
       errors.push('Question text cannot exceed 1000 characters.');
+    }
+
+    if (typeof questionText === 'string' && questionText.trim()) {
+      if (this.hasMojibake(questionText)) {
+        errors.push('Question text appears to contain corrupted character encoding. Review the source text before importing.');
+      }
+      if (this.isQuestionCardMetadata(questionText)) {
+        errors.push('Question text contains source-card labels instead of the actual question. Review or re-extract this row.');
+      }
     }
     if (questionImages !== undefined && (!Array.isArray(questionImages) || questionImages.some((item) => typeof item !== 'string'))) {
       errors.push('Question image references must be an array of strings.');
@@ -399,6 +418,9 @@ export class ImportsService {
             optionImages.some((image) => typeof image === 'string' && image.trim().length > 0);
           if ((typeof item.optionText !== 'string' || !item.optionText.trim()) && !hasOptionImages) {
             errors.push(`Option ${index + 1} requires option text or at least one image.`);
+          }
+          if (typeof item.optionText === 'string' && item.optionText.trim() && this.hasMojibake(item.optionText)) {
+            errors.push(`Option ${index + 1} appears to contain corrupted character encoding.`);
           }
           if (optionImages !== undefined && (!Array.isArray(optionImages) || optionImages.some((image) => typeof image !== 'string'))) {
             errors.push(`Option ${index + 1} image references must be an array of strings.`);
