@@ -1381,8 +1381,8 @@ export default function QuestionImportPanel() {
                 <>
 <div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[980px] text-left text-xs">
-                        <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
+                      <table className="w-full min-w-0 text-left text-xs">
+                        <thead className="hidden">
                           <tr>
                             <th className="w-12 p-3">Select</th>
                             <th className="w-16 p-3">Row</th>
@@ -1413,176 +1413,135 @@ export default function QuestionImportPanel() {
                             ].includes(row.status);
 
                             return (
-                              <tr
-                                key={row.id}
-                                className="align-top transition hover:bg-slate-50"
-                              >
-                                <td className="px-2 py-1.5">
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      selectAllBatch
-                                        ? ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)
-                                        : selectedIds.includes(row.id)
-                                    }
-                                    disabled={
-                                      !selectable ||
-                                      loading ||
-                                      (selectAllBatch && !["VALID", "DUPLICATE"].includes(row.status))
-                                    }
-                                    onChange={(event) =>
-                                      toggleRow(row.id, event.target.checked)
-                                    }
-                                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
-                                  />
-                                </td>
+                              <tr key={row.id} className="transition hover:bg-slate-50">
+                                <td colSpan={6} className="w-full px-2 py-1.5">
+                                  <div className="flex w-full min-w-0 flex-col gap-0.5 text-[11px] leading-tight">
+                                    <div className="grid w-full grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-x-3 gap-y-1">
+                                      <div className="flex min-w-0 items-center gap-1.5">
+                                        <input
+                                          type="checkbox"
+                                          checked={selectAllBatch
+                                            ? ["VALID", "DUPLICATE"].includes(row.status) && !excludedIds.includes(row.id)
+                                            : selectedIds.includes(row.id)}
+                                          disabled={!selectable || loading || (selectAllBatch && !["VALID", "DUPLICATE"].includes(row.status))}
+                                          onChange={(event) => toggleRow(row.id, event.target.checked)}
+                                          className="h-3.5 w-3.5 shrink-0 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                        />
+                                        <span className="shrink-0 font-bold text-slate-800">Q-{String(row.rowNumber).padStart(3, "0")}</span>
+                                        <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-bold ring-1 \${statusStyle(row.status)}`}>
+                                          {row.status === "VALID" ? "Valid" : row.status === "INVALID" ? "Invalid" : row.status === "DUPLICATE" ? "Duplicate" : row.status}
+                                        </span>
+                                      </div>
 
-                                <td className="px-2 py-1.5 font-semibold text-slate-500">
-                                  {row.rowNumber}
-                                </td>
+                                      <div className="min-w-0 text-center font-semibold text-slate-700">
+                                        {String(raw.subject ?? "—")} · {String(raw.topic ?? "—")}
+                                        <span className="ml-2 whitespace-nowrap text-slate-500">G-({String(raw.grade ?? raw.gradeLevel ?? raw.gradeName ?? "—")})</span>
+                                      </div>
 
-                                <td className="whitespace-normal px-2 py-1.5 font-medium text-slate-800">
-                                  {showAllDetails && (Boolean(raw.htmlImportMetadata) &&
-                                    typeof raw.htmlImportMetadata === "object" &&
-                                    typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
-                                      <p className="mb-1 text-[10px] font-semibold text-blue-700">
-                                        Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
-                                      </p>
-                                    ))}
-                                  {String(raw.questionText ?? "")}
-                                  {showAllDetails && (imageAnalyses.filter((analysis) => Array.isArray(raw.imageReferences) && raw.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
-                                    <div key={String(analysis.source ?? index)} className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-slate-700">
-                                      <p className="font-semibold text-blue-800">Question image OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
-                                      <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
-                                      <p className="mb-2 text-[10px] text-slate-600">মূল প্রশ্নের ছবি এখনো সংযুক্ত আছে। যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
-                                      <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে প্রশ্নের ছবি প্রতিস্থাপন করুন</button>
+                                      <div className="flex shrink-0 items-center justify-end gap-2 whitespace-nowrap">
+                                        <span className="text-slate-600">Occ: {Array.isArray(raw.occurrences) ? raw.occurrences.length : 0}</span>
+                                        <span className="text-slate-600">Dup: {row.status === "DUPLICATE" ? "Yes" : isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" ? "Passed" : "No"}</span>
+                                        {row.status === "DUPLICATE" && (
+                                          <button type="button" onClick={() => void reviewDuplicateRows([row.id], "PASS")} disabled={loading}
+                                            className="inline-flex h-7 min-w-[42px] items-center justify-center rounded border border-amber-300 bg-amber-50 px-2 text-[10px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40">
+                                            Pass
+                                          </button>
+                                        )}
+                                        {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
+                                          <button type="button" onClick={() => void reviewDuplicateRows([row.id], "RECHECK")} disabled={loading}
+                                            className="inline-flex h-7 min-w-[42px] items-center justify-center rounded border border-slate-300 px-2 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40">
+                                            Undo
+                                          </button>
+                                        )}
+                                        <button type="button"
+                                          onClick={() => {
+                                            startManualImportEdit(row);
+                                            document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                                          }}
+                                          disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
+                                          className="inline-flex h-7 min-w-[42px] items-center justify-center rounded border border-blue-200 bg-blue-50 px-2 text-[10px] font-semibold text-blue-700 hover:bg-blue-100 disabled:opacity-40">
+                                          Edit
+                                        </button>
+                                      </div>
                                     </div>
-                                  )))}
-                                  {showAllDetails && (parserWarnings.length > 0 && (
-                                    <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] font-medium text-amber-700">
-                                      {parserWarnings.map((warning, index) => (
-                                        <li key={index}>{warning}</li>
-                                      ))}
-                                    </ul>
-                                  ))}
-                                  {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
-                                    <div className="mt-2 flex flex-wrap gap-2">
-                                      {raw.imageReferences.map((source: unknown, index: number) => typeof source === "string" ? <img key={index} src={source} alt={`Question image ${index + 1}`} loading="lazy" className="max-h-36 max-w-full rounded border border-slate-200 object-contain" /> : null)}
+
+                                    <div className="whitespace-pre-wrap break-words font-medium text-slate-800">
+                                      {String(raw.questionText ?? "") || <span className="text-red-600">Question text missing</span>}
                                     </div>
-                                  )}
-                                  {!String(raw.questionText ?? "").trim() && (!Array.isArray(raw.imageReferences) || raw.imageReferences.length === 0) && <span className="text-red-600">Question text/image missing</span>}
-                                  {showAllDetails && (Array.isArray(raw.options) && raw.options.length > 0 && (
-                                    <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
-                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; imageReferences?: string[]; isCorrect?: boolean }, index: number) => (
-                                        <div
-                                          key={`${option.label ?? index}-${index}`}
-                                          className={`rounded-lg px-3 py-2 text-xs ${
-                                            option.isCorrect
-                                              ? "border border-emerald-200 bg-emerald-50 font-semibold text-emerald-800"
-                                              : "border border-slate-100 bg-slate-50 text-slate-700"
-                                          }`}
-                                        >
-                                          <span className="mr-2 font-bold">
-                                            {option.label ?? String.fromCharCode(65 + index)}.
+
+                                    {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
+                                      <div className="flex flex-wrap items-center gap-1 py-0.5">
+                                        {raw.imageReferences.map((source, index) => typeof source === "string" ? (
+                                          <img key={index} src={source} alt={`Question image \${index + 1}`} loading="lazy"
+                                            className="max-h-16 max-w-32 rounded border border-slate-200 object-contain" />
+                                        ) : null)}
+                                      </div>
+                                    )}
+
+                                    {Array.isArray(raw.options) && raw.options.length > 0 && (
+                                      <div className="flex w-full flex-wrap items-center gap-x-5 gap-y-1 text-slate-700">
+                                        {raw.options.map((option: { label?: string; optionText?: string; text?: string; imageReferences?: string[]; isCorrect?: boolean }, index: number) => (
+                                          <span key={`\${option.label ?? index}-\${index}`} className={option.isCorrect ? "font-semibold text-emerald-700" : ""}>
+                                            <strong>{option.label ?? String.fromCharCode(65 + index)}.</strong> {option.optionText ?? option.text ?? ""}
+                                            {option.isCorrect && <span className="ml-1">✓</span>}
+                                            {Array.isArray(option.imageReferences) && option.imageReferences.map((source, imageIndex) => typeof source === "string" ? (
+                                              <img key={imageIndex} src={source} alt={`Option \${option.label ?? index} image`} loading="lazy"
+                                                className="ml-1 inline-block max-h-10 max-w-16 rounded border border-slate-200 object-contain" />
+                                            ) : null)}
                                           </span>
-                                          {option.optionText ?? option.text ?? ""}
-                                          {imageAnalyses.filter((analysis) => Array.isArray(option.imageReferences) && option.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, analysisIndex) => (
-                                            <div key={String(analysis.source ?? analysisIndex)} className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-2 font-normal text-slate-700">
-                                              <p className="font-semibold text-blue-800">Option {option.label ?? index + 1} OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
-                                              <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
-                                              <p className="mb-2 text-[10px] text-slate-600">এই Option-এর মূল ছবি এখনো সংযুক্ত আছে।</p>
-                                              <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে Option-এর ছবি প্রতিস্থাপন করুন</button>
-                                            </div>
-                                          ))}
-                                          {Array.isArray(option.imageReferences) && option.imageReferences.length > 0 && (
-                                            <div className="mt-2 flex flex-wrap gap-1">
-                                              {option.imageReferences.map((source: unknown, imageIndex: number) => typeof source === "string" ? <img key={imageIndex} src={source} alt={`Option ${option.label ?? index} image ${imageIndex + 1}`} loading="lazy" className="max-h-24 max-w-full rounded border border-slate-200 object-contain" /> : null)}
-                                            </div>
-                                          )}
-                                          {option.isCorrect && (
-                                            <span className="ml-2">✓ Correct</span>
-                                          )}
-                                        </div>
-                                      ))}
-                                    </div>
-                                  ))}
-
-                                  {showAllDetails && (<div className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
-                                    <p className="mb-1 text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</p>
-                                    <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
-                                      {raw.correctAnswer != null && <p className="text-[11px] font-semibold text-emerald-700"><strong>Correct Answer:</strong> {String(raw.correctAnswer)}</p>}
-                                      {raw.questionType != null && <p className="text-[11px]"><strong>Type:</strong> {String(raw.questionType)}</p>}
-                                      {raw.difficulty != null && <p className="text-[11px]"><strong>Difficulty:</strong> {String(raw.difficulty)}</p>}
-                                      {raw.examName != null && <p className="text-[11px]"><strong>Exam:</strong> {String(raw.examName)}</p>}
-                                      {raw.examYear != null && <p className="text-[11px]"><strong>Year:</strong> {String(raw.examYear)}</p>}
-                                      {raw.institution != null && <p className="text-[11px]"><strong>Institution:</strong> {String(raw.institution)}</p>}
-                                      {raw.postName != null && <p className="text-[11px]"><strong>Post:</strong> {String(raw.postName)}</p>}
-                                      {raw.department != null && <p className="text-[11px]"><strong>Department:</strong> {String(raw.department)}</p>}
-                                      {raw.explanation != null && String(raw.explanation).trim() !== "" && <p className="whitespace-pre-wrap text-[11px]"><strong>Explanation:</strong> {String(raw.explanation)}</p>}
-                                      {raw.source != null && <p className="text-[11px]"><strong>Source:</strong> {String(raw.source)}</p>}
-                                      {raw.sourcePage != null && <p className="text-[11px]"><strong>Source Page:</strong> {String(raw.sourcePage)}</p>}
-                                      {raw.sourceUrl != null && <p className="break-all text-[11px]"><strong>Source URL:</strong> {String(raw.sourceUrl)}</p>}
-                                      {raw.repeatGroupId != null && <p className="text-[11px]"><strong>Repeat Group:</strong> {String(raw.repeatGroupId)}</p>}
-                                      {Array.isArray(raw.occurrences) && raw.occurrences.map((occurrence: unknown, index: number) => { const item = isRecord(occurrence) ? occurrence : {}; return <p key={index} className="text-[11px]"><strong>{String(item.examName ?? "Exam")}:</strong> {[item.examYear, item.postName, item.department, item.isPrimary ? "Primary" : "Additional"].filter(Boolean).map(String).join(" · ")}</p>; })}
-                                      {Object.entries(raw).filter(([key, value]) => !["questionText","options","correctAnswer","explanation","subject","topic","questionType","difficulty","status","institution","examName","examYear","postName","department","source","sourcePage","sourceUrl","occurrences","repeatGroupId","htmlImportMetadata"].includes(key) && value !== null && value !== undefined && value !== "").map(([key,value]) => <p key={key} className="break-words text-[11px]"><strong>{key}:</strong> {typeof value === "object" ? JSON.stringify(value) : String(value)}</p>)}
-                                    </div>
-                                  </div>)}
-                                </td>
-
-                                <td className="px-2 py-1.5 text-slate-700">
-                                  {String(raw.subject ?? "—")}
-                                  <p className="mt-1 text-xs text-slate-400">
-                                    {String(raw.topic ?? "—")}
-                                  </p>
-                                </td>
-
-                                <td className="px-2 py-1.5">
-                                  <span
-                                    className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${statusStyle(row.status)}`}
-                                  >
-                                    {row.status}
-                                  </span>
-                                  {errors.length > 0 && (
-                                    <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-red-600">
-                                      {errors.map((item, index) => (
-                                        <li key={index}>{item}</li>
-                                      ))}
-                                    </ul>
-                                  )}
-                                </td>
-                                <td className="px-2 py-1.5">
-                                  <div className="flex flex-wrap items-center gap-2">
-                                    {row.status === "DUPLICATE" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => void reviewDuplicateRows([row.id], "PASS")}
-                                        disabled={loading}
-                                        className="inline-flex h-8 items-center justify-center rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-800 transition hover:bg-amber-100 disabled:opacity-40"
-                                      >
-                                        Pass
-                                      </button>
+                                        ))}
+                                      </div>
                                     )}
-                                    {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
-                                      <button
-                                        type="button"
-                                        onClick={() => void reviewDuplicateRows([row.id], "RECHECK")}
-                                        disabled={loading}
-                                        className="inline-flex h-8 items-center justify-center rounded-md border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 disabled:opacity-40"
-                                      >
-                                        Undo Pass
-                                      </button>
+
+                                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-slate-600">
+                                      {raw.correctAnswer != null && <span><strong>Answer:</strong> {String(raw.correctAnswer)}</span>}
+                                      {raw.explanation != null && String(raw.explanation).trim() !== "" && (
+                                        <span className="whitespace-pre-wrap break-words"><strong>Explanation:</strong> {String(raw.explanation)}</span>
+                                      )}
+                                    </div>
+
+                                    <div className="flex flex-wrap items-baseline gap-x-3 gap-y-0.5 text-[10px] text-slate-500">
+                                      {raw.institution != null && <span><strong>Institution:</strong> {String(raw.institution)}</span>}
+                                      {raw.examName != null && <span><strong>Exam:</strong> {String(raw.examName)}</span>}
+                                      {raw.examYear != null && <span><strong>Year:</strong> {String(raw.examYear)}</span>}
+                                      {raw.postName != null && <span><strong>Post:</strong> {String(raw.postName)}</span>}
+                                      {raw.department != null && <span><strong>Dept:</strong> {String(raw.department)}</span>}
+                                    </div>
+
+                                    {errors.length > 0 && (
+                                      <ul className="flex flex-wrap gap-x-4 gap-y-0.5 text-[10px] text-red-600">
+                                        {errors.map((item, index) => <li key={index}>{item}</li>)}
+                                      </ul>
                                     )}
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        startManualImportEdit(row);
-                                        document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
-                                      }}
-                                      disabled={loading || !["PENDING", "VALID", "INVALID", "DUPLICATE"].includes(row.status)}
-                                      className="inline-flex h-8 items-center justify-center gap-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-xs font-semibold text-blue-700 transition hover:bg-blue-100 disabled:cursor-not-allowed disabled:opacity-40"
-                                    >
-                                      Edit
-                                    </button>
+
+                                    {showAllDetails && (
+                                      <div className="mt-1 flex flex-col gap-1 border-t border-slate-100 pt-1 text-[10px] text-slate-500">
+                                        {typeof htmlMetadata.sourceQuestionId === "string" && (
+                                          <span><strong>Source ID:</strong> {String(htmlMetadata.sourceQuestionId)}</span>
+                                        )}
+                                        {imageAnalyses.filter((analysis) =>
+                                          typeof analysis.extractedText === "string" &&
+                                          String(analysis.extractedText).trim()
+                                        ).map((analysis, index) => (
+                                          <div key={String(analysis.source ?? index)} className="rounded border border-blue-100 bg-blue-50 p-1.5">
+                                            <strong>Image OCR · Confidence {Number(analysis.confidence ?? 0)}%</strong>
+                                            <p className="whitespace-pre-wrap">{String(analysis.extractedText)}</p>
+                                            <button type="button"
+                                              onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))}
+                                              className="mt-1 rounded border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700">
+                                              Use OCR text
+                                            </button>
+                                          </div>
+                                        ))}
+                                        {parserWarnings.map((warning, index) => <span key={index} className="text-amber-700">{warning}</span>)}
+                                        {raw.source != null && <span><strong>Source:</strong> {String(raw.source)}</span>}
+                                        {raw.sourcePage != null && <span><strong>Source Page:</strong> {String(raw.sourcePage)}</span>}
+                                        {raw.sourceUrl != null && <span className="break-all"><strong>Source URL:</strong> {String(raw.sourceUrl)}</span>}
+                                        {raw.repeatGroupId != null && <span><strong>Repeat Group:</strong> {String(raw.repeatGroupId)}</span>}
+                                        {raw.questionType != null && <span><strong>Type:</strong> {String(raw.questionType)}</span>}
+                                        {raw.difficulty != null && <span><strong>Difficulty:</strong> {String(raw.difficulty)}</span>}
+                                      </div>
+                                    )}
                                   </div>
                                 </td>
                               </tr>
