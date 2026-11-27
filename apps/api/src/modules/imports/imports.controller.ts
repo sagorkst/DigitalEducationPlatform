@@ -32,6 +32,7 @@ import { ImportsErrorReportService } from './imports-error-report.service';
 import { OcrService } from './ocr.service';
 import { OcrHistoryService } from './ocr-history.service';
 import { HtmlQuestionParserService } from './html-question-parser.service';
+import { ImportImageStandardizationService } from './import-image-standardization.service';
 import { CommitImportDto } from './dto/commit-import.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -49,6 +50,7 @@ export class ImportsController {
     private readonly ocrService: OcrService,
     private readonly ocrHistoryService: OcrHistoryService,
     private readonly htmlQuestionParserService: HtmlQuestionParserService,
+    private readonly imageStandardizationService: ImportImageStandardizationService,
     private readonly storage: LocalStorageService,
   ) {}
 
@@ -190,24 +192,50 @@ export class ImportsController {
       );
     }
 
+    const allImageReferences = parsed.questions.flatMap((question) => [
+      ...question.imageReferences,
+      ...question.options.flatMap((option) => option.imageReferences),
+    ]);
+    const imageAnalyses = await this.imageStandardizationService.analyzeReferences(allImageReferences);
+    const imageAnalysisBySource = new Map(imageAnalyses.map((item) => [item.source, item]));
+
     const rows = parsed.questions.map((question) => {
-      const options = question.options.map((option, index) => ({
-        label: option.label,
-        optionText: option.text,
-        imageReferences: option.imageReferences,
-        isCorrect: option.isCorrect === true,
-        sortOrder: index + 1,
-      }));
+      const questionReplacement = this.imageStandardizationService.applySafeTextReplacement(
+        question.questionText,
+        question.imageReferences,
+        imageAnalyses,
+      );
+      const options = question.options.map((option, index) => {
+        const replacement = this.imageStandardizationService.applySafeTextReplacement(
+          option.text,
+          option.imageReferences,
+          imageAnalyses,
+        );
+        return {
+          label: option.label,
+          optionText: replacement.text,
+          imageReferences: replacement.imageReferences,
+          isCorrect: option.isCorrect === true,
+          sortOrder: index + 1,
+        };
+      });
 
       const correctOption = question.options.find(
         (option) =>
           option.label.toUpperCase() ===
           (question.correctAnswer ?? '').toUpperCase(),
       );
+      const imageStandardizationWarnings = [
+        ...questionReplacement.replacements,
+        ...question.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+        ...question.options.flatMap((option) =>
+          option.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+        ),
+      ].filter((item) => item && item.status !== 'REPLACED');
 
       return {
-        questionText: question.questionText,
-        imageReferences: question.imageReferences,
+        questionText: questionReplacement.text,
+        imageReferences: questionReplacement.imageReferences,
         questionType: question.questionType,
         subject: question.subject ?? '',
         topic: question.topic ?? '',
@@ -232,13 +260,25 @@ export class ImportsController {
         htmlImportMetadata: {
           sourceUrl: question.sourceUrl,
           sourceQuestionId: question.sourceQuestionId,
-          imageReferences: question.imageReferences,
-          optionImageReferences: question.options.map((option) => ({
+          imageReferences: questionReplacement.imageReferences,
+          optionImageReferences: options.map((option) => ({
             label: option.label,
             imageReferences: option.imageReferences,
           })),
           confidence: question.confidence,
-          warnings: question.warnings,
+          warnings: [
+            ...question.warnings,
+            ...imageStandardizationWarnings.map((item: any) => item.reason),
+          ],
+          imageStandardization: {
+            policy: 'CONSERVATIVE_OCR_REVIEW',
+            analyses: [
+              ...question.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+              ...question.options.flatMap((option) =>
+                option.imageReferences.map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+              ),
+            ],
+          },
         },
       };
     });
