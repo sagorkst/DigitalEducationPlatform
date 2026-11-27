@@ -251,6 +251,100 @@ export class HtmlQuestionParserService {
       (option) => option.isCorrect === true,
     );
 
+    // Detect the source badge before generating parser warnings.
+    const sourceCardText = this.normalize(container.text());
+    const sourceSaysMcq =
+      /(?:🎯\s*)?MCQ\b/i.test(sourceCardText) ||
+      /\bMCQ\b/i.test(this.firstAttribute(container, ['data-question-type', 'data-type']) ?? '');
+
+    const explanation = this.extractBySelectors(
+      $,
+      container,
+      this.explanationSelectors,
+    );
+
+    const subject = this.extractBySelectors($, container, [
+      '.q-subject-pill',
+      '.subject-name',
+      '.question-subject',
+      '[data-subject]',
+      '[itemprop="about"]',
+    ]);
+
+    const topic = this.extractBySelectors($, container, [
+      '.q-topic-pill',
+      '.topic-name',
+      '.question-topic',
+      '[data-topic]',
+    ]);
+
+    const examReference =
+      this.extractBySelectors($, container, [
+        '.q-exam-ref',
+        '.exam-name',
+        '.exam-reference',
+        '.question-exam',
+        '.exam-title',
+        '[data-exam-name]',
+      ]) ||
+      container.find('[data-exam-name]').first().attr('data-exam-name') ||
+      this.firstAttribute(container, ['data-exam-name', 'data-exam']) ||
+      null;
+
+    const examMetadata = this.extractExamMetadata(examReference);
+    const examName = examMetadata.examName;
+    const institution = examMetadata.institution;
+    const examYear = examMetadata.examYear;
+
+    const imageContainer = container.clone();
+    imageContainer.find([
+      ...this.optionSelectors,
+      '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
+      '.question-meta',
+      '.metadata',
+      '.exam',
+    ].join(', ')).remove();
+    const imageReferences = this.extractImages($, imageContainer);
+
+    const warnings: string[] = [];
+
+    if (questionText.trim().length < 3 && imageReferences.length === 0) {
+      warnings.push(
+        'Question text could not be extracted. This source record was retained for manual review.',
+      );
+    } else if (!questionText.trim() && imageReferences.length > 0) {
+      warnings.push(
+        'Question content is image-only. Verify the image visually before importing.',
+      );
+    }
+
+    if (sourceSaysMcq && options.length < 2) {
+      warnings.push(
+        'MCQ choices were not extracted as text; they may be embedded in the question image and require visual review.',
+      );
+    }
+
+    if (options.length > 0 && !explicitCorrect && !containerCorrect) {
+      warnings.push('Correct answer was not explicitly identified.');
+    }
+
+    if (options.length === 1) {
+      warnings.push('Only one option was detected.');
+    }
+
+    if (!explanation) {
+      warnings.push('Explanation was not found.');
+    }
+
+    const isTrueFalse =
+      options.length === 2 &&
+      options.some((o) => /^(true|false|সত্য|মিথ্যা)$/i.test(o.text));
+
     // Preserve the source question type even when no text options can be extracted.
     const questionType: HtmlImportedQuestionType =
       options.length >= 2
