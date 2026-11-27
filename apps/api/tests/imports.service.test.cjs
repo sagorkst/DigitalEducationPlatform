@@ -88,6 +88,22 @@ function createPrisma(overrides = {}) {
       findFirst: async () => null,
       ...overrides.topic,
     },
+
+    institution: {
+      findUnique: async () => null,
+      findFirst: async () => null,
+      ...overrides.institution,
+    },
+
+    post: {
+      findUnique: async () => null,
+      ...overrides.post,
+    },
+
+    sourceDocument: {
+      findUnique: async () => null,
+      ...overrides.sourceDocument,
+    },
   };
 
   prisma.$transaction = async (operation) => {
@@ -215,6 +231,33 @@ test('07 - accepts JSON object containing questions array', async () => {
   assert.equal(result.data.summary.totalRows, 1);
 });
 
+test('CSV import restores JSON-encoded question image references as an array', async () => {
+  const { service, prisma } = createService();
+  let savedRows;
+
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const csv = [
+    'questionText,subject,topic,imageReferences',
+    '"Which component is shown?","General Knowledge","Electricity","[""/uploads/questions/diagram.webp""]"',
+  ].join('\n');
+
+  const result = await service.preview({
+    originalname: 'questions.csv',
+    buffer: Buffer.from(csv),
+    size: Buffer.byteLength(csv),
+  });
+
+  assert.equal(result.data.summary.validRows, 1);
+  assert.deepEqual(
+    savedRows[0].rawData.imageReferences,
+    ['/uploads/questions/diagram.webp'],
+  );
+});
+
 test('08 - rejects non-object row data', async () => {
   const { service } = createService();
 
@@ -244,12 +287,12 @@ test('09 - rejects rows with missing required fields', async () => {
 
   assert.ok(
     savedRows[0].errorMessages.includes(
-      'Question text is required.',
+      'Question text or at least one question image is required.',
     ),
   );
 });
 
-test('10 - rejects MCQ without options', async () => {
+test('10 - accepts MCQ without options', async () => {
   const { service, prisma } = createService();
 
   let savedRows;
@@ -263,8 +306,9 @@ test('10 - rejects MCQ without options', async () => {
 
   const result = await service.preview(jsonFile([row]));
 
-  assert.equal(result.data.summary.invalidRows, 1);
-  assert.equal(savedRows[0].status, 'INVALID');
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(savedRows[0].status, 'VALID');
 });
 
 test('11 - accepts MCQ with multiple correct options', async () => {
@@ -327,7 +371,7 @@ test('11c - rejects MCQ with more than four options', async () => {
 
   await service.preview(jsonFile([row]));
   assert.equal(savedRows[0].status, 'INVALID');
-  assert.ok(savedRows[0].errorMessages.includes('MCQ options must contain 2 to 4 items.'));
+  assert.ok(savedRows[0].errorMessages.includes('A maximum of 4 options is allowed.'));
 });
 
 test('12 - detects duplicate questions inside the same import file', async () => {
@@ -574,6 +618,53 @@ test('23 - rejects invalid import row status', async () => {
 });
 
 // =====================================================
+// MANUAL DUPLICATE REVIEW
+// =====================================================
+
+test('manually passing a duplicate persists the override and revalidates it as valid', async () => {
+  const { service, prisma } = createService();
+  const row = {
+    id: 'row-duplicate',
+    rowNumber: 2,
+    status: 'DUPLICATE',
+    rawData: validRow(),
+  };
+  let questionLookups = 0;
+
+  prisma.importBatch.findUnique = async () => ({
+    id: BATCH_ID,
+    status: 'REVIEW',
+  });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.findMany = async () => [row];
+  prisma.importRow.update = async ({ data }) => {
+    if (Object.prototype.hasOwnProperty.call(data, 'rawData')) {
+      row.rawData = data.rawData;
+    }
+    if (data.status) row.status = data.status;
+    return row;
+  };
+  prisma.question.findFirst = async () => {
+    questionLookups++;
+    return { id: 'existing-question' };
+  };
+
+  const result = await service.reviewDuplicates(
+    BATCH_ID,
+    ['row-duplicate'],
+    'PASS',
+  );
+
+  assert.equal(result.success, true);
+  assert.equal(result.data.updatedRows, 1);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.duplicateRows, 0);
+  assert.equal(row.status, 'VALID');
+  assert.equal(row.rawData._importReviewOverride.duplicate, 'PASS');
+  assert.equal(questionLookups, 0);
+});
+
+// =====================================================
 // SKIP ROWS
 // =====================================================
 
@@ -677,4 +768,244 @@ test('28 - does not increment skipped count when no rows match', async () => {
     ),
     false,
   );
+});
+
+
+test('image-only questions and image-only options validate without blank-text duplicates', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  let imageLookups = 0;
+
+  prisma.importBatch.create = async () => ({ id: BATCH_ID });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+  prisma.question.findFirst = async ({ where }) => {
+    imageLookups++;
+    assert.ok(where.imageReferences);
+    return null;
+  };
+
+  const imageOnlyRow = {
+    questionText: '',
+    imageReferences: ['https://cdn.example.test/question-diagram.png'],
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    questionType: 'MCQ',
+    difficulty: 'MEDIUM',
+    status: 'DRAFT',
+    options: [
+      {
+        label: 'A',
+        optionText: '',
+        imageReferences: ['https://cdn.example.test/option-a.png'],
+        isCorrect: true,
+      },
+      {
+        label: 'B',
+        optionText: 'Text and image option',
+        imageReferences: ['https://cdn.example.test/option-b.png'],
+        isCorrect: false,
+      },
+    ],
+    occurrences: [],
+  };
+
+  const result = await service.previewParsedRows(
+    [imageOnlyRow, { ...imageOnlyRow, occurrences: [] }],
+    'image-only-import.html',
+  );
+
+  assert.equal(result.data.summary.totalRows, 2);
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.duplicateRows, 1);
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(savedRows.length, 2);
+  assert.equal(savedRows[0].status, 'VALID');
+  assert.equal(savedRows[1].status, 'DUPLICATE');
+  assert.equal(imageLookups, 1);
+});
+
+
+test('preview rejects mismatched Institution, Exam, Post and Year metadata against a selected Exam ID', async () => {
+  const { service, prisma } = createService();
+  const examId = '123e4567-e89b-42d3-a456-426614174000';
+  const institutionId = '123e4567-e89b-42d3-a456-426614174001';
+  const postId = '123e4567-e89b-42d3-a456-426614174002';
+  let savedRows = [];
+
+  prisma.exam.findUnique = async () => ({
+    id: examId,
+    institutionId,
+    postId,
+    name: 'BPSC Recruitment Examination',
+    examYear: 2022,
+    institution: {
+      id: institutionId,
+      name: 'Bangladesh Public Service Commission',
+      isActive: true,
+    },
+    post: { id: postId, name: 'Computer Typist' },
+  });
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      occurrences: [{
+        institution: 'Wrong Institution',
+        institutionId,
+        examName: 'Wrong Exam',
+        examId,
+        examYear: 2020,
+        postName: 'Wrong Post',
+        postId,
+      }],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.invalidRows, 1);
+  assert.equal(savedRows[0].status, 'INVALID');
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Institution name does not match the selected Exam.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Post name does not match the selected Exam.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Exam name does not match the selected Exam ID.',
+  ));
+  assert.ok(savedRows[0].errorMessages.includes(
+    'Occurrence 1: Exam Year does not match the selected Exam.',
+  ));
+});
+
+test('Primary Batch Metadata creates a new Year occurrence and preserves the previous occurrence', async () => {
+  const { service, prisma } = createService();
+  const row = {
+    id: 'row-primary',
+    status: 'VALID',
+    rawData: validRow({
+      occurrences: [{
+        institution: 'BPSC',
+        examName: 'Recruitment Examination',
+        postName: 'Computer Typist',
+        examYear: 2020,
+        isPrimary: true,
+      }],
+    }),
+  };
+
+  prisma.importBatch.findUnique = async () => ({ id: BATCH_ID, status: 'REVIEW' });
+  prisma.importBatch.update = async ({ data }) => ({ id: BATCH_ID, ...data });
+  prisma.importRow.findMany = async () => [row];
+  prisma.importRow.update = async ({ data }) => {
+    if (data.rawData !== undefined) row.rawData = data.rawData;
+    if (data.status !== undefined) row.status = data.status;
+    return row;
+  };
+
+  const result = await service.applyBatchMetadata(BATCH_ID, {
+    institution: 'BPSC',
+    examName: 'Recruitment Examination',
+    postName: 'Computer Typist',
+    examYear: 2022,
+    setAsPrimary: true,
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(row.rawData.occurrences.length, 2);
+  const oldOccurrence = row.rawData.occurrences.find((item) => item.examYear === 2020);
+  const newOccurrence = row.rawData.occurrences.find((item) => item.examYear === 2022);
+  assert.ok(oldOccurrence);
+  assert.ok(newOccurrence);
+  assert.equal(oldOccurrence.isPrimary, false);
+  assert.equal(newOccurrence.isPrimary, true);
+});
+
+test('Primary Batch Metadata rejects missing Institution, Exam, Post or Year', async () => {
+  const { service } = createService();
+
+  await assert.rejects(
+    service.applyBatchMetadata(BATCH_ID, {
+      institution: 'BPSC',
+      examName: 'Recruitment Examination',
+      postName: 'Computer Typist',
+      setAsPrimary: true,
+    }),
+    BadRequestException,
+  );
+});
+
+
+test('preview rejects mojibake question and option text instead of counting rows as valid', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({ questionText: 'αª¿αª┐αªÜαºçαª░ αªòαºïαª¿αªƒα' }),
+    validRow({
+      options: [
+        { label: 'A', optionText: 'αª¿αª┐', isCorrect: true },
+        { label: 'B', optionText: 'Valid option', isCorrect: false },
+      ],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.totalRows, 2);
+  assert.equal(result.data.summary.validRows, 0);
+  assert.equal(result.data.summary.invalidRows, 2);
+  assert.ok(savedRows.every((row) => row.status === 'INVALID'));
+  assert.ok(savedRows[0].errorMessages.some((message) => message.includes('corrupted character encoding')));
+  assert.ok(savedRows[1].errorMessages.some((message) => message.includes('Option 1')));
+});
+
+test('preview rejects source-card badge text even when an image is attached', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      questionText: '৮৯ 🎯 MCQ ↳ ভাষাগত যৌক্তিক বিচার ✓ ক)',
+      imageReferences: ['https://cdn.example.test/question-image.jpg'],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.totalRows, 1);
+  assert.equal(result.data.summary.validRows, 0);
+  assert.equal(result.data.summary.invalidRows, 1);
+  assert.equal(savedRows[0].status, 'INVALID');
+  assert.ok(savedRows[0].errorMessages.some((message) => message.includes('source-card labels')));
+});
+
+test('preview continues to accept intentional image-only questions with empty question text', async () => {
+  const { service, prisma } = createService();
+  let savedRows = [];
+  prisma.importRow.createMany = async ({ data }) => {
+    savedRows = data;
+    return { count: data.length };
+  };
+
+  const result = await service.preview(jsonFile([
+    validRow({
+      questionText: '',
+      imageReferences: ['https://cdn.example.test/image-only-question.jpg'],
+    }),
+  ]));
+
+  assert.equal(result.data.summary.validRows, 1);
+  assert.equal(result.data.summary.invalidRows, 0);
+  assert.equal(savedRows[0].status, 'VALID');
 });

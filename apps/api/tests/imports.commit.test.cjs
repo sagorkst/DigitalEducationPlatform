@@ -50,6 +50,8 @@ function createHarness(options = {}) {
     batchUpdate: [],
     batchStatus: [],
     rowCount: [],
+    occurrenceCreates: [],
+    occurrenceUpdates: [],
   };
 
   const tx = {
@@ -95,7 +97,7 @@ function createHarness(options = {}) {
     },
 
     question: {
-      findFirst: async () => null,
+      findFirst: async () => options.existingQuestion ?? null,
       create: async (args) => {
         calls.questionCreate.push(args);
 
@@ -117,12 +119,12 @@ function createHarness(options = {}) {
 
     exam: {
       findUnique: async () => null,
-      findFirst: async () => ({
-        id: 'exam-created',
-        institutionId: 'institution-created',
-        postId: null,
-        name: 'BCS Preliminary',
-        examYear: 2024,
+      findFirst: async ({ where }) => ({
+        id: `exam-${where.examYear}`,
+        institutionId: where.institutionId ?? 'institution-created',
+        postId: where.postId ?? null,
+        name: where.name?.equals ?? 'BCS Preliminary',
+        examYear: where.examYear,
       }),
       create: async () => ({
         id: 'exam-created',
@@ -150,7 +152,15 @@ function createHarness(options = {}) {
 
     questionOccurrence: {
       findFirst: async () => null,
-      create: async () => ({ id: 'occurrence-created' }),
+      findMany: async () => options.existingOccurrences ?? [],
+      update: async ({ where, data }) => {
+        calls.occurrenceUpdates.push({ where, data });
+        return { id: where.id, ...data };
+      },
+      create: async ({ data }) => {
+        calls.occurrenceCreates.push(data);
+        return { id: 'occurrence-created' };
+      },
     },
   };
 
@@ -312,4 +322,64 @@ test('commit rejects unexpected final batch update failure', async () => {
     () => service.commit('batch-1', undefined, true),
     /status changed unexpectedly/i,
   );
+});
+
+test('existing Question with the same Year reuses its Occurrence when question number changes', async () => {
+  const existing = {
+    id: 'occurrence-2024',
+    questionId: 'question-existing',
+    institution: 'বাংলাদেশ সরকারি কর্ম কমিশন',
+    examName: 'BCS Preliminary',
+    examYear: 2024,
+    postName: null,
+    institutionId: 'institution-created',
+    examId: 'exam-2024',
+    postId: null,
+    questionNumber: 3,
+    isPrimary: false,
+  };
+  const row = createRow('row-same-year', {
+    ...validQuestion,
+    occurrences: [{ ...validQuestion.occurrences[0], questionNumber: 99 }],
+  });
+  const { service, calls } = createHarness({
+    rows: [row],
+    existingQuestion: { id: 'question-existing' },
+    existingOccurrences: [existing],
+  });
+
+  const result = await service.commit('batch-1', undefined, true);
+  assert.equal(result.data.importedRows, 1);
+  assert.equal(calls.occurrenceCreates.length, 0);
+  assert.equal(calls.occurrenceUpdates.length, 0);
+});
+
+test('existing Question receives a separate Occurrence for a different Year', async () => {
+  const existing = {
+    id: 'occurrence-2024',
+    questionId: 'question-existing',
+    institution: 'বাংলাদেশ সরকারি কর্ম কমিশন',
+    examName: 'BCS Preliminary',
+    examYear: 2024,
+    postName: null,
+    institutionId: 'institution-created',
+    examId: 'exam-2024',
+    postId: null,
+    questionNumber: 3,
+    isPrimary: false,
+  };
+  const row = createRow('row-new-year', {
+    ...validQuestion,
+    occurrences: [{ ...validQuestion.occurrences[0], examYear: 2025 }],
+  });
+  const { service, calls } = createHarness({
+    rows: [row],
+    existingQuestion: { id: 'question-existing' },
+    existingOccurrences: [existing],
+  });
+
+  const result = await service.commit('batch-1', undefined, true);
+  assert.equal(result.data.importedRows, 1);
+  assert.equal(calls.occurrenceCreates.length, 1);
+  assert.equal(calls.occurrenceCreates[0].examYear, 2025);
 });

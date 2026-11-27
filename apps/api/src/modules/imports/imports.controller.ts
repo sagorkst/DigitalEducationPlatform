@@ -25,12 +25,14 @@ import * as XLSX from 'xlsx';
 import { simpleParser } from 'mailparser';
 
 import { ImportsService } from './imports.service';
+import { LocalStorageService } from '../users/local-storage.service';
 import { ImportsExportService } from './imports-export.service';
 import { ImportsRollbackService } from './imports-rollback.service';
 import { ImportsErrorReportService } from './imports-error-report.service';
 import { OcrService } from './ocr.service';
 import { OcrHistoryService } from './ocr-history.service';
 import { HtmlQuestionParserService } from './html-question-parser.service';
+import { ImportImageStandardizationService } from './import-image-standardization.service';
 import { CommitImportDto } from './dto/commit-import.dto';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { PermissionsGuard } from '../rbac/permissions.guard';
@@ -48,7 +50,65 @@ export class ImportsController {
     private readonly ocrService: OcrService,
     private readonly ocrHistoryService: OcrHistoryService,
     private readonly htmlQuestionParserService: HtmlQuestionParserService,
+    private readonly imageStandardizationService: ImportImageStandardizationService,
+    private readonly storage: LocalStorageService,
   ) {}
+
+  private async persistEmbeddedImages(html: string): Promise<string> {
+    // Common inline formats plus SVG/GIF are normalized to WebP by storage.
+    // Whitespace is accepted because MIME-encoded MHTML frequently wraps Base64.
+    const pattern = /data:image\/([a-z0-9.+-]+);base64,([A-Za-z0-9+/=\\\s]+)/gi;
+    const matches = Array.from(html.matchAll(pattern));
+    const stored = new Map<string, string>();
+    const apiOrigin = new URL(
+      process.env.API_BASE_URL ?? 'http://localhost:4000/api',
+    ).origin;
+
+    for (const match of matches) {
+      const dataUrl = match[0];
+      if (stored.has(dataUrl)) continue;
+
+      const encoded = match[2]
+        // MHTML producers sometimes serialize MIME line breaks as literal \n or \r\n.
+        .replace(/\\(?:r\\n|n|r)/gi, '')
+        .replace(/\s/g, '');
+      if (!encoded || encoded.length % 4 === 1 || !/^[A-Za-z0-9+/]*={0,2}$/.test(encoded)) {
+        throw new BadRequestException('An embedded HTML image contains invalid Base64 data.');
+      }
+      const buffer = Buffer.from(encoded, 'base64');
+      if (buffer.length === 0) {
+        throw new BadRequestException('An embedded HTML image contains invalid Base64 data.');
+      }
+      const publicPath = await this.storage.saveQuestionImage(buffer);
+      stored.set(dataUrl, new URL(publicPath, apiOrigin).toString());
+    }
+
+    let result = html;
+    for (const [dataUrl, publicUrl] of stored) {
+      result = result.split(dataUrl).join(publicUrl);
+    }
+
+    // Never persist large Base64 blobs or unresolved CID references in ImportRow JSON.
+    if (/data:image\//i.test(result)) {
+      throw new BadRequestException(
+        'HTML contains an unsupported or non-Base64 embedded image. Use JPEG, PNG, WebP, static GIF or SVG images.',
+      );
+    }
+    // Only image-bearing elements are required to resolve Content-IDs.
+    // MHTML commonly uses cid: for linked CSS stylesheets too.
+    const unresolvedImageCid =
+      /<(?:img|source)\b[^>]*\b(?:src|srcset|data-src|data-lazy-src|data-original|data-original-src|data-image)\s*=\s*["'][^"']*\bcid:/i.test(result) ||
+      /<image\b[^>]*\b(?:href|xlink:href)\s*=\s*["']\s*cid:/i.test(result) ||
+      /<[^>]+\bbackground\s*=\s*["']\s*cid:/i.test(result) ||
+      /<[^>]+\bstyle\s*=\s*["'][^"']*url\(\s*["']?cid:/i.test(result);
+    if (unresolvedImageCid) {
+      throw new BadRequestException(
+        'MHTML references an image attachment that is missing from the archive.',
+      );
+    }
+
+    return result;
+  }
 
   @Post('preview')
   @UseInterceptors(
@@ -101,6 +161,18 @@ export class ImportsController {
           ? mimeMessage.html
           : '';
 
+      // Resolve MHTML Content-ID images to data URLs so they remain visible
+      // after the original multipart archive has been discarded.
+      for (const attachment of mimeMessage.attachments ?? []) {
+        if (!String(attachment.contentType ?? '').toLowerCase().startsWith('image/')) continue;
+        const contentId = String(attachment.contentId ?? '').replace(/[<>]/g, '').trim();
+        if (!contentId || !Buffer.isBuffer(attachment.content)) continue;
+        const dataUrl = `data:${attachment.contentType};base64,${attachment.content.toString('base64')}`;
+        html = html.replace(/cid:[^"'\s)>]+/gi, (match) =>
+          match.toLowerCase() === `cid:${contentId.toLowerCase()}` ? dataUrl : match,
+        );
+      }
+
       if (!html.trim()) {
         throw new BadRequestException(
           'No HTML content was found inside the MHTML file.',
@@ -118,6 +190,10 @@ export class ImportsController {
       );
     }
 
+    // Convert embedded HTML data-URI images and MHTML CID attachments into
+    // permanent optimized files. Import rows then store stable URLs, not base64 blobs.
+    html = await this.persistEmbeddedImages(html);
+
     const parsed = this.htmlQuestionParserService.parse(
       html,
       file.originalname,
@@ -129,30 +205,74 @@ export class ImportsController {
       );
     }
 
+    const allImageReferences = parsed.questions.flatMap((question) => [
+      ...question.imageReferences,
+      ...question.options.flatMap((option) => option.imageReferences),
+    ]);
+    const imageAnalyses = await this.imageStandardizationService.analyzeReferences(allImageReferences);
+    const imageAnalysisBySource = new Map(imageAnalyses.map((item) => [item.source, item]));
+
     const rows = parsed.questions.map((question) => {
-      const options = question.options.map((option, index) => ({
-        label: option.label,
-        optionText: option.text,
-        isCorrect: option.isCorrect === true,
-        sortOrder: index + 1,
-      }));
+      const questionReplacement = this.imageStandardizationService.applySafeTextReplacement(
+        question.questionText,
+        question.imageReferences,
+        imageAnalyses,
+      );
+      const options = question.options.map((option, index) => {
+        const replacement = this.imageStandardizationService.applySafeTextReplacement(
+          option.text,
+          option.imageReferences,
+          imageAnalyses,
+        );
+        return {
+          label: option.label,
+          optionText: replacement.text,
+          imageReferences: replacement.imageReferences,
+          isCorrect: option.isCorrect === true,
+          sortOrder: index + 1,
+        };
+      });
 
       const correctOption = question.options.find(
         (option) =>
           option.label.toUpperCase() ===
           (question.correctAnswer ?? '').toUpperCase(),
       );
+      const replacedImageSources = new Set([
+        ...questionReplacement.replacements.map((item) => item.source),
+        ...question.options.flatMap((option, index) =>
+          option.imageReferences.filter(
+            (source) => !options[index]?.imageReferences.includes(source),
+          ),
+        ),
+      ]);
+      const imageStandardizationWarnings = [
+        ...questionReplacement.replacements,
+        ...question.imageReferences
+          .filter((source) => !replacedImageSources.has(source))
+          .map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+        ...question.options.flatMap((option) =>
+          option.imageReferences
+            .filter((source) => !replacedImageSources.has(source))
+            .map((source) => imageAnalysisBySource.get(source)).filter(Boolean),
+        ),
+      ].filter((item) => item && item.status !== 'REPLACED');
 
       return {
-        questionText: question.questionText,
+        questionText: questionReplacement.text,
+        imageReferences: questionReplacement.imageReferences,
         questionType: question.questionType,
         subject: question.subject ?? '',
         topic: question.topic ?? '',
         difficulty: 'MEDIUM',
         status: 'DRAFT',
-        ...(question.questionType === 'MCQ' ? { options } : {}),
+        ...(options.length > 0 ? { options } : {}),
         ...(correctOption
-          ? { correctAnswer: correctOption.text }
+          ? {
+              correctAnswer:
+                options.find((option) => option.label.toUpperCase() === correctOption.label.toUpperCase())?.optionText ||
+                correctOption.text,
+            }
           : {}),
         ...(question.explanation
           ? { explanation: question.explanation }
@@ -169,9 +289,29 @@ export class ImportsController {
         htmlImportMetadata: {
           sourceUrl: question.sourceUrl,
           sourceQuestionId: question.sourceQuestionId,
-          imageReferences: question.imageReferences,
+          imageReferences: questionReplacement.imageReferences,
+          optionImageReferences: options.map((option) => ({
+            label: option.label,
+            imageReferences: option.imageReferences,
+          })),
           confidence: question.confidence,
-          warnings: question.warnings,
+          warnings: [
+            ...question.warnings,
+            ...imageStandardizationWarnings.map((item: any) => item.reason),
+          ],
+          imageStandardization: {
+            policy: 'HIGH_CONFIDENCE_TEXT_AUTO_CONVERSION',
+            analyses: [
+              ...questionReplacement.replacements,
+              ...question.options.flatMap((option) =>
+                this.imageStandardizationService.applySafeTextReplacement(
+                  option.text,
+                  option.imageReferences,
+                  imageAnalyses,
+                ).replacements,
+              ),
+            ],
+          },
         },
       };
     });
@@ -516,9 +656,35 @@ export class ImportsController {
       rowIds?: unknown;
       applyTo?: unknown;
       overwriteExisting?: unknown;
+      setAsPrimary?: unknown;
     },
   ) {
     return this.importsService.applyBatchMetadata(id, body);
+  }
+
+  @Put(':id/duplicate-review')
+  @HttpCode(HttpStatus.OK)
+  reviewDuplicates(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() body: { rowIds?: unknown; action?: unknown },
+  ) {
+    if (
+      !Array.isArray(body.rowIds) ||
+      body.rowIds.length === 0 ||
+      body.rowIds.some((rowId) => typeof rowId !== 'string')
+    ) {
+      throw new BadRequestException('Select at least one duplicate row.');
+    }
+
+    if (body.action !== 'PASS' && body.action !== 'RECHECK') {
+      throw new BadRequestException('Duplicate review action must be PASS or RECHECK.');
+    }
+
+    return this.importsService.reviewDuplicates(
+      id,
+      body.rowIds as string[],
+      body.action,
+    );
   }
 
   @Put(':id/rows/:rowId')

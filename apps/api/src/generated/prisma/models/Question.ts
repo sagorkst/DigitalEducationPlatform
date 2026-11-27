@@ -442,8 +442,8 @@ export type QuestionCreateInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -472,8 +472,8 @@ export type QuestionUncheckedCreateInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -562,8 +562,8 @@ export type QuestionCreateManyInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -907,8 +907,8 @@ export type QuestionCreateWithoutSubjectRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -936,8 +936,8 @@ export type QuestionUncheckedCreateWithoutSubjectRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1017,8 +1017,8 @@ export type QuestionCreateWithoutTopicRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1046,8 +1046,8 @@ export type QuestionUncheckedCreateWithoutTopicRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1101,8 +1101,8 @@ export type QuestionCreateWithoutOptionsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1130,8 +1130,8 @@ export type QuestionUncheckedCreateWithoutOptionsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1233,8 +1233,8 @@ export type QuestionCreateWithoutOccurrencesInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1262,8 +1262,8 @@ export type QuestionUncheckedCreateWithoutOccurrencesInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1365,8 +1365,8 @@ export type QuestionCreateWithoutHistoriesInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1394,8 +1394,8 @@ export type QuestionUncheckedCreateWithoutHistoriesInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1497,8 +1497,8 @@ export type QuestionCreateWithoutDuplicateAsAInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1526,8 +1526,8 @@ export type QuestionUncheckedCreateWithoutDuplicateAsAInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1560,8 +1560,8 @@ export type QuestionCreateWithoutDuplicateAsBInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1589,8 +1589,8 @@ export type QuestionUncheckedCreateWithoutDuplicateAsBInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1761,8 +1761,8 @@ export type QuestionCreateWithoutTagsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1790,8 +1790,8 @@ export type QuestionUncheckedCreateWithoutTagsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1893,8 +1893,8 @@ export type QuestionCreateWithoutReviewsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -1922,8 +1922,8 @@ export type QuestionUncheckedCreateWithoutReviewsInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -2025,8 +2025,8 @@ export type QuestionCreateManySubjectRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null
@@ -2127,8 +2127,8 @@ export type QuestionCreateManyTopicRefInput = {
   optionC?: string | null
   optionD?: string | null
   correctAnswer?: string | null
-  subject: string
-  topic: string
+  subject?: string
+  topic?: string
   explanation?: string | null
   difficulty?: $Enums.Difficulty
   repeatGroupId?: string | null

@@ -10,6 +10,7 @@ import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateQuestionDto } from './dto/create-question.dto';
 import { UpdateQuestionDto } from './dto/update-question.dto';
+import { OccurrenceIdentityService } from '../occurrences/occurrence-identity.service';
 
 @Injectable()
 export class QuestionsService {
@@ -55,24 +56,93 @@ export class QuestionsService {
       examId?: string;
       postId?: string;
       sourceDocumentId?: string;
+      isPrimary?: boolean;
     },
   ) {
+    if (
+      occurrence.examYear !== undefined &&
+      occurrence.examYear !== null &&
+      (!Number.isInteger(occurrence.examYear) ||
+        occurrence.examYear < 1900 ||
+        occurrence.examYear > 2100)
+    ) {
+      throw new BadRequestException('Exam Year must be between 1900 and 2100.');
+    }
+
+    let source = occurrence.source ?? null;
+    if (occurrence.sourceDocumentId) {
+      const document = await tx.sourceDocument.findUnique({
+        where: { id: occurrence.sourceDocumentId },
+        select: { id: true, title: true },
+      });
+      if (!document) {
+        throw new BadRequestException('Selected Source Document does not exist.');
+      }
+      source = document.title;
+    }
+
     if (!occurrence.examId) {
-      // Legacy text-based occurrence remains supported.
+      let institution = occurrence.institution?.trim() || null;
+      let postName = occurrence.postName?.trim() || null;
+
+      if (occurrence.institutionId) {
+        const institutionRecord = await tx.institution.findUnique({
+          where: { id: occurrence.institutionId },
+          select: { id: true, name: true, isActive: true },
+        });
+        if (!institutionRecord) {
+          throw new BadRequestException('Selected Institution does not exist.');
+        }
+        if (!institutionRecord.isActive) {
+          throw new BadRequestException('Selected Institution is inactive.');
+        }
+        if (
+          institution &&
+          OccurrenceIdentityService.normalize(institution) !==
+            OccurrenceIdentityService.normalize(institutionRecord.name)
+        ) {
+          throw new BadRequestException(
+            'The supplied Institution name does not match the selected Institution.',
+          );
+        }
+        institution = institutionRecord.name;
+      }
+
+      if (occurrence.postId) {
+        const post = await tx.post.findUnique({
+          where: { id: occurrence.postId },
+          select: { id: true, name: true },
+        });
+        if (!post) {
+          throw new BadRequestException('Selected Post does not exist.');
+        }
+        if (
+          postName &&
+          OccurrenceIdentityService.normalize(postName) !==
+            OccurrenceIdentityService.normalize(post.name)
+        ) {
+          throw new BadRequestException(
+            'The supplied Post name does not match the selected Post.',
+          );
+        }
+        postName = post.name;
+      }
+
       return {
-        institution: occurrence.institution,
-        examName: occurrence.examName,
-        examYear: occurrence.examYear,
-        postName: occurrence.postName,
-        department: occurrence.department,
-        questionNumber: occurrence.questionNumber,
-        source: occurrence.source,
-        sourcePage: occurrence.sourcePage,
-        sourceUrl: occurrence.sourceUrl,
-        institutionId: occurrence.institutionId,
+        institution,
+        examName: occurrence.examName?.trim() || null,
+        examYear: occurrence.examYear ?? null,
+        postName,
+        department: occurrence.department ?? null,
+        questionNumber: occurrence.questionNumber ?? null,
+        source,
+        sourcePage: occurrence.sourcePage ?? null,
+        sourceUrl: occurrence.sourceUrl ?? null,
+        institutionId: occurrence.institutionId ?? null,
         examId: undefined,
-        postId: occurrence.postId,
-        sourceDocumentId: occurrence.sourceDocumentId,
+        postId: occurrence.postId ?? null,
+        sourceDocumentId: occurrence.sourceDocumentId ?? null,
+        isPrimary: occurrence.isPrimary ?? false,
       };
     }
 
@@ -87,16 +157,19 @@ export class QuestionsService {
         examYear: true,
         institutionId: true,
         postId: true,
+        institution: { select: { name: true, isActive: true } },
+        post: { select: { name: true } },
       },
     });
 
     if (!exam) {
-      throw new BadRequestException(
-        'Selected Exam does not exist.',
-      );
+      throw new BadRequestException('Selected Exam does not exist.');
     }
 
-    // Validate supplied Institution ID against the selected Exam.
+    if (exam.institution && !exam.institution.isActive) {
+      throw new BadRequestException('The selected Exam belongs to an inactive Institution.');
+    }
+
     if (
       occurrence.institutionId &&
       occurrence.institutionId !== exam.institutionId
@@ -106,7 +179,6 @@ export class QuestionsService {
       );
     }
 
-    // Validate supplied Post ID against the selected Exam.
     if (
       occurrence.postId &&
       occurrence.postId !== exam.postId
@@ -116,24 +188,49 @@ export class QuestionsService {
       );
     }
 
+    if (
+      occurrence.institution?.trim() &&
+      exam.institution?.name &&
+      OccurrenceIdentityService.normalize(occurrence.institution) !==
+        OccurrenceIdentityService.normalize(exam.institution.name)
+    ) {
+      throw new BadRequestException(
+        'The supplied Institution name does not match the selected Exam.',
+      );
+    }
+
+    if (
+      occurrence.postName?.trim() &&
+      exam.post?.name &&
+      OccurrenceIdentityService.normalize(occurrence.postName) !==
+        OccurrenceIdentityService.normalize(exam.post.name)
+    ) {
+      throw new BadRequestException(
+        'The supplied Post name does not match the selected Exam.',
+      );
+    }
+
+    if (occurrence.examYear !== exam.examYear) {
+      throw new BadRequestException(
+        'The supplied Exam Year does not match the selected Exam.',
+      );
+    }
+
     return {
-      // Preserve the supplied text values, consistent with ImportsService.
-      institution: occurrence.institution,
+      institution: exam.institution?.name ?? occurrence.institution,
       examName: exam.name,
       examYear: exam.examYear,
-      postName: occurrence.postName,
+      postName: exam.post?.name ?? occurrence.postName,
       department: occurrence.department,
       questionNumber: occurrence.questionNumber,
-      source: occurrence.source,
+      source,
       sourcePage: occurrence.sourcePage,
       sourceUrl: occurrence.sourceUrl,
-
-      // These relations are derived from the selected Exam.
       institutionId: exam.institutionId,
       examId: exam.id,
       postId: exam.postId,
-
       sourceDocumentId: occurrence.sourceDocumentId,
+      isPrimary: occurrence.isPrimary ?? false,
     };
   }
 
@@ -143,6 +240,16 @@ export class QuestionsService {
 
   async create(dto: CreateQuestionDto) {
     const questionType = dto.questionType ?? 'MCQ';
+    const questionText = String(dto.questionText ?? '').trim();
+    const hasQuestionImages = Array.isArray(dto.imageReferences) &&
+      dto.imageReferences.some((item) => typeof item === 'string' && item.trim().length > 0);
+
+    if (!questionText && !hasQuestionImages) {
+      throw new BadRequestException('Question text or at least one question image is required.');
+    }
+    if (questionText && questionText.length < 3) {
+      throw new BadRequestException('Question text must contain at least 3 characters.');
+    }
 
     if (
       questionType === 'MCQ' &&
@@ -151,6 +258,13 @@ export class QuestionsService {
       throw new BadRequestException(
         'MCQ questions must have 2 to 4 options.',
       );
+    }
+
+    if (dto.options?.some((option) =>
+      !option.optionText.trim() &&
+      !(Array.isArray(option.imageReferences) && option.imageReferences.length > 0)
+    )) {
+      throw new BadRequestException('Each option must contain text or at least one image.');
     }
 
     const questionCode = `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
@@ -232,17 +346,68 @@ export class QuestionsService {
           }
         }
 
-        // Resolve every occurrence inside the same transaction.
-        const occurrenceData = await Promise.all(
+        // Resolve and de-duplicate occurrence identities before creation.
+        // Question number is paper position metadata, never occurrence identity.
+        const resolvedOccurrences = await Promise.all(
           dto.occurrences.map((occurrence) =>
             this.resolveOccurrenceData(tx, occurrence),
           ),
         );
 
+        // Resolve known years first so a yearless row cannot be assigned
+        // arbitrarily when the same Question occurs in multiple years.
+        resolvedOccurrences.sort(
+          (left, right) =>
+            Number(right.examYear !== null && right.examYear !== undefined) -
+            Number(left.examYear !== null && left.examYear !== undefined),
+        );
+
+        const occurrenceData: Array<Record<string, any>> = [];
+
+        for (const resolved of resolvedOccurrences) {
+          const match = OccurrenceIdentityService.classify(
+            occurrenceData,
+            resolved,
+          );
+
+          if (match.kind === 'AMBIGUOUS') {
+            throw new BadRequestException(
+              'একই প্রশ্নের জন্য একাধিক অস্পষ্ট Exam Occurrence দেওয়া হয়েছে। Institution, Exam, Post ও Year যাচাই করুন।',
+            );
+          }
+
+          if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+            const target = match.occurrence;
+            for (const field of [
+              'institution', 'examName', 'postName', 'institutionId',
+              'examId', 'postId', 'department', 'questionNumber',
+              'source', 'sourcePage', 'sourceUrl', 'sourceDocumentId',
+            ]) {
+              const current = target[field];
+              const incoming = (resolved as Record<string, unknown>)[field];
+              if ((current === null || current === undefined || current === '') &&
+                  incoming !== null && incoming !== undefined && incoming !== '') {
+                target[field] = incoming;
+              }
+            }
+            target.isPrimary = target.isPrimary === true || resolved.isPrimary === true;
+            continue;
+          }
+
+          occurrenceData.push(resolved);
+        }
+
+        if (occurrenceData.filter((item) => item.isPrimary === true).length > 1) {
+          throw new BadRequestException(
+            'একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।',
+          );
+        }
+
         return tx.question.create({
           data: {
             questionCode,
             questionText: dto.questionText,
+            ...(dto.imageReferences?.length ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue } : {}),
             questionType,
 
             subject: selectedSubject?.name ?? dto.subject,
@@ -273,6 +438,7 @@ export class QuestionsService {
               create: (dto.options ?? []).map((option) => ({
                 label: option.label,
                 optionText: option.optionText,
+                ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
                 isCorrect: option.isCorrect ?? false,
                 sortOrder: option.sortOrder ?? 0,
               })),
@@ -392,7 +558,7 @@ export class QuestionsService {
         ? `exam:${occurrence.examId}`
         : `legacy:${JSON.stringify([
             institutionName.trim().toLowerCase(),
-            examName.trim().toLowerCase(),
+            (examName ?? '').trim().toLowerCase(),
             examYear,
             occurrence.postName ?? null,
             occurrence.department ?? null,
@@ -1013,6 +1179,13 @@ export class QuestionsService {
           );
         }
 
+        if (dto.options?.some((option) =>
+          !option.optionText.trim() &&
+          !(Array.isArray(option.imageReferences) && option.imageReferences.length > 0)
+        )) {
+          throw new BadRequestException('Each option must contain text or at least one image.');
+        }
+
         // Resolve Master Subject/Topic relations only when UUIDs are supplied.
         let relationSubject:
           | { id: string; name: string; isActive: boolean }
@@ -1135,6 +1308,10 @@ export class QuestionsService {
             ? { questionText: dto.questionText }
             : {}),
 
+          ...(dto.imageReferences !== undefined
+            ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue }
+            : {}),
+
           ...(dto.questionType !== undefined
             ? { questionType: dto.questionType }
             : {}),
@@ -1182,8 +1359,9 @@ export class QuestionsService {
             : {}),
         };
 
-        // Resolve new occurrences before updating.
-        const occurrenceData = dto.addOccurrences?.length
+        // Use the shared identity engine for every occurrence added by
+        // Question Edit, just as Import and Manual Add do.
+        const incomingOccurrences = dto.addOccurrences?.length
           ? await Promise.all(
               dto.addOccurrences.map((occurrence) =>
                 this.resolveOccurrenceData(tx, occurrence),
@@ -1191,34 +1369,113 @@ export class QuestionsService {
             )
           : [];
 
-        await tx.question.update({
-          where: { id },
-          data: {
-            ...updateData,
+        incomingOccurrences.sort(
+          (left, right) =>
+            Number(right.examYear !== null && right.examYear !== undefined) -
+            Number(left.examYear !== null && left.examYear !== undefined),
+        );
 
-            ...(dto.options !== undefined
-              ? {
-                  options: {
-                    deleteMany: {},
-                    create: dto.options.map((option) => ({
-                      label: option.label,
-                      optionText: option.optionText,
-                      isCorrect: option.isCorrect ?? false,
-                      sortOrder: option.sortOrder ?? 0,
-                    })),
-                  },
-                }
-              : {}),
+        if (incomingOccurrences.filter((item) => item.isPrimary === true).length > 1) {
+          throw new BadRequestException(
+            'একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।',
+          );
+        }
 
-            ...(occurrenceData.length
-              ? {
-                  occurrences: {
-                    create: occurrenceData,
-                  },
-                }
-              : {}),
-          },
-        });
+        for (const resolved of incomingOccurrences) {
+          const match = await OccurrenceIdentityService.findMatch(tx, id, resolved);
+
+          if (match.kind === 'AMBIGUOUS') {
+            throw new BadRequestException(
+              'এই প্রশ্নের জন্য একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। Institution, Exam, Post ও Year যাচাই করুন।',
+            );
+          }
+
+          if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+            const current = match.occurrence;
+            const patch: Record<string, unknown> = {};
+
+            for (const field of [
+              'institution', 'examName', 'postName', 'institutionId',
+              'examId', 'postId', 'department', 'questionNumber',
+              'source', 'sourcePage', 'sourceUrl', 'sourceDocumentId',
+            ]) {
+              const currentValue = current[field];
+              const incomingValue = (resolved as Record<string, unknown>)[field];
+              if (
+                (currentValue === null || currentValue === undefined || currentValue === '') &&
+                incomingValue !== null && incomingValue !== undefined && incomingValue !== ''
+              ) {
+                patch[field] = incomingValue;
+              }
+            }
+
+            if (
+              (current.examYear === null || current.examYear === undefined) &&
+              resolved.examYear !== null && resolved.examYear !== undefined
+            ) {
+              patch.examYear = resolved.examYear;
+            }
+
+            if (resolved.isPrimary === true) {
+              await tx.questionOccurrence.updateMany({
+                where: {
+                  questionId: id,
+                  isPrimary: true,
+                  id: { not: current.id },
+                },
+                data: { isPrimary: false },
+              });
+              if (current.isPrimary !== true) patch.isPrimary = true;
+            }
+
+            if (Object.keys(patch).length > 0) {
+              await tx.questionOccurrence.update({
+                where: { id: current.id },
+                data: patch as any,
+              });
+            }
+            continue;
+          }
+
+          if (resolved.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId: id, isPrimary: true },
+              data: { isPrimary: false },
+            });
+          }
+
+          await tx.questionOccurrence.create({
+            data: { questionId: id, ...resolved },
+          });
+        }
+
+        const questionUpdateData: Prisma.QuestionUpdateInput = {
+          ...updateData,
+          ...(dto.options !== undefined
+            ? {
+                options: {
+                  deleteMany: {},
+                  create: dto.options.map((option) => ({
+                    label: option.label,
+                    optionText: option.optionText,
+                    ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
+                    isCorrect: option.isCorrect ?? false,
+                    sortOrder: option.sortOrder ?? 0,
+                  })),
+                },
+              }
+            : {}),
+        };
+
+        // Occurrence-only edits are persisted through the shared transaction
+        // above. Do not send Prisma an empty Question update when no scalar
+        // fields or options changed.
+        if (Object.keys(questionUpdateData).length > 0) {
+          await tx.question.update({
+            where: { id },
+            data: questionUpdateData,
+          });
+        }
 
         const updated = await tx.question.findUnique({
           where: { id },
@@ -1370,6 +1627,7 @@ export class QuestionsService {
 
         type QuestionSnapshot = {
           questionText: string;
+          imageReferences?: unknown;
           questionType:
             | 'MCQ'
             | 'TRUE_FALSE'
@@ -1386,6 +1644,7 @@ export class QuestionsService {
           options: {
             label: string;
             optionText: string;
+            imageReferences?: unknown;
             isCorrect: boolean;
             sortOrder: number;
           }[];
@@ -1403,6 +1662,8 @@ export class QuestionsService {
             examId?: string | null;
             postId?: string | null;
             sourceDocumentId?: string | null;
+            isPrimary?: boolean;
+            createdAt?: string | Date;
           }[];
         };
 
@@ -1418,6 +1679,22 @@ export class QuestionsService {
             'The selected history snapshot is invalid.',
           );
         }
+
+        // Preserve the historical Primary flag. Older snapshots may contain
+        // multiple Primary flags from before the database constraint existed;
+        // in that legacy case keep the earliest-created occurrence deterministically.
+        const primaryCandidates = snapshot.occurrences
+          .map((occurrence, index) => ({
+            index,
+            createdAt: occurrence.createdAt
+              ? Date.parse(String(occurrence.createdAt))
+              : Number.MAX_SAFE_INTEGER,
+          }))
+          .filter((candidate) => snapshot.occurrences[candidate.index].isPrimary === true)
+          .sort((left, right) =>
+            left.createdAt - right.createdAt || left.index - right.index,
+          );
+        const primaryOccurrenceIndex = primaryCandidates[0]?.index ?? -1;
 
         const latestHistory = await tx.questionHistory.findFirst({
           where: { questionId: id },
@@ -1440,6 +1717,7 @@ export class QuestionsService {
           where: { id },
           data: {
             questionText: snapshot.questionText,
+            ...(Array.isArray(snapshot.imageReferences) ? { imageReferences: snapshot.imageReferences as Prisma.InputJsonValue } : {}),
             questionType: snapshot.questionType,
             subject: snapshot.subject,
             topic: snapshot.topic,
@@ -1470,6 +1748,7 @@ export class QuestionsService {
               create: snapshot.options.map((option) => ({
                 label: option.label,
                 optionText: option.optionText,
+                ...(Array.isArray(option.imageReferences) ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
                 isCorrect: option.isCorrect,
                 sortOrder: option.sortOrder,
               })),
@@ -1477,7 +1756,7 @@ export class QuestionsService {
 
             occurrences: {
               deleteMany: {},
-              create: snapshot.occurrences.map((occurrence) => ({
+              create: snapshot.occurrences.map((occurrence, index) => ({
                 institution: occurrence.institution,
                 examName: occurrence.examName,
                 examYear: occurrence.examYear,
@@ -1491,6 +1770,7 @@ export class QuestionsService {
                 examId: occurrence.examId,
                 postId: occurrence.postId,
                 sourceDocumentId: occurrence.sourceDocumentId,
+                isPrimary: index === primaryOccurrenceIndex,
               })),
             },
           },

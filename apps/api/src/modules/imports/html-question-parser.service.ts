@@ -9,6 +9,7 @@ export type HtmlImportedQuestionType =
 export interface HtmlImportedOption {
   label: string;
   text: string;
+  imageReferences: string[];
   isCorrect: boolean | null;
 }
 
@@ -120,7 +121,7 @@ export class HtmlQuestionParserService {
     // Never discard a source record because its text repeats or extraction is incomplete.
     // Duplicate classification belongs to Import Preview, where every row remains reviewable.
     const extractedCount = questions.filter(
-      (question) => question.questionText.trim().length >= 3,
+      (question) => question.questionText.trim().length >= 3 || question.imageReferences.length > 0,
     ).length;
     const skippedCount = Math.max(0, candidates.length - extractedCount);
 
@@ -174,9 +175,10 @@ export class HtmlQuestionParserService {
       $(selector).each((_, element) => {
         if (seen.has(element)) return;
 
-        const text = this.normalize($(element).text());
-
-        if (text.length < 5) return;
+        const current = $(element);
+        const text = this.normalize(current.text());
+        const hasImage = current.find('img, [style*="background-image"]').length > 0;
+        if (text.length < 5 && !hasImage) return;
 
         seen.add(element);
         found.push(element);
@@ -249,6 +251,12 @@ export class HtmlQuestionParserService {
       (option) => option.isCorrect === true,
     );
 
+    // Detect the source badge before generating parser warnings.
+    const sourceCardText = this.normalize(container.text());
+    const sourceSaysMcq =
+      /(?:🎯\s*)?MCQ\b/i.test(sourceCardText) ||
+      /\bMCQ\b/i.test(this.firstAttribute(container, ['data-question-type', 'data-type']) ?? '');
+
     const explanation = this.extractBySelectors(
       $,
       container,
@@ -270,25 +278,54 @@ export class HtmlQuestionParserService {
       '[data-topic]',
     ]);
 
-    const examReference = this.extractBySelectors($, container, [
-      '.q-exam-ref',
-      '.exam-name',
-      '.exam-reference',
-      '.question-exam',
-    ]);
+    const examReference =
+      this.extractBySelectors($, container, [
+        '.q-exam-ref',
+        '.exam-name',
+        '.exam-reference',
+        '.question-exam',
+        '.exam-title',
+        '[data-exam-name]',
+      ]) ||
+      container.find('[data-exam-name]').first().attr('data-exam-name') ||
+      this.firstAttribute(container, ['data-exam-name', 'data-exam']) ||
+      null;
 
     const examMetadata = this.extractExamMetadata(examReference);
     const examName = examMetadata.examName;
     const institution = examMetadata.institution;
     const examYear = examMetadata.examYear;
 
-    const imageReferences = this.extractImages($, container);
+    const imageContainer = container.clone();
+    imageContainer.find([
+      ...this.optionSelectors,
+      '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
+      '.question-meta',
+      '.metadata',
+      '.exam',
+    ].join(', ')).remove();
+    const imageReferences = this.extractImages($, imageContainer);
 
     const warnings: string[] = [];
 
-    if (questionText.trim().length < 3) {
+    if (questionText.trim().length < 3 && imageReferences.length === 0) {
       warnings.push(
         'Question text could not be extracted. This source record was retained for manual review.',
+      );
+    } else if (!questionText.trim() && imageReferences.length > 0) {
+      warnings.push(
+        'Question content is image-only. Verify the image visually before importing.',
+      );
+    }
+
+    if (sourceSaysMcq && options.length < 2) {
+      warnings.push(
+        'MCQ choices were not extracted as text; they may be embedded in the question image and require visual review.',
       );
     }
 
@@ -308,23 +345,26 @@ export class HtmlQuestionParserService {
       options.length === 2 &&
       options.some((o) => /^(true|false|সত্য|মিথ্যা)$/i.test(o.text));
 
+    // Preserve the source question type even when no text options can be extracted.
     const questionType: HtmlImportedQuestionType =
       options.length >= 2
         ? isTrueFalse
           ? 'TRUE_FALSE'
           : 'MCQ'
-        : 'WRITTEN';
+        : sourceSaysMcq
+          ? 'MCQ'
+          : 'WRITTEN';
 
     let confidence: 'HIGH' | 'MEDIUM' | 'LOW' = 'LOW';
 
-    if (questionText && options.length >= 2) {
+    if ((questionText || imageReferences.length > 0) && options.length >= 2) {
       confidence = explicitCorrect
         ? 'HIGH'
         : containerCorrect
           ? 'MEDIUM'
           : 'LOW';
-    } else if (questionText) {
-      confidence = 'MEDIUM';
+    } else if (questionText || imageReferences.length > 0) {
+      confidence = sourceSaysMcq && options.length < 2 ? 'LOW' : 'MEDIUM';
     }
 
     return {
@@ -348,24 +388,44 @@ export class HtmlQuestionParserService {
   }
 
   private extractQuestionText($: CheerioAPI, container: any): string {
+    let explicitQuestionElementFound = false;
+
     for (const selector of this.textSelectors) {
       const element = container.find(selector).first();
 
       if (!element.length) continue;
 
+      explicitQuestionElementFound = true;
       const text = this.cleanElement($, element);
 
       if (text.length >= 3) return text;
     }
+
+    // An explicit question element containing only an SVG is an image-only
+    // question. Do not fall back to the whole card: that would turn badges,
+    // row numbers and topic labels into fake question text.
+    if (explicitQuestionElementFound) return '';
 
     const clone = container.clone();
 
     clone.find([
       ...this.optionSelectors,
       ...this.explanationSelectors,
+      '.q-index-badge',
       '.q-subject-pill',
       '.q-topic-pill',
       '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
+      '.exam',
+      '.metadata',
+      '.question-meta',
+      '.question-header',
+      '.question-badges',
+      'header',
       'button',
       'script',
       'style',
@@ -373,7 +433,12 @@ export class HtmlQuestionParserService {
       'nav',
     ].join(', ')).remove();
 
-    return this.normalize(clone.text());
+    const fallbackText = this.normalize(clone.text());
+    if (/^(?:[০-৯0-9]{1,3}\s*)?(?:🎯\s*)?MCQ(?:\s*↳.*)?(?:\s*[✓✔]\s*[কখগঘA-D]\)?)?$/iu.test(fallbackText)) {
+      return '';
+    }
+
+    return fallbackText;
   }
 
   private extractOptions(
@@ -397,7 +462,8 @@ export class HtmlQuestionParserService {
         ? this.cleanElement($, textElement)
         : this.cleanElement($, option);
 
-      if (!text || text.length > 3000) return;
+      const imageReferences = this.extractImages($, option);
+      if ((!text && imageReferences.length === 0) || text.length > 3000) return;
 
       const label =
         this.firstAttribute(option, [
@@ -441,6 +507,7 @@ export class HtmlQuestionParserService {
       result.push({
         label: this.normalize(label),
         text,
+        imageReferences,
         isCorrect,
       });
     });
@@ -468,21 +535,48 @@ export class HtmlQuestionParserService {
 
   private extractImages($: CheerioAPI, container: any): string[] {
     const images = new Set<string>();
+    const add = (value: string | undefined) => {
+      const source = String(value ?? '').trim();
+      if (!source || /^javascript:/i.test(source)) return;
+      if (/^data:image\//i.test(source) && source.length > 13_500_000) return;
+      const baseHref = $('base[href]').first().attr('href');
+      if (baseHref && !/^(?:data:|https?:|cid:|\/\/)/i.test(source)) {
+        try {
+          images.add(new URL(source, baseHref).toString());
+          return;
+        } catch {
+          // Keep the original source when the base URL is malformed.
+        }
+      }
+      images.add(source);
+    };
 
     container.find('img').each((_index: number, element: any) => {
       const image = $(element);
+      for (const attribute of ['src', 'data-src', 'data-lazy-src', 'data-original', 'data-original-src', 'data-image']) {
+        add(image.attr(attribute));
+      }
+      const srcset = image.attr('srcset') || image.attr('data-srcset');
+      if (srcset) {
+        for (const candidate of srcset.split(',')) {
+          add(candidate.trim().split(/\s+/)[0]);
+        }
+      }
+    });
 
-      const source =
-        image.attr('src') ||
-        image.attr('data-src') ||
-        image.attr('data-lazy-src');
+    // BDNiyog exports diagrams and image-based MCQs as SVG <image> nodes,
+    // not HTML <img> tags. Read both modern and legacy SVG href attributes.
+    container.find('svg image, image').each((_index: number, element: any) => {
+      const image = $(element);
+      for (const attribute of ['href', 'xlink:href', 'src', 'data-src']) {
+        add(image.attr(attribute));
+      }
+    });
 
-      if (
-        source &&
-        !source.startsWith('data:') &&
-        !source.startsWith('javascript:')
-      ) {
-        images.add(source.trim());
+    container.find('[style*="background-image"]').each((_index: number, element: any) => {
+      const style = String($(element).attr('style') ?? '');
+      for (const match of style.matchAll(/url\((?:['"])?(.*?)(?:['"])?\)/gi)) {
+        add(match[1]);
       }
     });
 
@@ -595,6 +689,14 @@ export class HtmlQuestionParserService {
       '.correct-check-icon',
       '.share-btn',
       '.bookmark-btn',
+      '.q-exam-ref',
+      '.exam-name',
+      '.exam-reference',
+      '.question-exam',
+      '.exam-title',
+      '[data-exam-name]',
+      '.question-meta',
+      '.metadata',
     ].join(', ')).remove();
 
     return this.normalize(clone.text());

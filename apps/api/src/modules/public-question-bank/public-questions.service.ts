@@ -626,6 +626,7 @@ export class PublicQuestionsService {
         select: {
           id: true,
           questionText: true,
+          imageReferences: true,
           questionType: true,
           subject: true,
           topic: true,
@@ -640,6 +641,7 @@ export class PublicQuestionsService {
               id: true,
               label: true,
               optionText: true,
+              imageReferences: true,
               sortOrder: true,
             },
           },
@@ -747,6 +749,7 @@ export class PublicQuestionsService {
       select: {
         id: true,
         questionText: true,
+        imageReferences: true,
         questionType: true,
         subject: true,
         topic: true,
@@ -763,6 +766,7 @@ export class PublicQuestionsService {
             id: true,
             label: true,
             optionText: true,
+            imageReferences: true,
             isCorrect: true,
             sortOrder: true,
           },

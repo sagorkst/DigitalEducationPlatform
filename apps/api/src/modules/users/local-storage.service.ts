@@ -1,4 +1,4 @@
-﻿import {
+import {
   BadRequestException,
   Injectable,
 } from '@nestjs/common';
@@ -72,6 +72,63 @@ export class LocalStorageService {
     await writeFile(filePath, output, { flag: 'wx' });
 
     return `/uploads/avatars/${filename}`;
+  }
+
+  async saveQuestionImage(buffer: Buffer): Promise<string> {
+    if (!buffer || buffer.length === 0) {
+      throw new BadRequestException('An image file is required.');
+    }
+
+    let output: Buffer;
+
+    try {
+      const image = sharp(buffer, {
+        limitInputPixels: 100_000_000,
+        failOn: 'error',
+      });
+      const metadata = await image.metadata();
+
+      // Accept every format this Sharp/libvips build can decode, then normalize
+      // it to WebP. MHTML MIME labels do not always match the actual image bytes.
+      if (!metadata.format) {
+        throw new BadRequestException(
+          'The uploaded content does not contain a recognizable image format.',
+        );
+      }
+
+      if (metadata.pages && metadata.pages > 1) {
+        throw new BadRequestException(
+          'Animated images are not supported.',
+        );
+      }
+
+      // Keep diagrams and option images uncropped; preserve their aspect ratio.
+      output = await image
+        .rotate()
+        .resize(2400, 2400, {
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .webp({ quality: 88, effort: 5 })
+        .toBuffer();
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+
+      throw new BadRequestException(
+        'The image could not be decoded. It may be corrupt, truncated, unsupported by the installed image codecs, or exceed the 100-megapixel safety limit.',
+      );
+    }
+
+    const imageDirectory = resolve(this.storageRoot, 'questions');
+    await mkdir(imageDirectory, { recursive: true });
+
+    const filename = `${randomUUID()}.webp`;
+    const filePath = resolve(imageDirectory, filename);
+    await writeFile(filePath, output, { flag: 'wx' });
+
+    return `/uploads/questions/${filename}`;
   }
 
   async deleteAvatar(publicPath: string | null | undefined): Promise<void> {

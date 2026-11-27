@@ -32,6 +32,8 @@ type Question = {
   topic: string;
   questionType: string;
   question: string;
+  imageReferences: string[];
+  optionImages: Record<string, string[]>;
   optionA: string;
   optionB: string;
   optionC: string;
@@ -47,6 +49,7 @@ type Question = {
 type ApiOption = {
   label: string;
   optionText: string;
+  imageReferences?: string[];
   isCorrect: boolean;
   sortOrder?: number;
 };
@@ -64,6 +67,7 @@ type ApiQuestion = {
   id: string;
   questionCode?: string;
   questionText: string;
+  imageReferences?: string[];
   questionType: string;
   subject: string;
   topic: string;
@@ -185,6 +189,8 @@ function mapQuestion(item: ApiQuestion): Question {
     topic: item.topic ?? "",
     questionType: fromApiType(item.questionType),
     question: item.questionText,
+    imageReferences: Array.isArray(item.imageReferences) ? item.imageReferences.filter((value): value is string => typeof value === "string") : [],
+    optionImages: Object.fromEntries(options.map((option) => [option.label, Array.isArray(option.imageReferences) ? option.imageReferences.filter((value): value is string => typeof value === "string") : []])),
     optionA: optionText("A"),
     optionB: optionText("B"),
     optionC: optionText("C"),
@@ -919,6 +925,9 @@ export default function QuestionBankPage() {
     }
 
     const isMcq = form.questionType === "MCQ";
+    const editingQuestion = editingId
+      ? questions.find((question) => question.id === editingId)
+      : undefined;
 
     const optionValues = [
       ["A", form.optionA],
@@ -929,10 +938,11 @@ export default function QuestionBankPage() {
 
     const options = isMcq
       ? optionValues
-          .filter(([, value]) => value.trim())
+          .filter(([label, value]) => value.trim() || (editingQuestion?.optionImages[label]?.length ?? 0) > 0)
           .map(([label, optionText], index) => ({
             label,
             optionText: optionText.trim(),
+            imageReferences: editingQuestion?.optionImages[label] ?? [],
             isCorrect: form.correctAnswer === label,
             sortOrder: index,
           }))
@@ -1355,6 +1365,7 @@ export default function QuestionBankPage() {
                       <p className={`${tableDensity === "ultra" ? "mt-1 text-sm" : "mt-2 font-bold text-slate-900"}`}>
                         {q.question}
                       </p>
+                      {q.imageReferences.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{q.imageReferences.map((source, imageIndex) => <img key={imageIndex} src={source} alt={`Question image ${imageIndex + 1}`} loading="lazy" className="max-h-28 max-w-48 rounded border border-slate-200 object-contain" />)}</div>}
 
                       <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                         {q.institution && <span>{q.institution}</span>}
@@ -2064,7 +2075,7 @@ export default function QuestionBankPage() {
                       <tr key={q.id} className={`transition hover:bg-blue-50/50 ${(allMatchingSelected && !excludedQuestionIds.includes(q.id)) || selectedQuestionIds.includes(q.id) ? "bg-blue-50/70" : "bg-white"} ${tableDensity === "ultra" ? "text-xs" : "text-sm"}`}>
                         <td className="px-3 py-2"><input type="checkbox" aria-label="প্রশ্ন নির্বাচন করুন" checked={allMatchingSelected ? !excludedQuestionIds.includes(q.id) : selectedQuestionIds.includes(q.id)} disabled={bulkSaving} onChange={() => { if (allMatchingSelected) { setExcludedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : [...previous, q.id]); } else { setSelectedQuestionIds((previous) => previous.includes(q.id) ? previous.filter((id) => id !== q.id) : previous.length < 500 ? [...previous, q.id] : previous); } setBulkError(""); setBulkSuccess(""); }} className="h-4 w-4 accent-blue-600" /></td>
                         <td className="px-3 py-2 font-semibold text-slate-500">{((currentPage - 1) * 25 + index + 1).toLocaleString("bn-BD")}</td>
-                        <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question}</button><p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
+                        <td className="max-w-[340px] px-3 py-2"><button type="button" onClick={() => setSelected(selected === q.id ? null : q.id)} className="text-left font-semibold text-slate-900 hover:text-blue-700">{q.question || "Image-based question"}</button>{q.imageReferences.length > 0 && <div className="mt-1 flex flex-wrap gap-1">{q.imageReferences.map((source, imageIndex) => <img key={imageIndex} src={source} alt={`Question image ${imageIndex + 1}`} loading="lazy" className="max-h-16 max-w-24 rounded border border-slate-200 object-contain" />)}</div>}<p className="mt-1 text-[11px] text-slate-400">{q.questionType} · {q.difficulty} · {q.id.slice(0, 8)}</p></td>
                         <td className="px-3 py-2 text-slate-700">{q.institution || "—"}</td><td className="px-3 py-2 text-slate-700">{q.exam || "—"}{q.year ? <span className="block text-[11px] text-slate-400">{q.year}</span> : null}</td><td className="px-3 py-2 text-slate-700">{q.subject || "—"}</td><td className="px-3 py-2 text-slate-700">{q.post || "—"}</td>
                         <td className="px-3 py-2"><span className={`inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${q.status === "Published" ? "bg-emerald-100 text-emerald-800" : q.status === "Draft" ? "bg-blue-100 text-blue-800" : "bg-amber-100 text-amber-800"}`}>{q.status === "Published" ? "প্রকাশিত" : q.status === "Draft" ? "খসড়া" : q.status}</span></td>
                         <td className="px-3 py-2"><div className="flex justify-end gap-1.5"><Button size="sm" variant="outline" onClick={() => setSelected(selected === q.id ? null : q.id)}>দেখুন</Button><Button size="sm" variant="outline" onClick={() => openEditForm(q)}>সম্পাদনা</Button><Button size="sm" variant="outline" onClick={() => void deleteQuestion(q.id)} className="border-red-200 text-red-700 hover:bg-red-50">Trash</Button></div></td>
@@ -2193,23 +2204,18 @@ export default function QuestionBankPage() {
               </div>
 
               <h3 className="text-lg font-bold">
-                {selectedQuestion.question}
+                {selectedQuestion.question || "Image-based question"}
               </h3>
+              {selectedQuestion.imageReferences.length > 0 && <div className="flex flex-wrap gap-2">{selectedQuestion.imageReferences.map((source, imageIndex) => <img key={imageIndex} src={source} alt={`Question image ${imageIndex + 1}`} className="max-h-56 max-w-full rounded border border-slate-200 object-contain" />)}</div>}
 
-              {selectedQuestion.questionType === "MCQ" && (
+              {(selectedQuestion.optionA || selectedQuestion.optionB || selectedQuestion.optionC || selectedQuestion.optionD || Object.values(selectedQuestion.optionImages).some((images) => images.length > 0)) && (
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {selectedQuestion.optionA && (
-                    <p>A. {selectedQuestion.optionA}</p>
-                  )}
-                  {selectedQuestion.optionB && (
-                    <p>B. {selectedQuestion.optionB}</p>
-                  )}
-                  {selectedQuestion.optionC && (
-                    <p>C. {selectedQuestion.optionC}</p>
-                  )}
-                  {selectedQuestion.optionD && (
-                    <p>D. {selectedQuestion.optionD}</p>
-                  )}
+                  {(["A", "B", "C", "D"] as const).map((label) => {
+                    const text = selectedQuestion[`option${label}`];
+                    const images = selectedQuestion.optionImages[label] ?? [];
+                    if (!text && images.length === 0) return null;
+                    return <div key={label} className="rounded-lg border border-slate-200 p-3"><p className="text-sm">{label}. {text}</p>{images.length > 0 && <div className="mt-2 flex flex-wrap gap-2">{images.map((source, imageIndex) => <img key={imageIndex} src={source} alt={`Option ${label} image ${imageIndex + 1}`} className="max-h-36 max-w-full rounded border border-slate-200 object-contain" />)}</div>}</div>;
+                  })}
                 </div>
               )}
 

@@ -861,3 +861,520 @@ test('32 - Convert Prisma P2002 into ConflictException', async () => {
     ConflictException,
   );
 });
+
+
+test('manual Question creation stores one occurrence when Year and core identity match despite question-number changes', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return {
+            id: QUESTION_ID,
+            ...args.data,
+            options: args.data.options.create,
+            occurrences: args.data.occurrences.create,
+          };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  const occurrences = [
+    {
+      institution: 'PSC',
+      examName: 'BCS Preliminary',
+      examYear: 2024,
+      postName: 'Assistant Director',
+      questionNumber: 1,
+    },
+    {
+      institution: 'psc',
+      examName: 'BCS Preliminary',
+      examYear: 2024,
+      postName: 'Assistant Director',
+      questionNumber: 99,
+    },
+  ];
+
+  await service.create({
+    questionText: 'What is the capital?',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    occurrences,
+    options: validOptions,
+  });
+
+  assert.equal(questionCreateArgs.data.occurrences.create.length, 1);
+  assert.equal(questionCreateArgs.data.occurrences.create[0].questionNumber, 1);
+});
+
+test('manual Question creation preserves separate Year occurrences and a single Primary', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return { id: QUESTION_ID, ...args.data };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await service.create({
+    questionText: 'What is the capital?',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    occurrences: [
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Assistant Director',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Assistant Director',
+        isPrimary: true,
+      },
+    ],
+    options: validOptions,
+  });
+
+  assert.equal(questionCreateArgs.data.occurrences.create.length, 2);
+  assert.deepEqual(
+    questionCreateArgs.data.occurrences.create.map((item) => item.examYear),
+    [2020, 2022],
+  );
+  assert.deepEqual(
+    questionCreateArgs.data.occurrences.create.map((item) => item.isPrimary),
+    [false, true],
+  );
+});
+
+test('manual Question creation rejects multiple Primary Occurrences', async () => {
+  let createCalled = false;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async () => {
+          createCalled = true;
+          return { id: QUESTION_ID };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await assert.rejects(
+    service.create({
+      questionText: 'What is the capital?',
+      questionType: 'MCQ',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [
+        {
+          institution: 'PSC',
+          examName: 'BCS Preliminary',
+          examYear: 2020,
+          postName: 'Assistant Director',
+          isPrimary: true,
+        },
+        {
+          institution: 'PSC',
+          examName: 'BCS Preliminary',
+          examYear: 2022,
+          postName: 'Assistant Director',
+          isPrimary: true,
+        },
+      ],
+      options: validOptions,
+    }),
+    BadRequestException,
+  );
+  assert.equal(createCalled, false);
+});
+
+test('manual Question creation accepts image-only question content', async () => {
+  let questionCreateArgs;
+  const prisma = {
+    $transaction: async (callback) => callback({
+      question: {
+        create: async (args) => {
+          questionCreateArgs = args;
+          return { id: QUESTION_ID, ...args.data };
+        },
+      },
+    }),
+  };
+
+  const service = createService(prisma);
+  await service.create({
+    questionText: '',
+    imageReferences: ['/uploads/questions/diagram.webp'],
+    questionType: 'WRITTEN',
+    subject: 'Science',
+    topic: 'Diagrams',
+    occurrences: [],
+  });
+
+  assert.equal(questionCreateArgs.data.questionText, '');
+  assert.deepEqual(
+    questionCreateArgs.data.imageReferences,
+    ['/uploads/questions/diagram.webp'],
+  );
+});
+
+
+// ==========================================
+// OCCURRENCE IDENTITY DURING QUESTION UPDATE
+// ==========================================
+
+function createQuestionUpdateHarness(existingOccurrences = []) {
+  const occurrences = existingOccurrences.map((item) => ({ ...item }));
+  const calls = {
+    occurrenceCreates: [],
+    occurrenceUpdates: [],
+    occurrenceUpdateMany: [],
+    questionUpdates: [],
+  };
+  let nextOccurrenceId = 1;
+
+  const tx = {
+    question: {
+      findFirst: async () => createExistingQuestion({ occurrences: occurrences.map((item) => ({ ...item })) }),
+      update: async ({ data }) => {
+        calls.questionUpdates.push(data);
+        return { id: QUESTION_ID };
+      },
+      findUnique: async () => createExistingQuestion({ occurrences: occurrences.map((item) => ({ ...item })) }),
+    },
+    questionHistory: {
+      findFirst: async () => null,
+      create: async ({ data }) => data,
+    },
+    questionOccurrence: {
+      findMany: async () => occurrences.map((item) => ({ ...item })),
+      updateMany: async ({ where, data }) => {
+        calls.occurrenceUpdateMany.push({ where, data });
+        let count = 0;
+        for (const item of occurrences) {
+          if (item.questionId !== where.questionId) continue;
+          if (where.isPrimary !== undefined && item.isPrimary !== where.isPrimary) continue;
+          if (where.id?.not && item.id === where.id.not) continue;
+          Object.assign(item, data);
+          count++;
+        }
+        return { count };
+      },
+      update: async ({ where, data }) => {
+        const item = occurrences.find((candidate) => candidate.id === where.id);
+        if (!item) throw new Error('Occurrence not found in test harness.');
+        calls.occurrenceUpdates.push({ where, data });
+        Object.assign(item, data);
+        return item;
+      },
+      create: async ({ data }) => {
+        const item = { id: `created-occurrence-${nextOccurrenceId++}`, questionId: QUESTION_ID, ...data };
+        calls.occurrenceCreates.push({ data });
+        occurrences.push(item);
+        return item;
+      },
+    },
+  };
+
+  return {
+    service: createService({ $transaction: async (callback) => callback(tx) }),
+    calls,
+    occurrences,
+  };
+}
+
+function updateOccurrence(overrides = {}) {
+  return {
+    id: 'occurrence-2020',
+    questionId: QUESTION_ID,
+    institution: 'PSC',
+    examName: 'BCS Preliminary',
+    examYear: 2020,
+    postName: 'Computer Typist',
+    institutionId: null,
+    examId: null,
+    postId: null,
+    department: null,
+    questionNumber: 1,
+    source: null,
+    sourcePage: null,
+    sourceUrl: null,
+    sourceDocumentId: null,
+    isPrimary: false,
+    ...overrides,
+  };
+}
+
+test('Question update reuses the same Exam/Year Occurrence when question number changes', async () => {
+  const { service, calls, occurrences } = createQuestionUpdateHarness([updateOccurrence()]);
+  await service.update(QUESTION_ID, {
+    addOccurrences: [{
+      institution: 'PSC', examName: 'BCS Preliminary', examYear: 2020,
+      postName: 'Computer Typist', questionNumber: 99,
+    }],
+  });
+  assert.equal(calls.occurrenceCreates.length, 0);
+  assert.equal(calls.occurrenceUpdates.length, 0);
+  assert.equal(occurrences.length, 1);
+  assert.equal(occurrences[0].questionNumber, 1);
+});
+
+test('Question update creates a separate Occurrence for a different Year', async () => {
+  const { service, calls, occurrences } = createQuestionUpdateHarness([updateOccurrence()]);
+  await service.update(QUESTION_ID, {
+    addOccurrences: [{
+      institution: 'PSC', examName: 'BCS Preliminary', examYear: 2022,
+      postName: 'Computer Typist', questionNumber: 1,
+    }],
+  });
+  assert.equal(calls.occurrenceCreates.length, 1);
+  assert.deepEqual(occurrences.map((item) => item.examYear).sort(), [2020, 2022]);
+});
+
+test('Question update promotes a matching Occurrence and demotes the previous Primary', async () => {
+  const { service, calls, occurrences } = createQuestionUpdateHarness([
+    updateOccurrence({ id: 'occurrence-2020', examYear: 2020, questionNumber: 3, isPrimary: true }),
+    updateOccurrence({ id: 'occurrence-2022', examYear: 2022, questionNumber: 8 }),
+  ]);
+  await service.update(QUESTION_ID, {
+    addOccurrences: [{
+      institution: 'PSC', examName: 'BCS Preliminary', examYear: 2022,
+      postName: 'Computer Typist', questionNumber: 99, isPrimary: true,
+    }],
+  });
+  assert.equal(calls.occurrenceCreates.length, 0);
+  assert.equal(occurrences.find((item) => item.id === 'occurrence-2020').isPrimary, false);
+  assert.equal(occurrences.find((item) => item.id === 'occurrence-2022').isPrimary, true);
+  assert.equal(occurrences.length, 2);
+});
+
+test('Question update rejects a yearless Occurrence when multiple years share the same core identity', async () => {
+  const { service, calls } = createQuestionUpdateHarness([
+    updateOccurrence({ examYear: 2020 }),
+    updateOccurrence({ id: 'occurrence-2022', examYear: 2022 }),
+  ]);
+  await assert.rejects(
+    service.update(QUESTION_ID, {
+      addOccurrences: [{
+        institution: 'PSC', examName: 'BCS Preliminary', examYear: null,
+        postName: 'Computer Typist',
+      }],
+    }),
+    BadRequestException,
+  );
+  assert.equal(calls.occurrenceCreates.length, 0);
+});
+
+test('Manual Question creation checks known years before yearless source rows', async () => {
+  let createCalled = false;
+  const service = createService({
+    $transaction: async (callback) => callback({
+      question: { create: async () => { createCalled = true; return { id: QUESTION_ID }; } },
+    }),
+  });
+  await assert.rejects(
+    service.create({
+      questionText: 'What is the capital?',
+      questionType: 'WRITTEN',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [
+        { institution: 'PSC', examName: 'BCS Preliminary', examYear: null, postName: 'Computer Typist' },
+        { institution: 'PSC', examName: 'BCS Preliminary', examYear: 2020, postName: 'Computer Typist' },
+        { institution: 'PSC', examName: 'BCS Preliminary', examYear: 2022, postName: 'Computer Typist' },
+      ],
+    }),
+    BadRequestException,
+  );
+  assert.equal(createCalled, false);
+});
+
+
+// ==========================================
+// HISTORY RESTORE PRESERVES PRIMARY OCCURRENCE
+// ==========================================
+
+function historySnapshotWithOccurrences(occurrences) {
+  return {
+    questionText: 'Historical question text',
+    questionType: 'MCQ',
+    subject: 'General Knowledge',
+    topic: 'Geography',
+    correctAnswer: 'A',
+    explanation: null,
+    difficulty: 'MEDIUM',
+    status: 'DRAFT',
+    options: validOptions,
+    occurrences,
+  };
+}
+
+function createHistoryRestoreHarness(snapshot) {
+  let updateArgs;
+  const tx = {
+    question: {
+      findFirst: async () => createExistingQuestion(),
+      update: async ({ data }) => {
+        updateArgs = data;
+        return { id: QUESTION_ID };
+      },
+    },
+    questionHistory: {
+      findUnique: async () => ({ snapshot }),
+      findFirst: async () => null,
+      create: async ({ data }) => data,
+    },
+  };
+  const service = createService({
+    $transaction: async (callback) => callback(tx),
+  });
+  return { service, getUpdateArgs: () => updateArgs };
+}
+
+test('history restore preserves the saved Primary Occurrence', async () => {
+  const { service, getUpdateArgs } = createHistoryRestoreHarness(
+    historySnapshotWithOccurrences([
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Computer Typist',
+        isPrimary: false,
+        createdAt: '2020-01-01T00:00:00.000Z',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2022-01-01T00:00:00.000Z',
+      },
+    ]),
+  );
+
+  await service.restoreHistory(QUESTION_ID, 1);
+  assert.deepEqual(
+    getUpdateArgs().occurrences.create.map((item) => item.isPrimary),
+    [false, true],
+  );
+});
+
+test('history restore normalizes legacy snapshots containing multiple Primary Occurrences without deleting rows', async () => {
+  const { service, getUpdateArgs } = createHistoryRestoreHarness(
+    historySnapshotWithOccurrences([
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2020,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2020-01-01T00:00:00.000Z',
+      },
+      {
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2022,
+        postName: 'Computer Typist',
+        isPrimary: true,
+        createdAt: '2022-01-01T00:00:00.000Z',
+      },
+    ]),
+  );
+
+  await service.restoreHistory(QUESTION_ID, 1);
+  const restored = getUpdateArgs().occurrences.create;
+  assert.equal(restored.length, 2);
+  assert.deepEqual(restored.map((item) => item.isPrimary), [true, false]);
+});
+
+
+test('Question update with only Occurrence additions skips an empty Question update', async () => {
+  const { service, calls } = createQuestionUpdateHarness([
+    updateOccurrence(),
+  ]);
+
+  await service.update(QUESTION_ID, {
+    addOccurrences: [{
+      institution: 'PSC',
+      examName: 'BCS Preliminary',
+      examYear: 2022,
+      postName: 'Computer Typist',
+    }],
+  });
+
+  assert.equal(calls.occurrenceCreates.length, 1);
+  assert.equal(calls.questionUpdates.length, 0);
+});
+
+
+test('manual Question creation rejects a missing Institution reference without an Exam ID', async () => {
+  let questionCreated = false;
+  const service = createService({
+    $transaction: async (callback) => callback({
+      institution: { findUnique: async () => null },
+      question: { create: async () => { questionCreated = true; return { id: QUESTION_ID }; } },
+    }),
+  });
+
+  await assert.rejects(
+    service.create({
+      questionText: 'Reference validation question',
+      questionType: 'WRITTEN',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [{
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2024,
+        postName: 'Computer Typist',
+        institutionId: 'institution-missing',
+      }],
+    }),
+    BadRequestException,
+  );
+  assert.equal(questionCreated, false);
+});
+
+test('manual Question creation rejects mismatched Post text and Post ID without an Exam ID', async () => {
+  let questionCreated = false;
+  const service = createService({
+    $transaction: async (callback) => callback({
+      post: { findUnique: async () => ({ id: 'post-001', name: 'Assistant Director' }) },
+      question: { create: async () => { questionCreated = true; return { id: QUESTION_ID }; } },
+    }),
+  });
+
+  await assert.rejects(
+    service.create({
+      questionText: 'Reference validation question',
+      questionType: 'WRITTEN',
+      subject: 'General Knowledge',
+      topic: 'Geography',
+      occurrences: [{
+        institution: 'PSC',
+        examName: 'BCS Preliminary',
+        examYear: 2024,
+        postName: 'Computer Typist',
+        postId: 'post-001',
+      }],
+    }),
+    BadRequestException,
+  );
+  assert.equal(questionCreated, false);
+});

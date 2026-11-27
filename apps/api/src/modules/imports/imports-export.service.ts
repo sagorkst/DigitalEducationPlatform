@@ -55,13 +55,16 @@ export class ImportsExportService {
       explanation: question.explanation,
       difficulty: question.difficulty,
       status: question.status,
+      imageReferences: question.imageReferences,
       options: question.options.map((option) => ({
         label: option.label,
         optionText: option.optionText,
+        imageReferences: option.imageReferences,
         isCorrect: option.isCorrect,
         sortOrder: option.sortOrder,
       })),
       occurrences: question.occurrences.map((occurrence) => ({
+        isPrimary: occurrence.isPrimary,
         institution: occurrence.institution,
         examName: occurrence.examName,
         examYear: occurrence.examYear,
@@ -99,6 +102,8 @@ export class ImportsExportService {
 
     const flatData = data.map((question) => ({
       ...question,
+      // CSV/XLSX cells are scalar values. Keep nested JSON round-trippable.
+      imageReferences: JSON.stringify(question.imageReferences ?? []),
       options: JSON.stringify(question.options),
       occurrences: JSON.stringify(question.occurrences),
     }));

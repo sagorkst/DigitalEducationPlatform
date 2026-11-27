@@ -8,12 +8,20 @@ import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import helmet from 'helmet';
+import { json, urlencoded } from 'express';
 
 import { AppModule } from './app.module';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    bodyParser: false,
+  });
+
+  // HTML/MHTML imports may contain embedded image data URLs. Keep JSON
+  // request limits aligned with the 10 MB import-file limit.
+  app.use(json({ limit: '20mb' }));
+  app.use(urlencoded({ extended: true, limit: '20mb' }));
 
   app.use(
     helmet({

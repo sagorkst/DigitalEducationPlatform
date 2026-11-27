@@ -8,6 +8,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CreateOccurrenceDto } from './dto/create-occurrence.dto';
 import { UpdateOccurrenceDto } from './dto/update-occurrence.dto';
+import { OccurrenceIdentityService } from './occurrence-identity.service';
 
 @Injectable()
 export class OccurrencesService {
@@ -49,9 +50,9 @@ export class OccurrencesService {
 
   private async resolveReferences(
     data: {
-      institution?: string;
-      examName?: string;
-      examYear?: number;
+      institution?: string | null;
+      examName?: string | null;
+      examYear?: number | null;
       postName?: string | null;
       source?: string | null;
       institutionId?: string | null;
@@ -188,21 +189,18 @@ export class OccurrencesService {
     // REQUIRED FIELD VALIDATION
     // ==========================================
 
-    if (!institution?.trim() || !examName?.trim()) {
-      throw new BadRequestException(
-        'Institution এবং Exam Name আবশ্যক।',
-      );
+    if (institution !== undefined && institution !== null && !institution.trim()) {
+      institution = null;
     }
 
-    if (
-      examYear === undefined ||
-      !Number.isInteger(examYear) ||
-      examYear < 1900 ||
-      examYear > 2100
-    ) {
-      throw new BadRequestException(
-        'সঠিক Exam Year প্রদান করতে হবে।',
-      );
+    if (examName !== undefined && examName !== null && !examName.trim()) {
+      examName = null;
+    }
+
+    if (examYear !== undefined && examYear !== null && (
+      !Number.isInteger(examYear) || examYear < 1900 || examYear > 2100
+    )) {
+      throw new BadRequestException('সঠিক Exam Year প্রদান করতে হবে।');
     }
 
     return {
@@ -249,60 +247,13 @@ export class OccurrencesService {
   // DUPLICATE PROTECTION
   // ==========================================
 
-  private async ensureNoDuplicate(
-    data: {
-      questionId: string;
-      examId?: string | null;
-      examName: string;
-      institution: string;
-      examYear: number;
-      postId?: string | null;
-      postName?: string | null;
-      questionNumber?: number | null;
-    },
-    excludeId?: string,
-    db: any = this.prisma,
-  ) {
-    const where: any = {
-      questionId: data.questionId,
-      examYear: data.examYear,
-      questionNumber: data.questionNumber ?? null,
-    };
-
-    if (data.examId) {
-      where.examId = data.examId;
-      where.postId = data.postId ?? null;
-    } else {
-      where.examId = null;
-      where.institution = data.institution;
-      where.examName = data.examName;
-      where.postName = data.postName ?? null;
-      where.postId = data.postId ?? null;
-    }
-
-    if (excludeId) {
-      where.id = { not: excludeId };
-    }
-
-    const duplicate =
-      await db.questionOccurrence.findFirst({
-        where,
-        select: { id: true },
-      });
-
-    if (duplicate) {
-      throw new ConflictException(
-        'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
-      );
-    }
-  }
-
   // ==========================================
   // CREATE QUESTION OCCURRENCE
   // ==========================================
 
   async create(questionId: string, dto: CreateOccurrenceDto) {
     try {
+      let occurrenceWasPromoted = false;
       const occurrence = await this.prisma.$transaction(
         async (tx) => {
           await this.ensureQuestionExists(questionId, tx);
@@ -315,19 +266,86 @@ export class OccurrencesService {
             tx,
           );
 
-          await this.ensureNoDuplicate(
-            {
-              questionId,
-              ...references,
-              questionNumber: dto.questionNumber,
-            },
-            undefined,
+          const match = await OccurrenceIdentityService.findMatch(
             tx,
+            questionId,
+            references,
           );
+          if (match.kind === 'AMBIGUOUS') {
+            throw new ConflictException(
+              'এই প্রশ্নের একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। আগে তথ্যগুলো যাচাই করুন।',
+            );
+          }
+
+          if (match.kind === 'MATCH') {
+            if (dto.isPrimary !== true) {
+              throw new ConflictException(
+                'এই প্রশ্নের একই পরীক্ষার তথ্য আগে থেকেই যুক্ত আছে।',
+              );
+            }
+
+            // Promote the existing occurrence; do not create a duplicate row.
+            await tx.questionOccurrence.updateMany({
+              where: {
+                questionId,
+                isPrimary: true,
+                id: { not: match.occurrence.id },
+              },
+              data: { isPrimary: false },
+            });
+
+            occurrenceWasPromoted = true;
+            return tx.questionOccurrence.update({
+              where: { id: match.occurrence.id },
+              data: { isPrimary: true },
+              include: this.occurrenceInclude,
+            });
+          }
+
+          if (match.kind === 'ENRICH') {
+            const existing = match.occurrence;
+            const patch: Record<string, unknown> = {};
+            for (const field of [
+              'institution', 'examName', 'examYear', 'postName', 'institutionId',
+              'examId', 'postId', 'source', 'sourceDocumentId',
+            ]) {
+              const referenceValue = (references as Record<string, unknown>)[field];
+              if ((existing[field] === null || existing[field] === undefined || existing[field] === '') &&
+                  referenceValue !== null && referenceValue !== undefined && referenceValue !== '') {
+                patch[field] = referenceValue;
+              }
+            }
+            if (existing.department == null && dto.department !== undefined) patch.department = dto.department;
+            if (existing.questionNumber == null && dto.questionNumber !== undefined) patch.questionNumber = dto.questionNumber;
+            if (existing.sourcePage == null && dto.sourcePage !== undefined) patch.sourcePage = dto.sourcePage;
+            if (existing.sourceUrl == null && dto.sourceUrl !== undefined) patch.sourceUrl = dto.sourceUrl;
+            if (dto.isPrimary === true) {
+              await tx.questionOccurrence.updateMany({
+                where: { questionId, isPrimary: true },
+                data: { isPrimary: false },
+              });
+              patch.isPrimary = true;
+            } else if (dto.isPrimary !== undefined) {
+              patch.isPrimary = dto.isPrimary;
+            }
+            return tx.questionOccurrence.update({
+              where: { id: existing.id },
+              data: patch as any,
+              include: this.occurrenceInclude,
+            });
+          }
+
+          if (dto.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId, isPrimary: true },
+              data: { isPrimary: false },
+            });
+          }
 
           return tx.questionOccurrence.create({
             data: {
               questionId,
+              isPrimary: dto.isPrimary ?? false,
               institution: references.institution,
               examName: references.examName,
               examYear: references.examYear,
@@ -349,7 +367,9 @@ export class OccurrencesService {
 
       return {
         success: true,
-        message: 'Question occurrence created successfully.',
+        message: occurrenceWasPromoted
+          ? 'Existing Question occurrence promoted to Primary successfully.'
+          : 'Question occurrence created successfully.',
         data: occurrence,
       };
     } catch (error) {
@@ -555,10 +575,14 @@ export class OccurrencesService {
           const references = await this.resolveReferences(
             {
               institution:
-                dto.institution ?? existing.institution,
+                dto.institution !== undefined
+                  ? dto.institution
+                  : existing.institution,
 
               examName:
-                dto.examName ?? existing.examName,
+                dto.examName !== undefined
+                  ? dto.examName
+                  : existing.examName,
 
               examYear: requestedExamYear,
 
@@ -594,24 +618,32 @@ export class OccurrencesService {
             tx,
           );
 
-          const questionNumber =
-            dto.questionNumber !== undefined
-              ? dto.questionNumber
-              : existing.questionNumber;
-
-          await this.ensureNoDuplicate(
-            {
-              questionId: existing.questionId,
-              ...references,
-              questionNumber,
-            },
-            id,
+          const identityMatch = await OccurrenceIdentityService.findMatch(
             tx,
+            existing.questionId,
+            references,
+            id,
           );
+
+          if (identityMatch.kind !== 'CREATE') {
+            throw new ConflictException(
+              identityMatch.kind === 'AMBIGUOUS'
+                ? 'একই পরীক্ষার তথ্যের একাধিক Occurrence পাওয়া গেছে। আগে Duplicate তথ্য সমাধান করুন।'
+                : 'এই প্রশ্নের একই পরীক্ষার Occurrence আগে থেকেই যুক্ত আছে।',
+            );
+          }
+
+          if (dto.isPrimary === true) {
+            await tx.questionOccurrence.updateMany({
+              where: { questionId: existing.questionId, isPrimary: true, id: { not: id } },
+              data: { isPrimary: false },
+            });
+          }
 
           return tx.questionOccurrence.update({
             where: { id },
             data: {
+              ...(dto.isPrimary !== undefined && { isPrimary: dto.isPrimary }),
               institution: references.institution,
               examName: references.examName,
               examYear: references.examYear,

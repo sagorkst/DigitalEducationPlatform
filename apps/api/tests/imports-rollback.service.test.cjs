@@ -67,6 +67,15 @@ function createService(options = {}) {
       findMany: async () => [],
     },
 
+    questionOccurrence: {
+      findMany: async () => options.occurrences ?? [],
+      update: async ({ where, data }) => {
+        options.occurrenceUpdates?.push({ where, data });
+        return { id: where.id, ...data };
+      },
+      deleteMany: async () => ({ count: options.deleteCount ?? 0 }),
+    },
+
     $transaction: async (callback) => callback(prisma),
   };
 
@@ -653,4 +662,168 @@ test('rollback propagates transaction errors', async () => {
     service.rollback('batch-001'),
     /Transaction failed/,
   );
+});
+
+test('rollback refuses to delete an imported occurrence that was edited after the batch', async () => {
+  let deleteCalled = false;
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['created-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service, prisma } = createService({
+    batch,
+    questions: [],
+    occurrences: [{
+      id: 'created-occurrence',
+      createdAt: new Date('2026-01-01T10:10:00.000Z'),
+      updatedAt: new Date('2026-01-01T11:01:00.000Z'),
+    }],
+    deleteCount: 1,
+  });
+  prisma.questionOccurrence.deleteMany = async () => {
+    deleteCalled = true;
+    return { count: 1 };
+  };
+
+  await assert.rejects(
+    service.rollback('batch-001'),
+    ConflictException,
+  );
+  assert.equal(deleteCalled, false);
+});
+
+test('rollback rejects when a tracked newly created occurrence is missing', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['missing-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [],
+  });
+
+  await assert.rejects(
+    service.rollback('batch-001'),
+    ConflictException,
+  );
+});
+
+test('rollback removes a newly created linked occurrence when it is unchanged', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-linked',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: ['created-occurrence'],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [{
+      id: 'created-occurrence',
+      createdAt: new Date('2026-01-01T10:10:00.000Z'),
+      updatedAt: new Date('2026-01-01T10:30:00.000Z'),
+    }],
+    deleteCount: 1,
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.rolledBackOccurrences, 1);
+});
+
+test('rollback marks a no-op imported batch as rolled back', async () => {
+  const batch = createBatch({
+    rows: [{
+      id: 'row-noop',
+      questionId: 'question-existing',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: [],
+          occurrenceSnapshots: [],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.status, 'ROLLED_BACK');
+  assert.equal(result.data.rolledBackQuestions, 0);
+  assert.equal(result.data.rolledBackOccurrences, 0);
+});
+
+test('rollback restores the previous Primary only after demoting the newly selected Primary', async () => {
+  const occurrenceUpdates = [];
+  const batch = createBatch({
+    rows: [{
+      id: 'row-link',
+      questionId: 'question-linked',
+      rawData: {
+        _importTracking: {
+          action: 'LINKED_OCCURRENCE',
+          occurrenceIds: [],
+          occurrenceSnapshots: [
+            {
+              id: 'old-primary',
+              questionId: 'question-linked',
+              data: { isPrimary: true, examYear: 2020 },
+            },
+            {
+              id: 'new-primary',
+              questionId: 'question-linked',
+              data: { isPrimary: false, examYear: 2022 },
+            },
+          ],
+        },
+      },
+    }],
+  });
+  const { service } = createService({
+    batch,
+    questions: [],
+    occurrences: [
+      { id: 'old-primary', updatedAt: new Date('2026-01-01T10:30:00.000Z') },
+      { id: 'new-primary', updatedAt: new Date('2026-01-01T10:35:00.000Z') },
+    ],
+    occurrenceUpdates,
+  });
+
+  const result = await service.rollback('batch-001');
+  assert.equal(result.data.rolledBackQuestions, 0);
+  assert.equal(result.data.restoredOccurrences, 2);
+  assert.deepEqual(
+    occurrenceUpdates.map((item) => item.where.id),
+    ['new-primary', 'old-primary'],
+  );
+  assert.equal(occurrenceUpdates[0].data.isPrimary, false);
+  assert.equal(occurrenceUpdates[1].data.isPrimary, true);
 });

@@ -8,6 +8,7 @@ import { randomBytes } from 'crypto';
 import { Prisma } from '../../generated/prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateQuestionDto } from '../questions/dto/create-question.dto';
+import { OccurrenceIdentityService } from '../occurrences/occurrence-identity.service';
 
 import { parse } from 'csv-parse/sync';
 import * as XLSX from 'xlsx';
@@ -272,6 +273,10 @@ export class ImportsService {
         }
       }
 
+      if ('imageReferences' in data) {
+        data.imageReferences = this.parseJsonValue(data.imageReferences);
+      }
+
       if ('options' in data) {
         data.options = this.parseJsonValue(data.options);
       }
@@ -284,6 +289,16 @@ export class ImportsService {
     });
   }
 
+  private hasMojibake(value: string): boolean {
+    // Common UTF-8/legacy-codepage corruption signatures seen in imported Bengali.
+    return /αª|ΓÇ|â€|ï¿½|�|Ã[\u0080-\u00BF]|Â[\u0080-\u00BF]/u.test(value);
+  }
+
+  private isQuestionCardMetadata(value: string): boolean {
+    const text = value.replace(/\s+/g, ' ').trim();
+    return /^(?:[০-৯0-9]{1,3}\s*)?🎯\s*MCQ\s+↳.+[✓✔]\s*[কখগঘA-D]\)?$/iu.test(text);
+  }
+
   private validateRow(data: ImportData): string[] {
     const errors: string[] = [];
 
@@ -291,26 +306,39 @@ export class ImportsService {
     const subject = data.subject;
     const topic = data.topic;
 
-    if (
-      typeof questionText !== 'string' ||
-      !questionText.trim()
-    ) {
-      errors.push('Question text is required.');
-    } else if (questionText.trim().length < 3) {
+    const questionImages = data.imageReferences;
+    const hasQuestionImages = Array.isArray(questionImages) &&
+      questionImages.some((item) => typeof item === 'string' && item.trim().length > 0);
+
+    if (typeof questionText !== 'string' || (!questionText.trim() && !hasQuestionImages)) {
+      errors.push('Question text or at least one question image is required.');
+    } else if (questionText.trim() && questionText.trim().length < 3) {
       errors.push('Question text must contain at least 3 characters.');
     } else if (questionText.length > 1000) {
       errors.push('Question text cannot exceed 1000 characters.');
     }
 
-    if (typeof subject !== 'string' || !subject.trim()) {
-      errors.push('Subject is required.');
-    } else if (subject.length > 200) {
+    if (typeof questionText === 'string' && questionText.trim()) {
+      if (this.hasMojibake(questionText)) {
+        errors.push('Question text appears to contain corrupted character encoding. Review the source text before importing.');
+      }
+      if (this.isQuestionCardMetadata(questionText)) {
+        errors.push('Question text contains source-card labels instead of the actual question. Review or re-extract this row.');
+      }
+    }
+    if (questionImages !== undefined && (!Array.isArray(questionImages) || questionImages.some((item) => typeof item !== 'string'))) {
+      errors.push('Question image references must be an array of strings.');
+    }
+
+    if (subject !== undefined && subject !== null && typeof subject !== 'string') {
+      errors.push('Subject must be text.');
+    } else if (typeof subject === 'string' && subject.length > 200) {
       errors.push('Subject cannot exceed 200 characters.');
     }
 
-    if (typeof topic !== 'string' || !topic.trim()) {
-      errors.push('Topic is required.');
-    } else if (topic.length > 200) {
+    if (topic !== undefined && topic !== null && typeof topic !== 'string') {
+      errors.push('Topic must be text.');
+    } else if (typeof topic === 'string' && topic.length > 200) {
       errors.push('Topic cannot exceed 200 characters.');
     }
 
@@ -352,8 +380,8 @@ export class ImportsService {
       if (!Array.isArray(options)) {
         errors.push('Options must be an array.');
       } else {
-        if (options.length < 2 || options.length > 4) {
-          errors.push('MCQ options must contain 2 to 4 items.');
+        if (options.length > 4) {
+          errors.push('A maximum of 4 options is allowed.');
         }
 
         const labels = new Set<string>();
@@ -385,11 +413,17 @@ export class ImportsService {
             labels.add(label);
           }
 
-          if (
-            typeof item.optionText !== 'string' ||
-            !item.optionText.trim()
-          ) {
-            errors.push(`Option ${index + 1} requires option text.`);
+          const optionImages = item.imageReferences;
+          const hasOptionImages = Array.isArray(optionImages) &&
+            optionImages.some((image) => typeof image === 'string' && image.trim().length > 0);
+          if ((typeof item.optionText !== 'string' || !item.optionText.trim()) && !hasOptionImages) {
+            errors.push(`Option ${index + 1} requires option text or at least one image.`);
+          }
+          if (typeof item.optionText === 'string' && item.optionText.trim() && this.hasMojibake(item.optionText)) {
+            errors.push(`Option ${index + 1} appears to contain corrupted character encoding.`);
+          }
+          if (optionImages !== undefined && (!Array.isArray(optionImages) || optionImages.some((image) => typeof image !== 'string'))) {
+            errors.push(`Option ${index + 1} image references must be an array of strings.`);
           }
 
           if (
@@ -403,98 +437,33 @@ export class ImportsService {
 
         });
       }
-    } else if (questionType === 'MCQ') {
-      errors.push('MCQ questions require options.');
     }
 
     const occurrences = data.occurrences;
-
-    if (!Array.isArray(occurrences) || occurrences.length < 1) {
-      errors.push('At least one occurrence is required.');
-    } else {
+    if (occurrences !== undefined && occurrences !== null && !Array.isArray(occurrences)) {
+      errors.push('Occurrences must be an array.');
+    } else if (Array.isArray(occurrences)) {
       occurrences.forEach((occurrence, index) => {
-        if (
-          typeof occurrence !== 'object' ||
-          occurrence === null ||
-          Array.isArray(occurrence)
-        ) {
+        if (!occurrence || typeof occurrence !== 'object' || Array.isArray(occurrence)) {
           errors.push(`Occurrence ${index + 1} is invalid.`);
           return;
         }
-
         const item = occurrence as ImportData;
-        const hasExamId =
-          typeof item.examId === 'string' && item.examId.trim() !== '';
-
-        if (
-          typeof item.institution !== 'string' ||
-          !item.institution.trim()
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: institution is required.`,
-          );
-        }
-
-        // Exam-linked occurrences get examName and examYear
-        // directly from the Exam record.
-        if (!hasExamId) {
-          if (
-            typeof item.examName !== 'string' ||
-            !item.examName.trim()
-          ) {
-            errors.push(
-              `Occurrence ${index + 1}: exam name is required.`,
-            );
+        for (const [field, label] of [['institution', 'Institution'], ['examName', 'Exam name'], ['postName', 'Post name']] as const) {
+          if (item[field] !== undefined && item[field] !== null && typeof item[field] !== 'string') {
+            errors.push(`Occurrence ${index + 1}: ${label} must be text.`);
           }
-
+        }
+        if (item.examYear !== undefined && item.examYear !== null && String(item.examYear).trim() !== '') {
           const year = Number(item.examYear);
-
-          if (
-            !Number.isInteger(year) ||
-            year < 1900 ||
-            year > 2100
-          ) {
-            errors.push(
-              `Occurrence ${index + 1}: exam year must be between 1900 and 2100.`,
-            );
+          if (!Number.isInteger(year) || year < 1900 || year > 2100) {
+            errors.push(`Occurrence ${index + 1}: exam year must be between 1900 and 2100.`);
           }
-        } else if (!this.isValidUuid(item.examId)) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Exam ID.`,
-          );
         }
-
-        if (
-          item.institutionId !== undefined &&
-          item.institutionId !== null &&
-          item.institutionId !== '' &&
-          !this.isValidUuid(item.institutionId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Institution ID.`,
-          );
-        }
-
-        if (
-          item.postId !== undefined &&
-          item.postId !== null &&
-          item.postId !== '' &&
-          !this.isValidUuid(item.postId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Post ID.`,
-          );
-        }
-
-        if (
-          item.sourceDocumentId !== undefined &&
-          item.sourceDocumentId !== null &&
-          item.sourceDocumentId !== '' &&
-          !this.isValidUuid(item.sourceDocumentId)
-        ) {
-          errors.push(
-            `Occurrence ${index + 1}: invalid Source Document ID.`,
-          );
+        for (const [field, label] of [['examId', 'Exam ID'], ['institutionId', 'Institution ID'], ['postId', 'Post ID'], ['sourceDocumentId', 'Source Document ID']] as const) {
+          if (item[field] !== undefined && item[field] !== null && item[field] !== '' && !this.isValidUuid(item[field])) {
+            errors.push(`Occurrence ${index + 1}: invalid ${label}.`);
+          }
         }
       });
     }
@@ -525,70 +494,154 @@ export class ImportsService {
   ): Promise<string[]> {
     const errors: string[] = [];
 
-    if (!Array.isArray(data.occurrences)) {
-      return errors;
-    }
-
-    for (let index = 0; index < data.occurrences.length; index++) {
-      const occurrence = data.occurrences[index];
-
-      if (
-        typeof occurrence !== 'object' ||
-        occurrence === null ||
-        Array.isArray(occurrence)
-      ) {
-        continue;
-      }
-
-      const item = occurrence as ImportData;
-
-      if (
-        typeof item.examId !== 'string' ||
-        !item.examId.trim() ||
-        !this.isValidUuid(item.examId)
-      ) {
-        continue;
-      }
-
-      const exam = await this.prisma.exam.findUnique({
-        where: {
-          id: item.examId,
-        },
-        select: {
-          id: true,
-          institutionId: true,
-          postId: true,
-          name: true,
-          examYear: true,
-        },
-      });
-
-      if (!exam) {
-        errors.push(
-          `Occurrence ${index + 1}: selected Exam does not exist.`,
-        );
-        continue;
-      }
-
-      if (
-        item.institutionId &&
-        item.institutionId !== exam.institutionId
-      ) {
-        errors.push(
-          `Occurrence ${index + 1}: Institution ID does not match the selected Exam.`,
-        );
-      }
-
-      if (
-        item.postId &&
-        item.postId !== exam.postId
-      ) {
-        errors.push(
-          `Occurrence ${index + 1}: Post ID does not match the selected Exam.`,
-        );
+    if (data.subjectId !== undefined && data.subjectId !== null && data.subjectId !== '') {
+      if (!this.isValidUuid(data.subjectId)) {
+        errors.push('Invalid Subject ID.');
+      } else {
+        const subject = await this.prisma.subject.findFirst({
+          where: { id: data.subjectId, isActive: true },
+          select: { id: true, name: true, isActive: true },
+        });
+        if (!subject) {
+          errors.push('Selected Subject does not exist or is inactive.');
+        } else if (typeof data.subject === 'string' && data.subject.trim() &&
+            OccurrenceIdentityService.normalize(data.subject) !==
+              OccurrenceIdentityService.normalize(subject.name)) {
+          errors.push('Subject name does not match the selected Subject ID.');
+        }
       }
     }
 
+    if (data.topicId !== undefined && data.topicId !== null && data.topicId !== '') {
+      if (!this.isValidUuid(data.topicId)) {
+        errors.push('Invalid Topic ID.');
+      } else {
+        const topic = await this.prisma.topic.findFirst({
+          where: { id: data.topicId, isActive: true },
+          include: {
+            subject: { select: { id: true, name: true, isActive: true } },
+          },
+        });
+        if (!topic || !topic.subject.isActive) {
+          errors.push('Selected Topic does not exist or its Subject is inactive.');
+        } else {
+          if (data.subjectId && data.subjectId !== topic.subjectId) {
+            errors.push('Selected Topic does not belong to the selected Subject.');
+          }
+          if (typeof data.topic === 'string' && data.topic.trim() &&
+              OccurrenceIdentityService.normalize(data.topic) !==
+                OccurrenceIdentityService.normalize(topic.name)) {
+            errors.push('Topic name does not match the selected Topic ID.');
+          }
+        }
+      }
+    }
+
+    if (Array.isArray(data.occurrences)) {
+      for (let index = 0; index < data.occurrences.length; index++) {
+        const occurrence = data.occurrences[index];
+        if (!occurrence || typeof occurrence !== 'object' || Array.isArray(occurrence)) continue;
+        const item = occurrence as ImportData;
+        const hasExamId = typeof item.examId === 'string' &&
+          item.examId.trim() !== '' && this.isValidUuid(item.examId);
+
+        if (item.sourceDocumentId) {
+          if (!this.isValidUuid(item.sourceDocumentId)) {
+            errors.push(`Occurrence ${index + 1}: invalid Source Document ID.`);
+          } else {
+            const document = await this.prisma.sourceDocument.findUnique({
+              where: { id: item.sourceDocumentId },
+              select: { id: true },
+            });
+            if (!document) errors.push(`Occurrence ${index + 1}: selected Source Document does not exist.`);
+          }
+        }
+
+        if (hasExamId) {
+          const exam = await this.prisma.exam.findUnique({
+            where: { id: item.examId as string },
+            select: {
+              id: true,
+              institutionId: true,
+              postId: true,
+              name: true,
+              examYear: true,
+              institution: { select: { id: true, name: true, isActive: true } },
+              post: { select: { id: true, name: true } },
+            },
+          });
+          if (!exam) {
+            errors.push(`Occurrence ${index + 1}: selected Exam does not exist.`);
+            continue;
+          }
+          if (exam.institution && !exam.institution.isActive) {
+            errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
+          }
+          if (item.institutionId && item.institutionId !== exam.institutionId) {
+            errors.push(`Occurrence ${index + 1}: Institution ID does not match the selected Exam.`);
+          }
+          if (item.postId && item.postId !== exam.postId) {
+            errors.push(`Occurrence ${index + 1}: Post ID does not match the selected Exam.`);
+          }
+          if (typeof item.institution === 'string' && item.institution.trim() &&
+              exam.institution?.name &&
+              OccurrenceIdentityService.normalize(item.institution) !==
+                OccurrenceIdentityService.normalize(exam.institution.name)) {
+            errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Exam.`);
+          }
+          if (typeof item.postName === 'string' && item.postName.trim() &&
+              exam.post?.name &&
+              OccurrenceIdentityService.normalize(item.postName) !==
+                OccurrenceIdentityService.normalize(exam.post.name)) {
+            errors.push(`Occurrence ${index + 1}: Post name does not match the selected Exam.`);
+          }
+          if (typeof item.examName === 'string' && item.examName.trim() &&
+              OccurrenceIdentityService.normalize(item.examName) !==
+                OccurrenceIdentityService.normalize(exam.name)) {
+            errors.push(`Occurrence ${index + 1}: Exam name does not match the selected Exam ID.`);
+          }
+          if (item.examYear !== undefined && item.examYear !== null &&
+              String(item.examYear).trim() !== '' && Number(item.examYear) !== exam.examYear) {
+            errors.push(`Occurrence ${index + 1}: Exam Year does not match the selected Exam.`);
+          }
+          continue;
+        }
+
+        if (typeof item.institutionId === 'string' && item.institutionId.trim() &&
+            this.isValidUuid(item.institutionId)) {
+          const institution = await this.prisma.institution.findUnique({
+            where: { id: item.institutionId },
+            select: { id: true, name: true, isActive: true },
+          });
+          if (!institution) {
+            errors.push(`Occurrence ${index + 1}: selected Institution does not exist.`);
+          } else {
+            if (!institution.isActive) {
+              errors.push(`Occurrence ${index + 1}: selected Institution is inactive.`);
+            }
+            if (typeof item.institution === 'string' && item.institution.trim() &&
+                OccurrenceIdentityService.normalize(item.institution) !==
+                  OccurrenceIdentityService.normalize(institution.name)) {
+              errors.push(`Occurrence ${index + 1}: Institution name does not match the selected Institution ID.`);
+            }
+          }
+        }
+
+        if (typeof item.postId === 'string' && item.postId.trim() && this.isValidUuid(item.postId)) {
+          const post = await this.prisma.post.findUnique({
+            where: { id: item.postId },
+            select: { id: true, name: true },
+          });
+          if (!post) {
+            errors.push(`Occurrence ${index + 1}: selected Post does not exist.`);
+          } else if (typeof item.postName === 'string' && item.postName.trim() &&
+              OccurrenceIdentityService.normalize(item.postName) !==
+                OccurrenceIdentityService.normalize(post.name)) {
+            errors.push(`Occurrence ${index + 1}: Post name does not match the selected Post ID.`);
+          }
+        }
+      }
+    }
     return errors;
   }
 
@@ -597,134 +650,128 @@ export class ImportsService {
    */
   private async resolveOccurrenceForImport(
     tx: Prisma.TransactionClient,
-    occurrence: CreateQuestionDto['occurrences'][number],
+    occurrence: NonNullable<CreateQuestionDto['occurrences']>[number] & { isPrimary?: boolean },
   ) {
     const institutionName = String(occurrence.institution ?? '').trim();
     const examName = String(occurrence.examName ?? '').trim();
-    const examYear = Number(occurrence.examYear);
+    const rawYear = occurrence.examYear;
+    const examYear = String(rawYear ?? '').trim() === '' ? null : Number(rawYear);
 
-    let institution = occurrence.institutionId
-      ? await tx.institution.findUnique({
-          where: { id: occurrence.institutionId },
-          select: { id: true, name: true },
-        })
-      : null;
-
-    if (occurrence.institutionId && !institution) {
-      throw new BadRequestException('Selected Institution does not exist.');
-    }
-
-    if (!institution) {
+    let institution: { id: string; name: string; isActive: boolean } | null = null;
+    if (occurrence.institutionId) {
+      institution = await tx.institution.findUnique({
+        where: { id: occurrence.institutionId },
+        select: { id: true, name: true, isActive: true },
+      });
+      if (!institution) throw new BadRequestException('Selected Institution does not exist.');
+      if (!institution.isActive) throw new BadRequestException('Selected Institution is inactive.');
+      if (institutionName && this.normalizeText(institutionName) !== this.normalizeText(institution.name)) {
+        throw new BadRequestException('Institution name does not match the selected Institution ID.');
+      }
+    } else if (institutionName) {
       institution = await tx.institution.findFirst({
         where: { name: { equals: institutionName, mode: 'insensitive' } },
-        select: { id: true, name: true },
+        select: { id: true, name: true, isActive: true },
       });
-    }
-
-    if (!institution) {
-      const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
-      institution = await tx.institution.create({
-        data: {
-          name: institutionName,
-          slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          isActive: true,
-        },
-        select: { id: true, name: true },
-      });
-    }
-
-    let post: { id: string; name: string } | null = null;
-
-    if (occurrence.postId) {
-      post = await tx.post.findUnique({
-        where: { id: occurrence.postId },
-        select: { id: true, name: true },
-      });
-      if (!post) throw new BadRequestException('Selected Post does not exist.');
-    } else if (occurrence.postName?.trim()) {
-      const postName = occurrence.postName.trim();
-      post = await tx.post.findFirst({
-        where: { name: { equals: postName, mode: 'insensitive' } },
-        select: { id: true, name: true },
-      });
-
-      if (!post) {
-        const slug = this.normalizeText(postName).replace(/\s+/g, '-').slice(0, 50) || 'post';
-        post = await tx.post.create({
-          data: {
-            name: postName,
-            slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          },
-          select: { id: true, name: true },
+      if (institution && !institution.isActive) {
+        throw new BadRequestException('Selected Institution is inactive.');
+      }
+      if (!institution) {
+        const slug = this.normalizeText(institutionName).replace(/\s+/g, '-').slice(0, 50) || 'institution';
+        institution = await tx.institution.create({
+          data: { name: institutionName, slug: `${slug}-${randomBytes(4).toString('hex')}`, isActive: true },
+          select: { id: true, name: true, isActive: true },
         });
       }
     }
 
-    let exam: {
-      id: string;
-      institutionId: string | null;
-      postId: string | null;
-      name: string;
-      examYear: number;
-    } | null = null;
+    let post: { id: string; name: string } | null = null;
+    if (occurrence.postId) {
+      post = await tx.post.findUnique({ where: { id: occurrence.postId }, select: { id: true, name: true } });
+      if (!post) throw new BadRequestException('Selected Post does not exist.');
+      if (occurrence.postName?.trim() &&
+          this.normalizeText(occurrence.postName) !== this.normalizeText(post.name)) {
+        throw new BadRequestException('Post name does not match the selected Post ID.');
+      }
+    } else if (occurrence.postName?.trim()) {
+      const postName = occurrence.postName.trim();
+      post = await tx.post.findFirst({ where: { name: { equals: postName, mode: 'insensitive' } }, select: { id: true, name: true } });
+      if (!post) {
+        const slug = this.normalizeText(postName).replace(/\s+/g, '-').slice(0, 50) || 'post';
+        post = await tx.post.create({ data: { name: postName, slug: `${slug}-${randomBytes(4).toString('hex')}` }, select: { id: true, name: true } });
+      }
+    }
 
+    let exam: { id: string; institutionId: string | null; postId: string | null; name: string; examYear: number } | null = null;
     if (occurrence.examId) {
       exam = await tx.exam.findUnique({
         where: { id: occurrence.examId },
         select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
       });
-
       if (!exam) throw new BadRequestException('Selected Exam does not exist.');
-      if (exam.institutionId && exam.institutionId !== institution.id) {
+      if (institutionName && institution &&
+          this.normalizeText(institutionName) !== this.normalizeText(institution.name)) {
+        throw new BadRequestException('Institution name does not match the selected Institution ID.');
+      }
+      if (institution && exam.institutionId && exam.institutionId !== institution.id) {
         throw new BadRequestException('Institution does not match the selected Exam.');
       }
-      if (exam.postId && post && exam.postId !== post.id) {
+      if (occurrence.postName?.trim() && post &&
+          this.normalizeText(occurrence.postName) !== this.normalizeText(post.name)) {
+        throw new BadRequestException('Post name does not match the selected Post ID.');
+      }
+      if (post && exam.postId && exam.postId !== post.id) {
         throw new BadRequestException('Post does not match the selected Exam.');
       }
-    } else {
-      if (!examName || !Number.isInteger(examYear) || examYear < 1900 || examYear > 2100) {
-        throw new BadRequestException('A valid Exam Name and Exam Year are required.');
+      if (examYear !== null && examYear !== exam.examYear) {
+        throw new BadRequestException('Exam Year does not match the selected Exam.');
       }
-
+      if (examName && this.normalizeText(examName) !== this.normalizeText(exam.name)) {
+        throw new BadRequestException('Exam name does not match the selected Exam.');
+      }
+      if (!institution && exam.institutionId) {
+        institution = await tx.institution.findUnique({
+          where: { id: exam.institutionId },
+          select: { id: true, name: true, isActive: true },
+        });
+        if (institution && !institution.isActive) {
+          throw new BadRequestException('Selected Exam belongs to an inactive Institution.');
+        }
+      }
+    } else if (examName && examYear !== null && Number.isInteger(examYear) && examYear >= 1900 && examYear <= 2100) {
       exam = await tx.exam.findFirst({
         where: {
-          institutionId: institution.id,
+          institutionId: institution?.id ?? null,
           postId: post?.id ?? null,
           examYear,
           name: { equals: examName, mode: 'insensitive' },
         },
         select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
       });
-
       if (!exam) {
         const slug = this.normalizeText(`${examName}-${examYear}`).replace(/\s+/g, '-').slice(0, 50) || 'exam';
         exam = await tx.exam.create({
-          data: {
-            institutionId: institution.id,
-            postId: post?.id ?? null,
-            name: examName,
-            examYear,
-            slug: `${slug}-${randomBytes(4).toString('hex')}`,
-          },
+          data: { institutionId: institution?.id ?? null, postId: post?.id ?? null, name: examName, examYear, slug: `${slug}-${randomBytes(4).toString('hex')}` },
           select: { id: true, institutionId: true, postId: true, name: true, examYear: true },
         });
       }
     }
 
     return {
-      institution: institution.name,
-      examName: exam.name,
-      examYear: exam.examYear,
-      postName: post?.name ?? occurrence.postName,
-      department: occurrence.department,
-      questionNumber: occurrence.questionNumber,
-      source: occurrence.source,
-      sourcePage: occurrence.sourcePage,
-      sourceUrl: occurrence.sourceUrl,
-      institutionId: institution.id,
-      examId: exam.id,
-      postId: exam.postId ?? post?.id ?? null,
-      sourceDocumentId: occurrence.sourceDocumentId,
+      institution: institution?.name ?? (institutionName || null),
+      examName: exam?.name ?? (examName || null),
+      examYear: exam?.examYear ?? (examYear !== null && Number.isInteger(examYear) ? examYear : null),
+      postName: post?.name ?? (occurrence.postName?.trim() || null),
+      department: occurrence.department ?? null,
+      questionNumber: occurrence.questionNumber ?? null,
+      source: occurrence.source ?? null,
+      sourcePage: occurrence.sourcePage ?? null,
+      sourceUrl: occurrence.sourceUrl ?? null,
+      institutionId: institution?.id ?? null,
+      examId: exam?.id ?? null,
+      postId: exam?.postId ?? post?.id ?? null,
+      sourceDocumentId: occurrence.sourceDocumentId ?? null,
+      isPrimary: occurrence.isPrimary === true,
     };
   }
   /**
@@ -739,40 +786,103 @@ export class ImportsService {
     tx: Prisma.TransactionClient,
     questionId: string,
     dto: CreateQuestionDto,
-  ): Promise<string[]> {
-    const occurrenceIds: string[] = [];
-
-    for (const occurrence of dto.occurrences ?? []) {
-      const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
-
-      const existingOccurrence = await tx.questionOccurrence.findFirst({
-        where: {
-          questionId,
-          examId: resolved.examId,
-        },
+  ): Promise<{ createdOccurrenceIds: string[]; occurrenceSnapshots: Record<string, unknown>[] }> {
+    const createdOccurrenceIds: string[] = [];
+    const snapshots = new Map<string, Record<string, unknown>>();
+    const snapshotFields = [
+      'institution', 'examName', 'examYear', 'postName', 'department',
+      'questionNumber', 'source', 'sourcePage', 'sourceUrl', 'institutionId',
+      'examId', 'postId', 'sourceDocumentId', 'isPrimary',
+    ];
+    const capture = (record: Record<string, any>) => {
+      if (snapshots.has(record.id)) return;
+      const data: Record<string, unknown> = {};
+      for (const field of snapshotFields) data[field] = record[field] ?? null;
+      snapshots.set(record.id, { id: record.id, questionId, data });
+    };
+    const demoteOtherPrimaries = async (keepId?: string) => {
+      const primaries = await tx.questionOccurrence.findMany({
+        where: { questionId, isPrimary: true },
         select: {
-          id: true,
+          id: true, questionId: true, institution: true, examName: true,
+          examYear: true, postName: true, department: true, questionNumber: true,
+          source: true, sourcePage: true, sourceUrl: true, institutionId: true,
+          examId: true, postId: true, sourceDocumentId: true, isPrimary: true,
         },
       });
+      for (const primary of primaries) {
+        if (primary.id === keepId) continue;
+        capture(primary);
+        await tx.questionOccurrence.update({ where: { id: primary.id }, data: { isPrimary: false } });
+      }
+    };
 
-      if (existingOccurrence) {
+    const primaryCount = (dto.occurrences ?? []).filter(
+      (item) => (item as typeof item & { isPrimary?: boolean }).isPrimary === true,
+    ).length;
+    if (primaryCount > 1) {
+      throw new BadRequestException('একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।');
+    }
+
+    const incomingOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    for (const occurrence of dto.occurrences ?? []) {
+      const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
+      if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+      incomingOccurrences.push(resolved);
+    }
+
+    // Resolve known years first. Otherwise a yearless row at the top of the
+    // file could be enriched with 2020 before a later 2022 row is seen,
+    // making the result depend on source row order.
+    incomingOccurrences.sort(
+      (left, right) =>
+        Number(right.examYear !== null && right.examYear !== undefined) -
+        Number(left.examYear !== null && left.examYear !== undefined),
+    );
+
+    for (const resolved of incomingOccurrences) {
+      const match = await OccurrenceIdentityService.findMatch(tx, questionId, resolved);
+      if (match.kind === 'AMBIGUOUS') {
+        throw new BadRequestException(
+          'এই প্রশ্নের জন্য একাধিক সম্ভাব্য Exam Occurrence পাওয়া গেছে। Preview-তে Institution, Exam, Post ও Year যাচাই করুন।',
+        );
+      }
+
+      if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+        const existing = match.occurrence;
+        const patch: Record<string, unknown> = {};
+        const fillFields = [
+          'institution', 'examName', 'postName', 'institutionId', 'examId',
+          'postId', 'department', 'questionNumber', 'source', 'sourcePage',
+          'sourceUrl', 'sourceDocumentId',
+        ];
+        for (const field of fillFields) {
+          const current = existing[field];
+          const next = (resolved as Record<string, unknown>)[field];
+          if ((current === null || current === undefined || current === '') &&
+              next !== null && next !== undefined && next !== '') patch[field] = next;
+        }
+        if (match.kind === 'ENRICH' && resolved.examYear !== null) patch.examYear = resolved.examYear;
+        if (resolved.isPrimary) {
+          await demoteOtherPrimaries(existing.id);
+          if (existing.isPrimary !== true) patch.isPrimary = true;
+        }
+        if (Object.keys(patch).length > 0) {
+          capture(existing);
+          await tx.questionOccurrence.update({ where: { id: existing.id }, data: patch as any });
+        }
         continue;
       }
 
-      const createdOccurrence = await tx.questionOccurrence.create({
-        data: {
-          questionId,
-          ...resolved,
-        },
-        select: {
-          id: true,
-        },
+      if (resolved.isPrimary) await demoteOtherPrimaries();
+      const created = await tx.questionOccurrence.create({
+        data: { questionId, ...resolved },
+        select: { id: true },
       });
-
-      occurrenceIds.push(createdOccurrence.id);
+      createdOccurrenceIds.push(created.id);
     }
 
-    return occurrenceIds;
+    return { createdOccurrenceIds, occurrenceSnapshots: [...snapshots.values()] };
   }
 
   private async createQuestionInTransaction(
@@ -780,15 +890,6 @@ export class ImportsService {
     dto: CreateQuestionDto,
   ) {
     const questionType = dto.questionType ?? 'MCQ';
-
-    if (
-      questionType === 'MCQ' &&
-      (!dto.options || dto.options.length < 2 || dto.options.length > 4)
-    ) {
-      throw new BadRequestException(
-        'MCQ questions must have 2 to 4 options.',
-      );
-    }
 
     const questionCode =
       `Q-${Date.now()}-${randomBytes(3).toString('hex').toUpperCase()}`;
@@ -868,20 +969,60 @@ export class ImportsService {
       }
     }
 
-    // Resolve all occurrence references inside the same transaction.
-    const resolvedOccurrences = await Promise.all(
-      dto.occurrences.map((occurrence) =>
-        this.resolveOccurrenceForImport(tx, occurrence),
-      ),
+    // Resolve all occurrence references before matching so that yearless
+    // rows can be checked against every known year in this same Question set.
+    const incomingOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    for (const occurrence of dto.occurrences ?? []) {
+      const resolved = await this.resolveOccurrenceForImport(tx, occurrence);
+      if (!resolved.institution && !resolved.examName && !resolved.examId) continue;
+      incomingOccurrences.push(resolved);
+    }
+    incomingOccurrences.sort(
+      (left, right) =>
+        Number(right.examYear !== null && right.examYear !== undefined) -
+        Number(left.examYear !== null && left.examYear !== undefined),
     );
+
+    const resolvedOccurrences: Awaited<ReturnType<ImportsService['resolveOccurrenceForImport']>>[] = [];
+    for (const resolved of incomingOccurrences) {
+      const match = OccurrenceIdentityService.classify(
+        resolvedOccurrences as unknown as Record<string, any>[],
+        resolved,
+      );
+      if (match.kind === 'AMBIGUOUS') {
+        throw new BadRequestException('একই প্রশ্নের জন্য একাধিক অস্পষ্ট Exam Occurrence পাওয়া গেছে।');
+      }
+      if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+        const target = match.occurrence as Record<string, unknown>;
+        for (const field of [
+          'institution', 'examName', 'postName', 'institutionId', 'examId',
+          'postId', 'department', 'questionNumber', 'source', 'sourcePage',
+          'sourceUrl', 'sourceDocumentId',
+        ]) {
+          if ((target[field] === null || target[field] === undefined || target[field] === '') &&
+              (resolved as Record<string, unknown>)[field] !== null &&
+              (resolved as Record<string, unknown>)[field] !== undefined) {
+            target[field] = (resolved as Record<string, unknown>)[field];
+          }
+        }
+        if (target.examYear === null || target.examYear === undefined) target.examYear = resolved.examYear;
+        target.isPrimary = target.isPrimary === true || resolved.isPrimary === true;
+        continue;
+      }
+      resolvedOccurrences.push(resolved);
+    }
+    if (resolvedOccurrences.filter((item) => item.isPrimary === true).length > 1) {
+      throw new BadRequestException('একটি Question-এর জন্য একাধিক Primary Occurrence নির্বাচন করা যাবে না।');
+    }
 
     return tx.question.create({
       data: {
         questionCode,
         questionText: dto.questionText,
+        ...(dto.imageReferences?.length ? { imageReferences: dto.imageReferences as Prisma.InputJsonValue } : {}),
         questionType,
-        subject: selectedSubject?.name ?? dto.subject,
-        topic: selectedTopic?.name ?? dto.topic,
+        subject: selectedSubject?.name ?? dto.subject ?? '',
+        topic: selectedTopic?.name ?? dto.topic ?? '',
         ...(selectedSubject
           ? { subjectRef: { connect: { id: selectedSubject.id } } }
           : {}),
@@ -897,6 +1038,7 @@ export class ImportsService {
           create: (dto.options ?? []).map((option) => ({
             label: option.label,
             optionText: option.optionText,
+            ...(option.imageReferences?.length ? { imageReferences: option.imageReferences as Prisma.InputJsonValue } : {}),
             isCorrect: option.isCorrect ?? false,
             sortOrder: option.sortOrder ?? 0,
           })),
@@ -964,6 +1106,7 @@ export class ImportsService {
     let duplicateRows = 0;
 
     const seenQuestions = new Set<string>();
+    const seenImageQuestions = new Set<string>();
 
     try {
       for (let index = 0; index < rows.length; index++) {
@@ -984,30 +1127,42 @@ export class ImportsService {
           rowStatus = 'INVALID';
           invalidRows++;
         } else {
-          const questionText = String(row.questionText);
+          const questionText = String(row.questionText ?? '');
           const normalized = this.normalizeText(questionText);
+          const questionImages = Array.isArray(row.imageReferences)
+            ? row.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+            : [];
+          const imageFingerprint = questionImages.length > 0
+            ? questionImages.map((item) => item.trim()).sort().join('|')
+            : '';
 
-          if (seenQuestions.has(normalized)) {
+          if ((normalized && seenQuestions.has(normalized)) || (imageFingerprint && seenImageQuestions.has(imageFingerprint))) {
             rowStatus = 'DUPLICATE';
             errors.push(
               'Duplicate question found within this import file.',
             );
             duplicateRows++;
           } else {
-            seenQuestions.add(normalized);
+            if (normalized) seenQuestions.add(normalized);
+            if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
 
-            const existing = await this.prisma.question.findFirst({
-              where: {
-                deletedAt: null,
-                questionText: {
-                  equals: questionText,
-                  mode: 'insensitive',
-                },
-              },
-              select: {
-                id: true,
-              },
-            });
+            const existing = normalized
+              ? await this.prisma.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    questionText: { equals: questionText, mode: 'insensitive' },
+                  },
+                  select: { id: true },
+                })
+              : questionImages.length > 0
+                ? await this.prisma.question.findFirst({
+                    where: {
+                      deletedAt: null,
+                      imageReferences: { equals: questionImages as Prisma.InputJsonValue },
+                    },
+                    select: { id: true },
+                  })
+                : null;
 
             if (existing) {
               rowStatus = 'DUPLICATE';
@@ -1164,6 +1319,7 @@ export class ImportsService {
     let invalidRows = 0;
     let duplicateRows = 0;
     const seenQuestions = new Set<string>();
+    const seenImageQuestions = new Set<string>();
 
     for (const row of rows) {
       const data =
@@ -1185,26 +1341,53 @@ export class ImportsService {
         rowStatus = 'INVALID';
         invalidRows++;
       } else {
-        const questionText = String(data.questionText);
-        const normalized = this.normalizeText(questionText);
+        const reviewOverride =
+          data._importReviewOverride &&
+          typeof data._importReviewOverride === 'object' &&
+          !Array.isArray(data._importReviewOverride)
+            ? (data._importReviewOverride as Record<string, unknown>)
+            : undefined;
 
-        if (seenQuestions.has(normalized)) {
+        const questionText = String(data.questionText ?? '');
+        const normalized = this.normalizeText(questionText);
+        const questionImages = Array.isArray(data.imageReferences)
+          ? data.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          : [];
+        const imageFingerprint = questionImages.length > 0
+          ? questionImages.map((item) => item.trim()).sort().join('|')
+          : '';
+        const isDuplicateInBatch =
+          (normalized.length > 0 && seenQuestions.has(normalized)) ||
+          (imageFingerprint.length > 0 && seenImageQuestions.has(imageFingerprint));
+
+        // Approved rows still become comparison candidates for subsequent rows.
+        if (normalized) seenQuestions.add(normalized);
+        if (imageFingerprint) seenImageQuestions.add(imageFingerprint);
+
+        if (reviewOverride?.duplicate === 'PASS') {
+          validRows++;
+        } else if (isDuplicateInBatch) {
           rowStatus = 'DUPLICATE';
           errors.push('Duplicate question found within this import file.');
           duplicateRows++;
         } else {
-          seenQuestions.add(normalized);
-
-          const existing = await tx.question.findFirst({
-            where: {
-              deletedAt: null,
-              questionText: {
-                equals: questionText,
-                mode: 'insensitive',
-              },
-            },
-            select: { id: true },
-          });
+          const existing = normalized
+            ? await tx.question.findFirst({
+                where: {
+                  deletedAt: null,
+                  questionText: { equals: questionText, mode: 'insensitive' },
+                },
+                select: { id: true },
+              })
+            : questionImages.length > 0
+              ? await tx.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    imageReferences: { equals: questionImages as Prisma.InputJsonValue },
+                  },
+                  select: { id: true },
+                })
+              : null;
 
           if (existing) {
             rowStatus = 'DUPLICATE';
@@ -1243,6 +1426,7 @@ export class ImportsService {
   async applyBatchMetadata(
     batchId: string,
     metadata: {
+      setAsPrimary?: unknown;
       institution?: unknown;
       examName?: unknown;
       examYear?: unknown;
@@ -1279,6 +1463,11 @@ export class ImportsService {
       }
     }
 
+    const setAsPrimary = metadata.setAsPrimary === true;
+    if (metadata.setAsPrimary !== undefined && typeof metadata.setAsPrimary !== 'boolean') {
+      throw new BadRequestException('setAsPrimary must be a boolean.');
+    }
+
     const suppliedOccurrences = metadata.occurrences;
     if (suppliedOccurrences !== undefined && !Array.isArray(suppliedOccurrences)) {
       throw new BadRequestException('Occurrences must be an array.');
@@ -1311,12 +1500,6 @@ export class ImportsService {
             cleaned[key] = number;
           }
         }
-        if (!cleaned.examId && !cleaned.examName) {
-          throw new BadRequestException(`Occurrence ${index + 1} requires examName or examId.`);
-        }
-        if (!cleaned.institution && !cleaned.institutionId && !common.institution) {
-          throw new BadRequestException(`Occurrence ${index + 1} requires institution or institutionId.`);
-        }
         if (cleaned.examYear === undefined && common.examYear !== undefined) {
           cleaned.examYear = common.examYear;
         }
@@ -1339,6 +1522,20 @@ export class ImportsService {
     const hasCommonMetadata = Object.values(common).some((value) => value !== undefined);
     if (!hasCommonMetadata && cleanOccurrences.length === 0) {
       throw new BadRequestException('Provide at least one metadata field or exam occurrence.');
+    }
+    if (setAsPrimary) {
+      const primaryCandidate: Record<string, unknown> = {
+        ...common,
+        ...(cleanOccurrences[0] ?? {}),
+      };
+      const hasInstitution = Boolean(primaryCandidate.institution || primaryCandidate.institutionId);
+      const hasExam = Boolean(primaryCandidate.examName || primaryCandidate.examId);
+      const hasPost = Boolean(primaryCandidate.postName || primaryCandidate.postId);
+      const primaryYear = Number(primaryCandidate.examYear);
+      const hasYear = Number.isInteger(primaryYear) && primaryYear >= 1900 && primaryYear <= 2100;
+      if (!hasInstitution || !hasExam || !hasPost || !hasYear) {
+        throw new BadRequestException('Primary Occurrence-এর জন্য Institution, Exam, Post ও Year—চারটি তথ্যই প্রয়োজন।');
+      }
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -1371,7 +1568,30 @@ export class ImportsService {
       ) => {
         if (value === undefined) return;
         const current = target[key];
-        if (overwriteExisting || current === undefined || current === null || String(current).trim() === '') {
+        const currentIsEmpty =
+          current === undefined || current === null || String(current).trim() === '';
+        const identityChanged =
+          !currentIsEmpty &&
+          OccurrenceIdentityService.normalize(current) !==
+            OccurrenceIdentityService.normalize(value);
+
+        // The visible metadata fields are editable independently of stored IDs.
+        // When Replace changes an identity field, drop dependent IDs so commit
+        // resolves the new Institution/Post/Exam instead of failing against a
+        // stale reference that still points to the previous metadata.
+        if (overwriteExisting && identityChanged) {
+          if (key === 'institution') {
+            delete target.institutionId;
+            delete target.examId;
+          } else if (key === 'examName' || key === 'examYear') {
+            delete target.examId;
+          } else if (key === 'postName') {
+            delete target.postId;
+            delete target.examId;
+          }
+        }
+
+        if (overwriteExisting || currentIsEmpty) {
           target[key] = value;
         }
       };
@@ -1388,25 +1608,55 @@ export class ImportsService {
             )
           : [];
 
-        if (cleanOccurrences.length > 0) {
-          for (const addition of cleanOccurrences) {
-            const next = { ...common, ...addition } as Record<string, unknown>;
-            const keyFor = (item: Record<string, unknown>) =>
-              item.examId
-                ? `id:${String(item.examId).toLowerCase()}`
-                : `name:${String(item.examName ?? '').trim().toLowerCase()}|${String(item.examYear ?? '')}|${String(item.institutionId ?? item.institution ?? '').trim().toLowerCase()}`;
-            const key = keyFor(next);
-            const existing = existingOccurrences.find((item) => keyFor(item) === key);
-            if (existing) {
-              for (const [field, value] of Object.entries(next)) assignValue(existing, field, value);
-            } else {
-              existingOccurrences.push(next);
+        const additions = cleanOccurrences.length > 0
+          ? cleanOccurrences.map((item) => ({ ...common, ...item }) as Record<string, unknown>)
+          : [({ ...common } as Record<string, unknown>)];
+        let primaryTarget: Record<string, unknown> | null = null;
+
+        for (const addition of additions) {
+          const hasCore = Boolean(
+            (addition.institution || addition.institutionId) &&
+            (addition.examName || addition.examId),
+          );
+          let target: Record<string, unknown> | undefined;
+
+          if (hasCore) {
+            const match = OccurrenceIdentityService.classify(existingOccurrences, addition as any);
+            if (match.kind === 'AMBIGUOUS') {
+              throw new BadRequestException(
+                'এই Batch Metadata একাধিক Occurrence-এর সঙ্গে মিলে যাচ্ছে। Year বা Post নির্দিষ্ট করুন।',
+              );
+            }
+            if (match.kind === 'MATCH' || match.kind === 'ENRICH') {
+              target = match.occurrence;
+            }
+          } else if (existingOccurrences.length === 1) {
+            target = existingOccurrences[0];
+          } else if (existingOccurrences.length > 1) {
+            throw new BadRequestException(
+              'একাধিক Exam Occurrence থাকায় অসম্পূর্ণ Batch Metadata কোনটিতে প্রয়োগ হবে তা নির্ধারণ করা যাচ্ছে না।',
+            );
+          }
+
+          if (!target) {
+            target = { ...addition };
+            existingOccurrences.push(target);
+          } else {
+            for (const [field, value] of Object.entries(addition)) {
+              assignValue(target, field, value);
             }
           }
-        } else {
-          if (existingOccurrences.length === 0) existingOccurrences.push({});
-          const target = existingOccurrences[0];
-          for (const [field, value] of Object.entries(common)) assignValue(target, field, value);
+
+          if (setAsPrimary && addition === additions[0]) primaryTarget = target;
+        }
+
+        if (setAsPrimary) {
+          if (!primaryTarget) {
+            throw new BadRequestException('Primary Occurrence নির্ধারণ করা যায়নি।');
+          }
+          for (const occurrence of existingOccurrences) {
+            occurrence.isPrimary = occurrence === primaryTarget;
+          }
         }
 
         data.occurrences = existingOccurrences;
@@ -1420,6 +1670,77 @@ export class ImportsService {
       return {
         success: true,
         message: 'Batch metadata applied successfully.',
+        data: { batchId, updatedRows: rows.length, summary },
+      };
+    });
+  }
+
+  async reviewDuplicates(
+    batchId: string,
+    rowIds: string[],
+    action: 'PASS' | 'RECHECK',
+  ) {
+    if (!Array.isArray(rowIds) || rowIds.length === 0) {
+      throw new BadRequestException('Select at least one duplicate row.');
+    }
+
+    const uniqueRowIds = [...new Set(rowIds.filter((id) => typeof id === 'string'))];
+    if (uniqueRowIds.length === 0 || uniqueRowIds.length > 10000) {
+      throw new BadRequestException('Invalid duplicate row selection.');
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const batch = await tx.importBatch.findUnique({
+        where: { id: batchId },
+        select: { id: true, status: true },
+      });
+
+      if (!batch) throw new NotFoundException('Import batch not found.');
+      if (batch.status !== 'REVIEW') {
+        throw new BadRequestException('Duplicate review is only available while the batch is in REVIEW status.');
+      }
+
+      const rows = await tx.importRow.findMany({
+        where: {
+          batchId,
+          id: { in: uniqueRowIds },
+          status: { in: ['DUPLICATE', 'VALID'] },
+        },
+        select: { id: true, rawData: true },
+      });
+
+      if (rows.length === 0) {
+        throw new NotFoundException('No reviewable duplicate rows were found.');
+      }
+
+      for (const row of rows) {
+        const data =
+          row.rawData && typeof row.rawData === 'object' && !Array.isArray(row.rawData)
+            ? { ...(row.rawData as Record<string, unknown>) }
+            : {};
+
+        if (action === 'PASS') {
+          data._importReviewOverride = {
+            duplicate: 'PASS',
+            reviewedAt: new Date().toISOString(),
+          };
+        } else {
+          delete data._importReviewOverride;
+        }
+
+        await tx.importRow.update({
+          where: { id: row.id },
+          data: { rawData: data as Prisma.InputJsonValue },
+        });
+      }
+
+      const summary = await this.revalidateBatchRows(tx, batchId);
+
+      return {
+        success: true,
+        message: action === 'PASS'
+          ? 'Selected duplicate rows were manually approved.'
+          : 'Selected rows were returned to automatic duplicate checking.',
         data: { batchId, updatedRows: rows.length, summary },
       };
     });
@@ -1442,8 +1763,8 @@ export class ImportsService {
       throw new BadRequestException('Invalid question data.');
     }
 
-    if (!serialized || serialized.length > 500000) {
-      throw new BadRequestException('Question data exceeds the allowed size.');
+    if (!serialized || serialized.length > 15_000_000) {
+      throw new BadRequestException('Question data exceeds the 15 MB edit limit.');
     }
 
     const cleanData = JSON.parse(serialized) as ImportData;
@@ -1638,26 +1959,41 @@ export class ImportsService {
         const normalizedText = this.normalizeText(
           String(dto.questionText ?? ''),
         );
+        const imageReferences = Array.isArray(dto.imageReferences)
+          ? dto.imageReferences.filter((item): item is string => typeof item === 'string' && item.trim().length > 0)
+          : [];
+        const imageFingerprint = imageReferences.length > 0
+          ? imageReferences.map((item) => item.trim()).sort().join('|')
+          : '';
+        const identityKey = normalizedText || (imageFingerprint ? `image:${imageFingerprint}` : '');
 
         let processedQuestionId = '';
 
         await this.prisma.$transaction(async (tx) => {
-          let questionId = questionIdsByText.get(normalizedText) ?? null;
+          let questionId = identityKey ? questionIdsByText.get(identityKey) ?? null : null;
           let action: 'CREATED_QUESTION' | 'LINKED_OCCURRENCE' =
             'LINKED_OCCURRENCE';
           let occurrenceIds: string[] = [];
+          let occurrenceSnapshots: Record<string, unknown>[] = [];
 
           if (!questionId) {
-            const existingQuestion = await tx.question.findFirst({
-              where: {
-                deletedAt: null,
-                questionText: {
-                  equals: dto.questionText,
-                  mode: 'insensitive',
-                },
-              },
-              select: { id: true },
-            });
+            const existingQuestion = normalizedText
+              ? await tx.question.findFirst({
+                  where: {
+                    deletedAt: null,
+                    questionText: { equals: dto.questionText, mode: 'insensitive' },
+                  },
+                  select: { id: true },
+                })
+              : imageReferences.length > 0
+                ? await tx.question.findFirst({
+                    where: {
+                      deletedAt: null,
+                      imageReferences: { equals: imageReferences as Prisma.InputJsonValue },
+                    },
+                    select: { id: true },
+                  })
+                : null;
 
             questionId = existingQuestion?.id ?? null;
           }
@@ -1680,12 +2016,14 @@ export class ImportsService {
               (occurrence) => occurrence.id,
             );
           } else if (questionId) {
-            occurrenceIds =
+            const linked =
               await this.linkOccurrencesToExistingQuestionInTransaction(
                 tx,
                 questionId,
                 dto,
               );
+            occurrenceIds = linked.createdOccurrenceIds;
+            occurrenceSnapshots = linked.occurrenceSnapshots;
           }
 
           if (!questionId) {
@@ -1699,6 +2037,7 @@ export class ImportsService {
             _importTracking: {
               action,
               occurrenceIds,
+              occurrenceSnapshots,
             },
           } as Prisma.InputJsonValue;
 
@@ -1725,8 +2064,8 @@ export class ImportsService {
           processedQuestionId = questionId;
         });
 
-        if (processedQuestionId) {
-          questionIdsByText.set(normalizedText, processedQuestionId);
+        if (processedQuestionId && identityKey) {
+          questionIdsByText.set(identityKey, processedQuestionId);
         }
 
         importedRows++;

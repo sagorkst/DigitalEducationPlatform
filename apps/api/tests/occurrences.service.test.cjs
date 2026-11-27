@@ -30,7 +30,7 @@ function createOccurrence(overrides = {}) {
     institution: 'Bangladesh Public Service Commission',
     examName: 'BCS Preliminary',
     examYear: 2025,
-    postName: null,
+    postName: 'Assistant Director',
     department: null,
     questionNumber: null,
     source: null,
@@ -40,6 +40,7 @@ function createOccurrence(overrides = {}) {
     examId: null,
     postId: null,
     sourceDocumentId: null,
+    isPrimary: false,
     createdAt: new Date(),
     ...overrides,
   };
@@ -108,6 +109,7 @@ function createPrisma(overrides = {}) {
       findMany: async () => [],
       findUnique: async () => createOccurrence(),
       count: async () => 0,
+      updateMany: async () => ({ count: 0 }),
       create: async ({ data }) => createOccurrence(data),
       update: async ({ data }) => createOccurrence(data),
       delete: async () => createOccurrence(),
@@ -144,6 +146,7 @@ const legacyDto = {
   institution: 'Bangladesh Public Service Commission',
   examName: 'BCS Preliminary',
   examYear: 2025,
+  postName: 'Assistant Director',
 };
 
 // =====================================================
@@ -174,6 +177,33 @@ test('01 - creates occurrence successfully using legacy references', async () =>
   );
   assert.equal(createArgs.data.examName, legacyDto.examName);
   assert.equal(createArgs.data.examYear, 2025);
+});
+
+test('01b - creates a Primary Occurrence and demotes the previous primary', async () => {
+  const { service, prisma } = createService();
+  const calls = [];
+  prisma.questionOccurrence.updateMany = async (args) => {
+    calls.push({ type: 'demote', args });
+    return { count: 1 };
+  };
+  prisma.questionOccurrence.create = async ({ data }) => {
+    calls.push({ type: 'create', data });
+    return createOccurrence(data);
+  };
+
+  const result = await service.create(QUESTION_ID, {
+    ...legacyDto,
+    isPrimary: true,
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(calls[0].type, 'demote');
+  assert.deepEqual(calls[0].args.where, {
+    questionId: QUESTION_ID,
+    isPrimary: true,
+  });
+  assert.equal(calls[1].type, 'create');
+  assert.equal(calls[1].data.isPrimary, true);
 });
 
 test('02 - creates occurrence using selected Exam and its references', async () => {
@@ -375,17 +405,24 @@ test('12 - rejects missing Source Document', async () => {
   );
 });
 
-test('13 - rejects missing required Institution or Exam Name', async () => {
-  const { service } = createService();
+test('13 - accepts occurrence with incomplete optional metadata', async () => {
+  const { service, prisma } = createService();
 
-  await assert.rejects(
-    service.create(QUESTION_ID, {
-      institution: '',
-      examName: 'BCS Preliminary',
-      examYear: 2025,
-    }),
-    BadRequestException,
-  );
+  let createArgs;
+  prisma.questionOccurrence.create = async (args) => {
+    createArgs = args;
+    return createOccurrence(args.data);
+  };
+
+  const result = await service.create(QUESTION_ID, {
+    institution: '',
+    examName: 'BCS Preliminary',
+    examYear: 2025,
+  });
+
+  assert.equal(result.success, true);
+  assert.equal(createArgs.data.institution, null);
+  assert.equal(createArgs.data.examName, 'BCS Preliminary');
 });
 
 test('14 - rejects invalid Exam Year', async () => {
@@ -402,16 +439,52 @@ test('14 - rejects invalid Exam Year', async () => {
 });
 
 test('15 - rejects duplicate occurrence', async () => {
-  const { service, prisma } = createService({
-    questionOccurrence: {
-      findFirst: async () => ({ id: 'existing-occurrence' }),
-    },
-  });
+  const { service, prisma } = createService();
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'existing-occurrence' }),
+  ];
 
   await assert.rejects(
     service.create(QUESTION_ID, legacyDto),
     ConflictException,
   );
+});
+
+test('15b - detects duplicate identity despite case and whitespace differences', async () => {
+  const { service, prisma } = createService();
+
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({
+      id: 'normalized-duplicate',
+      institution: '  bangladesh   public service commission ',
+      examName: 'bcs   PRELIMINARY',
+      postName: ' assistant   director ',
+    }),
+  ];
+
+  await assert.rejects(
+    service.create(QUESTION_ID, legacyDto),
+    ConflictException,
+  );
+});
+
+test('15c - allows a new occurrence when Exam Year differs', async () => {
+  const { service, prisma } = createService();
+
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'different-year', examYear: 2024 }),
+  ];
+
+  let createCalled = false;
+  prisma.questionOccurrence.create = async ({ data }) => {
+    createCalled = true;
+    return createOccurrence(data);
+  };
+
+  const result = await service.create(QUESTION_ID, legacyDto);
+
+  assert.equal(result.success, true);
+  assert.equal(createCalled, true);
 });
 
 test('16 - converts Prisma P2002 into ConflictException', async () => {
@@ -647,15 +720,68 @@ test('27 - updates occurrence fields successfully', async () => {
   );
 });
 
+test('27a - update rejects an existing identity even when question number differs', async () => {
+  const { service, prisma } = createService();
+  prisma.questionOccurrence.findUnique = async () => createOccurrence();
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'occurrence-duplicate', questionNumber: 99 }),
+  ];
+
+  await assert.rejects(
+    service.update(OCCURRENCE_ID, { questionNumber: 15 }),
+    ConflictException,
+  );
+});
+
+test('27aa - update rejects an ambiguous yearless occurrence identity', async () => {
+  const { service, prisma } = createService();
+  prisma.questionOccurrence.findUnique = async () =>
+    createOccurrence({ examYear: null });
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'occurrence-2020', examYear: 2020 }),
+    createOccurrence({ id: 'occurrence-2022', examYear: 2022 }),
+  ];
+
+  await assert.rejects(
+    service.update(OCCURRENCE_ID, { department: 'Administration' }),
+    ConflictException,
+  );
+});
+
+test('27b - setting an occurrence Primary demotes only the other primary rows', async () => {
+  const { service, prisma } = createService();
+  let demotion;
+  let updateArgs;
+  prisma.questionOccurrence.findUnique = async () => createOccurrence();
+  prisma.questionOccurrence.updateMany = async (args) => {
+    demotion = args;
+    return { count: 1 };
+  };
+  prisma.questionOccurrence.update = async (args) => {
+    updateArgs = args;
+    return createOccurrence(args.data);
+  };
+
+  const result = await service.update(OCCURRENCE_ID, { isPrimary: true });
+
+  assert.equal(result.success, true);
+  assert.deepEqual(demotion.where, {
+    questionId: QUESTION_ID,
+    isPrimary: true,
+    id: { not: OCCURRENCE_ID },
+  });
+  assert.equal(updateArgs.data.isPrimary, true);
+});
+
 test('28 - rejects duplicate occurrence during update', async () => {
   const { service, prisma } = createService();
 
   prisma.questionOccurrence.findUnique = async () =>
     createOccurrence();
 
-  prisma.questionOccurrence.findFirst = async () => ({
-    id: 'another-occurrence',
-  });
+  prisma.questionOccurrence.findMany = async () => [
+    createOccurrence({ id: 'another-occurrence' }),
+  ];
 
   await assert.rejects(
     service.update(OCCURRENCE_ID, {
@@ -673,9 +799,9 @@ test('29 - excludes current occurrence from duplicate check', async () => {
   prisma.questionOccurrence.findUnique = async () =>
     createOccurrence();
 
-  prisma.questionOccurrence.findFirst = async (args) => {
+  prisma.questionOccurrence.findMany = async (args) => {
     duplicateArgs = args;
-    return null;
+    return [createOccurrence({ id: OCCURRENCE_ID })];
   };
 
   prisma.questionOccurrence.update = async ({ data }) =>
@@ -685,9 +811,7 @@ test('29 - excludes current occurrence from duplicate check', async () => {
     questionNumber: 20,
   });
 
-  assert.deepEqual(duplicateArgs.where.id, {
-    not: OCCURRENCE_ID,
-  });
+  assert.deepEqual(duplicateArgs.where, { questionId: QUESTION_ID });
 });
 
 test('30 - converts update P2002 into ConflictException', async () => {
@@ -748,4 +872,59 @@ test('32 - deletes occurrence successfully', async () => {
     result.message,
     'Question occurrence deleted successfully.',
   );
+});
+test('15d - enriches a single yearless legacy occurrence when a Year is supplied', async () => {
+  const { service, prisma } = createService();
+  const existing = createOccurrence({
+    id: 'yearless-occurrence',
+    examYear: null,
+    institutionId: null,
+    examId: null,
+    postId: null,
+  });
+  prisma.questionOccurrence.findMany = async () => [existing];
+
+  let updateArgs;
+  let createCalled = false;
+  prisma.questionOccurrence.update = async (args) => {
+    updateArgs = args;
+    return createOccurrence({ ...existing, ...args.data });
+  };
+  prisma.questionOccurrence.create = async () => {
+    createCalled = true;
+    return createOccurrence();
+  };
+
+  const result = await service.create(QUESTION_ID, legacyDto);
+  assert.equal(result.success, true);
+  assert.equal(updateArgs.where.id, 'yearless-occurrence');
+  assert.equal(updateArgs.data.examYear, 2025);
+  assert.equal(createCalled, false);
+});
+
+
+test('create promotes an existing matching Occurrence when Primary is requested instead of duplicating it', async () => {
+  const { service, prisma } = createService();
+  const matching = createOccurrence({ id: 'matching-occurrence', examYear: 2025, isPrimary: false });
+  const previousPrimary = createOccurrence({ id: 'previous-primary', examYear: 2020, isPrimary: true });
+  let demotionArgs;
+  let updateArgs;
+  let createCalled = false;
+
+  prisma.questionOccurrence.findMany = async () => [matching, previousPrimary];
+  prisma.questionOccurrence.updateMany = async (args) => { demotionArgs = args; return { count: 1 }; };
+  prisma.questionOccurrence.update = async (args) => { updateArgs = args; return { ...matching, ...args.data }; };
+  prisma.questionOccurrence.create = async () => { createCalled = true; return createOccurrence(); };
+
+  const result = await service.create(QUESTION_ID, { ...legacyDto, isPrimary: true });
+
+  assert.equal(result.success, true);
+  assert.equal(result.message, 'Existing Question occurrence promoted to Primary successfully.');
+  assert.deepEqual(demotionArgs.where, {
+    questionId: QUESTION_ID, isPrimary: true, id: { not: 'matching-occurrence' },
+  });
+  assert.deepEqual(updateArgs.where, { id: 'matching-occurrence' });
+  assert.equal(updateArgs.data.isPrimary, true);
+  assert.equal(result.data.id, 'matching-occurrence');
+  assert.equal(createCalled, false);
 });

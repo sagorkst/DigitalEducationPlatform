@@ -324,6 +324,7 @@ model Question {
   id           String       @id @default(uuid()) @db.Uuid
   questionCode String       @unique
   questionText String
+  imageReferences Json?
   questionType QuestionType @default(MCQ)
 
   // Legacy fields retained for existing Question Bank UI
@@ -332,8 +333,8 @@ model Question {
   optionC       String?
   optionD       String?
   correctAnswer String?
-  subject       String
-  topic         String
+  subject       String         @default("")
+  topic         String         @default("")
 
   explanation   String?
   difficulty    Difficulty     @default(MEDIUM)
@@ -370,6 +371,7 @@ model QuestionOption {
   questionId String   @db.Uuid
   label      String
   optionText String
+  imageReferences Json?
   isCorrect  Boolean  @default(false)
   sortOrder  Int      @default(0)
   createdAt  DateTime @default(now())
@@ -381,13 +383,14 @@ model QuestionOption {
 }
 
 model QuestionOccurrence {
-  id         String @id @default(uuid()) @db.Uuid
-  questionId String @db.Uuid
+  id         String  @id @default(uuid()) @db.Uuid
+  questionId String  @db.Uuid
+  isPrimary  Boolean @default(false)
 
   // Legacy text fields retained for existing data format
-  institution    String
-  examName       String
-  examYear       Int
+  institution    String?
+  examName       String?
+  examYear       Int?
   postName       String?
   department     String?
   questionNumber Int?
@@ -410,6 +413,8 @@ model QuestionOccurrence {
   sourceDocument SourceDocument? @relation(fields: [sourceDocumentId], references: [id])
 
   @@index([questionId])
+  // Partial unique indexes for occurrence identity exclude questionNumber;
+  // Primary and occurrence identity constraints are maintained by SQL migrations.
   @@index([institution, examYear])
   @@index([institutionId, examYear])
   @@index([examId, examYear])

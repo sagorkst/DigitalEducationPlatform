@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import OcrQuestionImportPanel from "./ocr-question-import-panel";
 
 type ImportSummary = {
@@ -9,14 +9,6 @@ type ImportSummary = {
   validRows: number;
   invalidRows: number;
   duplicateRows: number;
-};
-
-type HtmlParserSummary = {
-  detectedStructure: string;
-  totalCandidates: number;
-  extractedCount: number;
-  skippedCount: number;
-  warnings: string[];
 };
 
 type ImportRow = {
@@ -59,6 +51,10 @@ function statusStyle(status: string) {
   }
 }
 
+function getBatchSuggestions(rows: ImportRow[], field: string) {
+  return Array.from(new Set(rows.map((row) => String(row.rawData?.[field] ?? "").trim()).filter(Boolean))).slice(0, 50);
+}
+
 function FileIcon({ type }: { type: string }) {
   return (
     <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -90,13 +86,13 @@ export default function QuestionImportPanel() {
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
   const [summary, setSummary] = useState<ImportSummary | null>(null);
-  const [parserSummary, setParserSummary] = useState<HtmlParserSummary | null>(null);
   const [rows, setRows] = useState<ImportRow[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [selectAllBatch, setSelectAllBatch] = useState(false);
   const [excludedIds, setExcludedIds] = useState<string[]>([]);
   const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
+  const [showAllDetails, setShowAllDetails] = useState(false);
+  const [detailOverrides, setDetailOverrides] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -105,16 +101,17 @@ export default function QuestionImportPanel() {
     examName: "",
     examYear: "",
     postName: "",
-    department: "",
   });
-  const [batchOccurrences, setBatchOccurrences] = useState([
-    { examName: "", examYear: "", postName: "", department: "" },
-  ]);
+  const [batchOverwriteExisting, setBatchOverwriteExisting] = useState(false);
   const [editingRowId, setEditingRowId] = useState("");
   const [editingData, setEditingData] = useState<Record<string, unknown> | null>(null);
-  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; isCorrect: boolean; sortOrder: number }>>([]);
+  const [editingOptions, setEditingOptions] = useState<Array<{ label: string; optionText: string; imageReferences: string[]; isCorrect: boolean; sortOrder: number }>>([]);
   const [savingEdit, setSavingEdit] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
+  useEffect(() => {
+    if (editingData) document.getElementById("manual-question-edit-form")?.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [editingData]);
 
   function validateFile(selectedFile: File | null) {
     if (!selectedFile) return;
@@ -137,30 +134,31 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setBatchId("");
     setSelectedIds([]);
     setSelectAllBatch(false);
   }
 
-  async function loadRows(id: string, pageNumber = 1) {
-    const response = await fetch(
-      `/api/imports/${id}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`,
-      { cache: "no-store" },
-    );
-
-    const result = await response.json();
-
-    if (!response.ok || !result.success) {
-      throw new Error(result.message || "Import rows load failed.");
+  async function loadRows(id: string, _pageNumber = 1) {
+    void _pageNumber;
+    const firstResponse = await fetch(`/api/imports/${id}/rows?page=1&limit=${PAGE_SIZE}`, { cache: "no-store" });
+    const firstResult = await firstResponse.json();
+    if (!firstResponse.ok || !firstResult.success) throw new Error(firstResult.message || "Import rows load failed.");
+    const allRows: ImportRow[] = Array.isArray(firstResult.data) ? firstResult.data : [];
+    const pageCount = Math.max(1, Number(firstResult.pagination?.totalPages) || 1);
+    if (pageCount > 1) {
+      const remainingPages = await Promise.all(Array.from({ length: pageCount - 1 }, async (_, index) => {
+        const pageNumber = index + 2;
+        const response = await fetch(`/api/imports/${id}/rows?page=${pageNumber}&limit=${PAGE_SIZE}`, { cache: "no-store" });
+        const result = await response.json();
+        if (!response.ok || !result.success) throw new Error(result.message || `Import rows page ${pageNumber} load failed.`);
+        return Array.isArray(result.data) ? result.data as ImportRow[] : [];
+      }));
+      allRows.push(...remainingPages.flat());
     }
-
-    setRows(Array.isArray(result.data) ? result.data : []);
-    setPage(pageNumber);
-
-    const pages = Number(result.pagination?.totalPages);
-    setTotalPages(Number.isFinite(pages) && pages > 0 ? pages : 1);
+    setRows(allRows);
+    setPage(1);
   }
 
   async function previewImport() {
@@ -173,7 +171,6 @@ export default function QuestionImportPanel() {
     setError("");
     setMessage("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setSelectAllBatch(false);
@@ -204,7 +201,6 @@ export default function QuestionImportPanel() {
 
       setBatchId(id);
       setSummary(result.data.summary);
-      setParserSummary(result.parser ?? null);
       await loadRows(id, 1);
       setMessage("ফাইল সফলভাবে Preview তৈরি হয়েছে।");
     } catch (err) {
@@ -295,7 +291,7 @@ export default function QuestionImportPanel() {
           .map((row) => row.id);
       }
 
-      if (!batchId || actionIds.length === 0) {
+      if (!batchId || (actionIds.length === 0 && !(action === "skip" && selectAllBatch))) {
         throw new Error("অন্তত একটি উপযুক্ত Row নির্বাচন করুন।");
       }
 
@@ -356,6 +352,102 @@ export default function QuestionImportPanel() {
     }
   }
 
+  async function reviewDuplicateRows(rowIds: string[], action: "PASS" | "RECHECK") {
+    if (!batchId || rowIds.length === 0) return;
+
+    setLoading(true);
+    setError("");
+    setMessage("");
+
+    try {
+      const response = await fetch(`/api/imports/${batchId}/duplicate-review`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ rowIds, action }),
+      });
+      const result = await response.json();
+
+      if (!response.ok || result.success === false) {
+        throw new Error(result.message || "Duplicate review update করা যায়নি।");
+      }
+
+      const payload = result.data ?? result;
+      if (payload.summary) {
+        setSummary((current) => current ? { ...current, ...payload.summary } : current);
+      }
+      await loadRows(batchId, page);
+      setSelectedIds([]);
+      setSelectAllBatch(false);
+      setExcludedIds([]);
+      setMessage(action === "PASS"
+        ? `${payload.updatedRows ?? rowIds.length}টি Duplicate Row ম্যানুয়ালি Pass করা হয়েছে। Commit করলে বিদ্যমান প্রশ্নের সঙ্গে Occurrence যুক্ত হবে।`
+        : `${payload.updatedRows ?? rowIds.length}টি Row আবার Duplicate Check-এর আওতায় আনা হয়েছে।`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Duplicate review failed.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function passSelectedDuplicates() {
+    const ids = rows
+      .filter((row) =>
+        row.status === "DUPLICATE" &&
+        (selectAllBatch ? !excludedIds.includes(row.id) : selectedIds.includes(row.id)),
+      )
+      .map((row) => row.id);
+    if (ids.length === 0) {
+      setError("Pass করার জন্য অন্তত একটি Duplicate Row নির্বাচন করুন।");
+      return;
+    }
+    void reviewDuplicateRows(ids, "PASS");
+  }
+
+  async function uploadImageFiles(
+    files: FileList | null,
+    onUploaded: (references: string[]) => void,
+  ) {
+    const selectedFiles = Array.from(files ?? []);
+    if (selectedFiles.length === 0) return;
+
+    const invalidFile = selectedFiles.find((file) =>
+      !["image/jpeg", "image/png", "image/webp"].includes(file.type) ||
+      file.size > 10 * 1024 * 1024
+    );
+    if (invalidFile) {
+      setError("শুধু JPEG, PNG বা WebP ছবি দিন; প্রতিটি ছবির সর্বোচ্চ সাইজ ১০ MB।");
+      return;
+    }
+
+    setUploadingImage(true);
+    setError("");
+
+    try {
+      const references = await Promise.all(selectedFiles.map(async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+
+        const response = await fetch("/api/questions/images/upload", {
+          method: "POST",
+          body: formData,
+        });
+        const result = await response.json();
+
+        if (!response.ok || !result.success || typeof result.data?.imageReference !== "string") {
+          throw new Error(result.message || "ছবি Upload করা যায়নি।");
+        }
+
+        return result.data.imageReference as string;
+      }));
+
+      onUploaded(references);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "ছবি Upload করা যায়নি।");
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
   function updateEditingField(field: string, value: string) {
     setEditingData((current) =>
       current ? { ...current, [field]: value } : current,
@@ -374,13 +466,6 @@ export default function QuestionImportPanel() {
     });
   }
 
-  function addBatchOccurrence() {
-    setBatchOccurrences((current) => [...current, { examName: "", examYear: "", postName: "", department: "" }]);
-  }
-
-  function updateBatchOccurrence(index: number, field: string, value: string) {
-    setBatchOccurrences((current) => current.map((item, i) => i === index ? { ...item, [field]: value } : item));
-  }
 
   function addEditingOccurrence() {
     setEditingData((current) => current ? { ...current, occurrences: [...(Array.isArray(current.occurrences) ? current.occurrences : []), {}] } : current);
@@ -394,6 +479,7 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => [...current, {
       label: String.fromCharCode(65 + current.length),
       optionText: "",
+      imageReferences: [],
       isCorrect: false,
       sortOrder: current.length,
     }]);
@@ -425,6 +511,52 @@ export default function QuestionImportPanel() {
     setEditingOptions((current) => current.filter((_, i) => i !== index).map((option, i) => ({ ...option, sortOrder: i })));
   }
 
+  function handleOcrSuggestion(row: ImportRow, source: string, extractedText: string) {
+    const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
+    const questionImages = Array.isArray(raw.imageReferences) ? raw.imageReferences.filter((value): value is string => typeof value === "string") : [];
+    let applied = false;
+
+    if (questionImages.includes(source)) {
+      raw.questionText = String(raw.questionText ?? "").trim() || extractedText;
+      raw.imageReferences = questionImages.filter((value) => value !== source);
+      applied = true;
+    } else if (Array.isArray(raw.options)) {
+      raw.options = raw.options.map((value) => {
+        if (!isRecord(value)) return value;
+        const imageReferences = Array.isArray(value.imageReferences) ? value.imageReferences.filter((item): item is string => typeof item === "string") : [];
+        if (!imageReferences.includes(source)) return value;
+        applied = true;
+        return {
+          ...value,
+          optionText: String(value.optionText ?? value.text ?? "").trim() || extractedText,
+          imageReferences: imageReferences.filter((item) => item !== source),
+        };
+      });
+      const correct = (raw.options as unknown[]).find((value) => isRecord(value) && value.isCorrect === true);
+      if (isRecord(correct)) raw.correctAnswer = String(correct.optionText ?? raw.correctAnswer ?? "");
+    }
+
+    if (!applied) return;
+    setEditingRowId(row.id);
+    setEditingData(raw);
+    setEditingOptions(
+      Array.isArray(raw.options)
+        ? raw.options.map((value: unknown, index: number) => {
+            const option = isRecord(value) ? value : {};
+            return {
+              label: String(option.label ?? String.fromCharCode(65 + index)),
+              optionText: String(option.optionText ?? option.text ?? ""),
+              imageReferences: Array.isArray(option.imageReferences) ? option.imageReferences.filter((item): item is string => typeof item === "string") : [],
+              isCorrect: Boolean(option.isCorrect),
+              sortOrder: Number(option.sortOrder ?? index),
+            };
+          })
+        : [],
+    );
+    setError("");
+    setMessage("OCR text সম্পাদনার জন্য নেওয়া হয়েছে। Save করার আগে লেখা যাচাই করুন; মূল ছবি metadata-তে সংরক্ষিত আছে।");
+  }
+
   function startManualImportEdit(row: ImportRow) {
     const raw = JSON.parse(JSON.stringify(row.rawData ?? {})) as Record<string, unknown>;
 
@@ -437,6 +569,7 @@ export default function QuestionImportPanel() {
             return {
               label: String(optionData.label ?? String.fromCharCode(65 + index)),
               optionText: String(optionData.optionText ?? ""),
+              imageReferences: Array.isArray(optionData.imageReferences) ? optionData.imageReferences.filter((value): value is string => typeof value === "string") : [],
               isCorrect: Boolean(optionData.isCorrect),
               sortOrder: Number(optionData.sortOrder ?? index),
             };
@@ -447,30 +580,26 @@ export default function QuestionImportPanel() {
     setMessage("");
   }
 
-  async function applyBatchMetadataNow() {
+  async function applyBatchMetadataNow(setAsPrimary = false) {
     if (!batchId) return;
 
-    const occurrences = batchOccurrences
-      .filter((item) => item.examName.trim())
-      .map((item) => ({
-        examName: item.examName.trim(),
-        examYear: item.examYear.trim() ? Number(item.examYear) : undefined,
-        postName: item.postName.trim() || undefined,
-        department: item.department.trim() || undefined,
-      }));
     const body = {
       institution: batchMetadata.institution.trim() || undefined,
       examName: batchMetadata.examName.trim() || undefined,
       examYear: batchMetadata.examYear.trim() ? Number(batchMetadata.examYear) : undefined,
       postName: batchMetadata.postName.trim() || undefined,
-      department: batchMetadata.department.trim() || undefined,
-      occurrences: occurrences.length ? occurrences : undefined,
       rowIds: selectedIds.length && !selectAllBatch ? selectedIds : undefined,
       applyTo: selectedIds.length && !selectAllBatch ? "selected" : "all",
-      overwriteExisting: false,
+      overwriteExisting: batchOverwriteExisting,
+      setAsPrimary,
     };
 
-    if (!body.institution && !body.examName && !body.examYear && !body.postName && !body.department && !body.occurrences) {
+    if (setAsPrimary && (!body.institution || !body.examName || !body.postName || !body.examYear)) {
+      setError("Primary Occurrence নির্ধারণের জন্য Institution, Exam, Post ও Year—চারটি তথ্যই দিন।");
+      return;
+    }
+
+    if (!body.institution && !body.examName && !body.examYear && !body.postName) {
       setError("কমপক্ষে একটি Batch Metadata দিন।");
       return;
     }
@@ -499,7 +628,9 @@ export default function QuestionImportPanel() {
         current ? { ...current, ...counts } : current,
       );
       await loadRows(batchId, page);
-      setMessage(`Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
+      setMessage(setAsPrimary
+        ? `Primary Occurrence ${payload.updatedRows ?? 0}টি প্রশ্নের জন্য নির্ধারণ করা হয়েছে। আগের Occurrence রেকর্ড অক্ষত আছে; শুধু Primary flag পরিবর্তিত হয়েছে।`
+        : `Batch Metadata ${payload.updatedRows ?? 0}টি প্রশ্নে প্রয়োগ হয়েছে। আগে থেকে থাকা তথ্য অক্ষত রাখা হয়েছে।`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Batch metadata apply failed.");
     } finally {
@@ -511,10 +642,10 @@ export default function QuestionImportPanel() {
     if (!batchId || !editingRowId || !editingData) return;
 
     const normalizedOptions = editingOptions
-      .filter((option) => option.optionText.trim())
+      .filter((option) => option.optionText.trim() || option.imageReferences.length > 0)
       .map((option, index) => ({ ...option, optionText: option.optionText.trim(), sortOrder: index }));
-    if (editingData.questionType === "MCQ" && (normalizedOptions.length < 2 || normalizedOptions.length > 4)) {
-      setError("MCQ-এর জন্য ২ থেকে ৪টি Option দিতে হবে। সঠিক উত্তর একাধিক বা অনির্ধারিত থাকতে পারে।");
+    if (normalizedOptions.length > 4) {
+      setError("সর্বোচ্চ ৪টি Option দেওয়া যাবে। Option ও Correct Answer ফাঁকা রাখা যাবে।");
       return;
     }
     const rawData = { ...editingData, options: normalizedOptions };
@@ -570,11 +701,9 @@ export default function QuestionImportPanel() {
     setFile(null);
     setBatchId("");
     setSummary(null);
-    setParserSummary(null);
     setRows([]);
     setSelectedIds([]);
     setPage(1);
-    setTotalPages(1);
     setMessage("");
     setError("");
   }
@@ -597,7 +726,7 @@ export default function QuestionImportPanel() {
 
       {open && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm sm:p-5">
-          <div className="flex max-h-[95vh] w-full max-w-6xl flex-col overflow-hidden rounded-2xl bg-slate-50 shadow-2xl">
+          <div className={`flex w-full flex-col overflow-hidden bg-slate-50 shadow-2xl ${summary ? "max-h-[96vh] max-w-[98vw] rounded-xl" : "max-h-[95vh] max-w-6xl rounded-2xl"}`}>
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
               <div className="flex items-center gap-3">
                 <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -626,8 +755,8 @@ export default function QuestionImportPanel() {
               </button>
             </div>
 
-            <div className="overflow-y-auto p-4 sm:p-7">
-              <div className="mb-6 grid gap-3 sm:grid-cols-3">
+            <div className={`min-h-0 overflow-y-auto ${summary ? "p-2 sm:p-3" : "p-4 sm:p-7"}`}>
+              <div className={`${summary ? "hidden" : ""} mb-6 grid gap-3 sm:grid-cols-3`}>
                 <div className="rounded-xl border border-slate-200 bg-white p-4">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">
                     Supported formats
@@ -796,16 +925,28 @@ export default function QuestionImportPanel() {
               )}
 
               {error && (
-                <div className="mt-5 flex gap-3 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                  <span className="font-bold">!</span>
-                  <p>{error}</p>
+                <div className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/50 p-4" role="alertdialog" aria-modal="true" aria-labelledby="import-error-title">
+                  <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
+                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-xl font-bold text-red-700">!</div>
+                    <h3 id="import-error-title" className="text-center text-base font-bold text-slate-900">সতর্কতা</h3>
+                    <p className="mt-2 text-center text-sm leading-6 text-slate-600">{error}</p>
+                    <div className="mt-5 flex justify-center">
+                      <button type="button" onClick={() => setError("")} className="min-w-24 rounded-lg bg-red-600 px-5 py-2 text-sm font-semibold text-white hover:bg-red-700">OK</button>
+                    </div>
+                  </div>
                 </div>
               )}
 
               {message && (
-                <div className="mt-5 flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-700">
-                  <span className="font-bold">✓</span>
-                  <p>{message}</p>
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/40 p-4" role="dialog" aria-modal="true" aria-labelledby="import-success-title">
+                  <div className="w-full max-w-sm rounded-xl bg-white p-5 shadow-2xl">
+                    <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full bg-emerald-100 text-xl font-bold text-emerald-700">✓</div>
+                    <h3 id="import-success-title" className="text-center text-base font-bold text-slate-900">সফল হয়েছে</h3>
+                    <p className="mt-2 text-center text-sm leading-6 text-slate-600">{message}</p>
+                    <div className="mt-5 flex justify-center">
+                      <button type="button" onClick={() => setMessage("")} className="min-w-24 rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white hover:bg-blue-700">OK</button>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -834,56 +975,52 @@ export default function QuestionImportPanel() {
 
               {summary && (
                 <div className="mb-6 space-y-5">
-                  <section className="rounded-xl border border-blue-200 bg-white p-4 sm:p-5">
-                    <h3 className="text-base font-bold text-slate-900">
-                      Batch Metadata — Apply to Missing Information
-                    </h3>
-                    <p className="mt-1 text-xs text-slate-500">
-                      একই পরীক্ষার Institution, Exam, Year ও Post একবার লিখুন।
-                      আগে থেকে থাকা প্রশ্নের তথ্য পরিবর্তন হবে না।
-                    </p>
-
-                    <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      <input value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Shared Institution" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Default Exam Name (optional)" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Default Exam Year" inputMode="numeric" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Shared Post Name" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                      <input value={batchMetadata.department} onChange={(e) => setBatchMetadata((v) => ({ ...v, department: e.target.value }))} placeholder="Shared Department" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
-                    </div>
-                    <div className="mt-4 rounded-lg border border-slate-200 p-3">
-                      <div className="mb-3 flex items-center justify-between gap-2">
-                        <p className="text-sm font-semibold text-slate-700">একই প্রশ্নের জন্য একাধিক Exam যুক্ত করুন</p>
-                        <button type="button" onClick={addBatchOccurrence} className="rounded-md border border-blue-200 px-3 py-1.5 text-xs font-bold text-blue-700 hover:bg-blue-50">+ Add Exam</button>
+                  <section className="mb-3 grid grid-cols-1 gap-4 lg:grid-cols-5">
+                    <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-2">
+                      <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Batch Metadata</h3>
+                      <div className="grid flex-1 grid-cols-1 gap-2 sm:grid-cols-2 xl:grid-cols-4">
+                        <input list="batch-institution-suggestions" value={batchMetadata.institution} onChange={(e) => setBatchMetadata((v) => ({ ...v, institution: e.target.value }))} placeholder="Institution" title={batchMetadata.institution} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-exam-suggestions" value={batchMetadata.examName} onChange={(e) => setBatchMetadata((v) => ({ ...v, examName: e.target.value }))} placeholder="Exam Name" title={batchMetadata.examName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-post-suggestions" value={batchMetadata.postName} onChange={(e) => setBatchMetadata((v) => ({ ...v, postName: e.target.value }))} placeholder="Post Name" title={batchMetadata.postName} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
+                        <input list="batch-year-suggestions" value={batchMetadata.examYear} onChange={(e) => setBatchMetadata((v) => ({ ...v, examYear: e.target.value }))} placeholder="Year" inputMode="numeric" title={batchMetadata.examYear} className="h-11 min-w-0 w-full rounded-md border border-slate-300 px-2.5 text-xs" />
                       </div>
-                      <div className="space-y-3">
-                        {batchOccurrences.map((item, index) => (
-                          <div key={index} className="grid gap-2 rounded-lg bg-slate-50 p-3 sm:grid-cols-2 lg:grid-cols-4">
-                            <input value={item.examName} onChange={(e) => updateBatchOccurrence(index, "examName", e.target.value)} placeholder={`Exam Name ${index + 1}`} className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <input value={item.examYear} onChange={(e) => updateBatchOccurrence(index, "examYear", e.target.value)} placeholder="Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <input value={item.postName} onChange={(e) => updateBatchOccurrence(index, "postName", e.target.value)} placeholder="Post" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                            <div className="flex gap-2">
-                              <input value={item.department} onChange={(e) => updateBatchOccurrence(index, "department", e.target.value)} placeholder="Department" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
-                              <button type="button" onClick={() => setBatchOccurrences((current) => current.filter((_, i) => i !== index))} disabled={batchOccurrences.length === 1} aria-label="Remove exam" className="rounded-md border border-red-200 px-2 text-red-600 disabled:opacity-30">×</button>
-                            </div>
+                      <datalist id="batch-institution-suggestions">{getBatchSuggestions(rows, "institution").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-exam-suggestions">{getBatchSuggestions(rows, "examName").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-year-suggestions">{getBatchSuggestions(rows, "examYear").map((value) => <option key={value} value={value} />)}</datalist>
+                      <datalist id="batch-post-suggestions">{getBatchSuggestions(rows, "postName").map((value) => <option key={value} value={value} />)}</datalist>
+                      <div className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-2">
+                        <label className="flex items-center gap-1.5 text-[11px] text-slate-700"><input type="checkbox" checked={batchOverwriteExisting} onChange={(e) => setBatchOverwriteExisting(e.target.checked)} className="rounded border-slate-300" /><span>Replace existing</span></label>
+                        <span className="text-[10px] text-slate-500">{selectAllBatch ? "All rows" : selectedIds.length ? `${selectedIds.length} selected` : "All rows"}</span>
+                        <button type="button" onClick={() => applyBatchMetadataNow()} disabled={loading} className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-700 disabled:opacity-50">{batchOverwriteExisting ? "↻ Replace & Apply" : "✓ Apply"}</button>
+                        <button type="button" onClick={() => applyBatchMetadataNow(true)} disabled={loading || !batchMetadata.institution.trim() || !batchMetadata.examName.trim() || !batchMetadata.postName.trim() || !/^\d{4}$/.test(batchMetadata.examYear) || Number(batchMetadata.examYear) < 1900 || Number(batchMetadata.examYear) > 2100} title="Set as primary occurrence (Institution, Exam, Post and a valid Year required)" className="rounded-md border border-emerald-300 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">★ Primary</button>
+                      </div>
+                    </div>
+                    <div className="flex h-full flex-col justify-between gap-3 rounded-md border border-slate-200 bg-white p-3 lg:col-span-3">
+                      <h3 className="border-b border-slate-200 pb-2 text-sm font-bold text-slate-800">Statistics</h3>
+                      <div className="grid flex-1 grid-cols-2 gap-3 xl:grid-cols-4">
+                        {[
+                          { label: "Total Questions", value: summary.totalRows, icon: "▤", color: "text-slate-900" },
+                          { label: "Valid", value: summary.validRows, icon: "✓", color: "text-emerald-700" },
+                          { label: "Invalid", value: summary.invalidRows, icon: "!", color: "text-red-700" },
+                          { label: "Duplicates", value: summary.duplicateRows, icon: "⧉", color: "text-amber-700" },
+                        ].map((item) => (
+                          <div key={item.label} className="flex min-h-[54px] items-center justify-between gap-2 rounded border border-slate-200 bg-white px-2 py-1">
+                            <span className="min-w-0 text-[10px] font-medium leading-tight text-slate-500">{item.label}</span>
+                            <span className={`shrink-0 text-base font-black tabular-nums ${item.color}`}><span className="mr-1 text-xs">{item.icon}</span>{item.value.toLocaleString("en-US")}</span>
                           </div>
                         ))}
                       </div>
+                      <div className="flex flex-wrap items-center gap-1 border-t border-slate-100 pt-2">
+                        <button type="button" onClick={selectAllValid} disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-700 disabled:opacity-40">☑ Select All</button>
+                        <button type="button" onClick={passSelectedDuplicates} disabled={loading || summary.duplicateRows === 0 || (!selectAllBatch && !rows.some((row) => row.status === "DUPLICATE" && selectedIds.includes(row.id)))} className="flex-1 rounded border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 disabled:opacity-40">✓ Pass Selected Duplicates</button>
+                        <button type="button" onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }} disabled={loading || (selectedIds.length === 0 && !selectAllBatch)} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 disabled:opacity-40">✕ Clear</button>
+                        <button type="button" onClick={() => performAction("commit")} disabled={loading || (selectAllBatch ? summary.validRows + summary.duplicateRows <= excludedIds.length : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))} className="flex-1 rounded border border-emerald-300 bg-emerald-50 px-2 py-1.5 text-[10px] font-semibold text-emerald-700 disabled:opacity-40">✓ Commit</button>
+                        <button type="button" onClick={() => performAction("skip")} disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)} className="flex-1 rounded border border-red-200 px-2 py-1.5 text-[10px] font-semibold text-red-600 disabled:opacity-40">↷ Skip</button>
+                        <a href={`/api/imports/${batchId}/error-report?format=csv`} className="flex-1 rounded border border-slate-300 px-2 py-1.5 text-center text-[10px] font-semibold text-slate-700">⇩ Error Report</a>
+                      </div>
                     </div>
-                    <p className="mt-3 text-xs text-slate-500">
-                      Apply target: {selectAllBatch ? "সব import row" : selectedIds.length ? `${selectedIds.length}টি selected row` : "সব import row"}।
-                    </p>
-
-                    <button
-                      type="button"
-                      onClick={applyBatchMetadataNow}
-                      disabled={loading}
-                      className="mt-4 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-50"
-                    >
-                      Apply to Missing Fields & Revalidate
-                    </button>
                   </section>
-
-                  <section id="manual-question-edit-form" className="rounded-xl border border-amber-200 bg-white p-4 sm:p-5">
+                  <section id="manual-question-edit-form" className={`rounded-lg border border-amber-200 bg-white p-3 ${editingData ? "" : "hidden"}`}>
                     <h3 className="text-base font-bold text-slate-900">
                       Manual Question Edit
                     </h3>
@@ -916,14 +1053,72 @@ export default function QuestionImportPanel() {
                         <textarea
                           value={String(editingData.questionText ?? "")}
                           onChange={(e) => updateEditingField("questionText", e.target.value)}
-                          placeholder="Question Text"
+                          placeholder="Question Text (image-only questions are supported)"
                           rows={3}
                           className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
                         />
+                        <textarea
+                          value={Array.isArray(editingData.imageReferences) ? editingData.imageReferences.join("\n") : ""}
+                          onChange={(e) => setEditingData((current) => current ? { ...current, imageReferences: e.target.value.split("\n").map((value) => value.trim()).filter(Boolean) } : current)}
+                          placeholder="Question image URLs (one per line)"
+                          rows={2}
+                          className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                        />
+                        <label className="flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                          <span className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700">
+                            {uploadingImage ? "Uploading..." : "＋ Upload Question Images"}
+                          </span>
+                          <input
+                            type="file"
+                            accept="image/jpeg,image/png,image/webp"
+                            multiple
+                            disabled={uploadingImage || savingEdit}
+                            onChange={(e) => {
+                              void uploadImageFiles(e.currentTarget.files, (references) =>
+                                setEditingData((current) => current ? {
+                                  ...current,
+                                  imageReferences: [
+                                    ...(Array.isArray(current.imageReferences) ? current.imageReferences.filter((value): value is string => typeof value === "string") : []),
+                                    ...references,
+                                  ],
+                                } : current),
+                              );
+                              e.currentTarget.value = "";
+                            }}
+                            className="sr-only"
+                          />
+                          <span className="font-normal text-slate-500">JPEG / PNG / WebP · Max 10 MB each</span>
+                        </label>
+                        {Array.isArray(editingData.imageReferences) && editingData.imageReferences.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {editingData.imageReferences.map((source, index) => typeof source === "string" ? (
+                              <img key={index} src={source} alt={`Question image ${index + 1}`} className="max-h-28 max-w-48 rounded border border-slate-200 object-contain" />
+                            ) : null)}
+                          </div>
+                        )}
 
                         <div className="grid gap-3 sm:grid-cols-2">
                           <input value={String(editingData.subject ?? "")} onChange={(e) => updateEditingField("subject", e.target.value)} placeholder="Subject" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
                           <input value={String(editingData.topic ?? "")} onChange={(e) => updateEditingField("topic", e.target.value)} placeholder="Topic" className="rounded-lg border border-slate-300 px-3 py-2 text-sm" />
+                        </div>
+                        <div className="grid gap-3 sm:grid-cols-3">
+                          <select value={String(editingData.questionType ?? "MCQ")} onChange={(e) => updateEditingField("questionType", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="MCQ">MCQ</option><option value="TRUE_FALSE">True / False</option><option value="FILL_IN_THE_BLANKS">Fill in the Blanks</option><option value="WRITTEN">Written</option>
+                          </select>
+                          <select value={String(editingData.difficulty ?? "MEDIUM")} onChange={(e) => updateEditingField("difficulty", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="EASY">Easy</option><option value="MEDIUM">Medium</option><option value="HARD">Hard</option>
+                          </select>
+                          <select value={String(editingData.status ?? "DRAFT")} onChange={(e) => updateEditingField("status", e.target.value)} className="rounded-lg border border-slate-300 px-3 py-2 text-sm">
+                            <option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="HIDDEN">Hidden</option><option value="ARCHIVED">Archived</option>
+                          </select>
+                        </div>
+                        <div className="rounded-lg border border-slate-200 p-3">
+                          <p className="mb-2 text-sm font-semibold text-slate-700">Primary / Source Metadata</p>
+                          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                            {(["institution","examName","examYear","postName","department","source","sourcePage","sourceUrl"] as const).map((field) => (
+                              <input key={field} value={String(editingData[field] ?? "")} onChange={(e) => updateEditingField(field, e.target.value)} placeholder={field} inputMode={field === "examYear" || field === "sourcePage" ? "numeric" : undefined} className="min-w-0 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                            ))}
+                          </div>
                         </div>
                         <div className="rounded-lg border border-slate-200 p-3">
                           <div className="mb-3 flex items-center justify-between gap-2">
@@ -936,6 +1131,12 @@ export default function QuestionImportPanel() {
                                 <input value={String(occurrence.institution ?? "")} onChange={(e) => updateEditingOccurrence(index, "institution", e.target.value)} placeholder="Institution" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                 <input value={String(occurrence.examName ?? "")} onChange={(e) => updateEditingOccurrence(index, "examName", e.target.value)} placeholder="Exam Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                 <input value={String(occurrence.examYear ?? "")} onChange={(e) => updateEditingOccurrence(index, "examYear", e.target.value)} placeholder="Exam Year" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.department ?? "")} onChange={(e) => updateEditingOccurrence(index, "department", e.target.value)} placeholder="Department" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.questionNumber ?? "")} onChange={(e) => updateEditingOccurrence(index, "questionNumber", e.target.value)} placeholder="Question Number" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.source ?? "")} onChange={(e) => updateEditingOccurrence(index, "source", e.target.value)} placeholder="Source" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.sourcePage ?? "")} onChange={(e) => updateEditingOccurrence(index, "sourcePage", e.target.value)} placeholder="Source Page" inputMode="numeric" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
+                                <input value={String(occurrence.sourceUrl ?? "")} onChange={(e) => updateEditingOccurrence(index, "sourceUrl", e.target.value)} placeholder="Source URL" className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm sm:col-span-2" />
                                 <div className="flex gap-2">
                                   <input value={String(occurrence.postName ?? "")} onChange={(e) => updateEditingOccurrence(index, "postName", e.target.value)} placeholder="Post Name" className="min-w-0 flex-1 rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" />
                                   <button type="button" onClick={() => removeEditingOccurrence(index)} aria-label="Remove exam occurrence" className="rounded-md border border-red-200 px-2 text-red-600">×</button>
@@ -953,11 +1154,44 @@ export default function QuestionImportPanel() {
                           </div>
                           <div className="space-y-2">
                             {editingOptions.map((option, index) => (
-                              <div key={index} className="flex items-center gap-2">
+                              <div key={index} className="grid grid-cols-[3.5rem_minmax(0,1fr)_auto_auto] items-center gap-2">
                                 <input value={option.label} onChange={(e) => updateEditingOption(index, "label", e.target.value)} aria-label="Option label" className="w-14 rounded-md border border-slate-300 px-2 py-2 text-sm" />
-                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1}`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
+                                <input value={option.optionText} onChange={(e) => updateEditingOption(index, "optionText", e.target.value)} placeholder={`Option ${index + 1} text`} className="min-w-0 flex-1 rounded-md border border-slate-300 px-3 py-2 text-sm" />
                                 <label className="flex items-center gap-1 text-xs text-slate-600"><input type="checkbox" checked={option.isCorrect} onChange={() => toggleCorrectEditingOption(index)} /> Correct</label>
                                 <button type="button" onClick={() => removeEditingOption(index)} aria-label="Remove option" className="rounded-md border border-red-200 px-2 py-2 text-red-600">×</button>
+                                <textarea
+                                  value={option.imageReferences.join("\n")}
+                                  onChange={(e) => setEditingOptions((current) => current.map((item, i) => i === index ? { ...item, imageReferences: e.target.value.split("\n").map((value) => value.trim()).filter(Boolean) } : item))}
+                                  placeholder="Option image URLs (one per line)"
+                                  rows={2}
+                                  className="col-span-full w-full rounded-md border border-slate-300 px-3 py-2 text-xs"
+                                />
+                                <label className="col-span-full flex flex-wrap items-center gap-2 text-xs font-semibold text-slate-700">
+                                  <span className="rounded-md border border-blue-200 bg-blue-50 px-3 py-2 text-blue-700">＋ Upload Option Images</span>
+                                  <input
+                                    type="file"
+                                    accept="image/jpeg,image/png,image/webp"
+                                    multiple
+                                    disabled={uploadingImage || savingEdit}
+                                    onChange={(e) => {
+                                      void uploadImageFiles(e.currentTarget.files, (references) =>
+                                        setEditingOptions((current) => current.map((item, i) =>
+                                          i === index ? { ...item, imageReferences: [...item.imageReferences, ...references] } : item
+                                        )),
+                                      );
+                                      e.currentTarget.value = "";
+                                    }}
+                                    className="sr-only"
+                                  />
+                                  <span className="font-normal text-slate-500">JPEG / PNG / WebP · Max 10 MB each</span>
+                                </label>
+                                {option.imageReferences.length > 0 && (
+                                  <div className="col-span-full flex flex-wrap gap-2">
+                                    {option.imageReferences.map((source, imageIndex) => (
+                                      <img key={imageIndex} src={source} alt={`Option ${option.label} image ${imageIndex + 1}`} className="max-h-24 max-w-40 rounded border border-slate-200 object-contain" />
+                                    ))}
+                                  </div>
+                                )}
                               </div>
                             ))}
                             {editingOptions.length === 0 && <p className="text-xs text-slate-500">এই প্রশ্নে এখনো কোনো Option নেই।</p>}
@@ -1007,174 +1241,16 @@ export default function QuestionImportPanel() {
               )}
               {summary && (
                 <>
-                  <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-bold text-slate-900">
-                        Import Preview
-                      </h3>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Review the extracted records before committing.
-                      </p>
-                    </div>
-                    <span className="rounded-lg bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-700">
-                      Batch: {batchId.slice(0, 8)}
-                    </span>
-                  </div>
+                  <div className="mb-2 flex flex-wrap items-center justify-between gap-2"><h3 className="text-sm font-bold text-slate-900">Import Preview <span className="font-normal text-slate-400">/</span> <span className="text-blue-700">Extracted Questions</span></h3><span className="rounded bg-blue-50 px-2 py-1 text-[10px] font-semibold text-blue-700">Batch: {batchId.slice(0, 8)}</span></div>
 
-                  <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
-                    {[
-                      {
-                        label: "Total Questions",
-                        value: summary.totalRows,
-                        color: "text-slate-900",
-                        icon: "▤",
-                      },
-                      {
-                        label: "Valid",
-                        value: summary.validRows,
-                        color: "text-emerald-700",
-                        icon: "✓",
-                      },
-                      {
-                        label: "Invalid",
-                        value: summary.invalidRows,
-                        color: "text-red-700",
-                        icon: "!",
-                      },
-                      {
-                        label: "Duplicates",
-                        value: summary.duplicateRows,
-                        color: "text-amber-700",
-                        icon: "↗",
-                      },
-                    ].map((item) => (
-                      <div
-                        key={item.label}
-                        className="rounded-xl border border-slate-200 bg-white p-4"
-                      >
-                        <div className="flex items-center justify-between">
-                          <p className="text-xs font-semibold text-slate-500">
-                            {item.label}
-                          </p>
-                          <span className={`text-lg font-bold ${item.color}`}>
-                            {item.icon}
-                          </span>
-                        </div>
-                        <p className={`mt-2 text-2xl font-black ${item.color}`}>
-                          {item.value.toLocaleString("en-US")}
-                        </p>
-                      </div>
-                    ))}
-                  </div>
 
-                  {parserSummary && (
-                    <section className="mb-5 rounded-xl border border-blue-200 bg-blue-50/70 p-4">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <h4 className="text-sm font-bold text-blue-950">
-                          Source Extraction Report
-                        </h4>
-                        <span className="rounded-md bg-white px-2 py-1 text-[10px] font-semibold text-blue-800">
-                          {parserSummary.detectedStructure}
-                        </span>
-                      </div>
-                      <div className="mt-3 grid grid-cols-3 gap-2">
-                        {[
-                          { label: "Source Records", value: parserSummary.totalCandidates },
-                          { label: "Text Extracted", value: parserSummary.extractedCount },
-                          { label: "Needs Review", value: parserSummary.skippedCount },
-                        ].map((item) => (
-                          <div key={item.label} className="rounded-lg border border-blue-100 bg-white p-3">
-                            <p className="text-[10px] font-semibold text-slate-500">{item.label}</p>
-                            <p className="mt-1 text-xl font-black tabular-nums text-slate-900">
-                              {item.value.toLocaleString("en-US")}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                      {parserSummary.skippedCount > 0 && (
-                        <p className="mt-3 text-xs font-medium text-amber-800">
-                          {parserSummary.skippedCount}টি Source Record থেকে প্রশ্নের লেখা পুরোপুরি পাওয়া যায়নি। কোনো Record বাদ দেওয়া হয়নি—সবগুলো Preview-তে রাখা হয়েছে, অসম্পূর্ণগুলো INVALID হিসেবে সংশোধন করতে হবে।
-                        </p>
-                      )}
-                      {parserSummary.warnings.length > 0 && (
-                        <ul className="mt-2 list-inside list-disc space-y-1 text-xs text-slate-600">
-                          {parserSummary.warnings.map((warning, index) => (
-                            <li key={index}>{warning}</li>
-                          ))}
-                        </ul>
-                      )}
-                    </section>
-                  )}
 
-                  <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <h4 className="text-sm font-bold text-slate-900">
-                        Extracted Questions
-                      </h4>
-                      <p className="mt-1 text-xs text-slate-500">
-                        Select records to commit or skip.
-                      </p>
-                    </div>
 
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        type="button"
-                        onClick={selectAllValid}
-                        disabled={loading || (summary.validRows === 0 && summary.duplicateRows === 0)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Select All Rows (Across All Pages)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setSelectedIds([]); setExcludedIds([]); setSelectAllBatch(false); }}
-                        disabled={loading || (selectedIds.length === 0 && !selectAllBatch)}
-                        className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Clear Selection
-                      </button>
-                    </div>
-                  </div>
 
-                  <div className="mb-4 flex flex-wrap items-center gap-2 rounded-xl border border-slate-200 bg-white p-3">
-                    <span className="mr-auto text-xs font-semibold text-slate-600">
-                      {selectAllBatch ? `All eligible rows selected${excludedIds.length ? ` · ${excludedIds.length} excluded` : ""}` : `${selectedIds.length} selected`}
-                    </span>
 
-                    <button
-                      type="button"
-                      onClick={() => performAction("commit")}
-                      disabled={
-                        loading ||
-                        (selectAllBatch
-                          ? summary.validRows + summary.duplicateRows <= excludedIds.length
-                          : !rows.some((row) => ["VALID", "DUPLICATE"].includes(row.status) && selectedIds.includes(row.id)))
-                      }
-                      className="rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-40"
-                    >
-                      Commit Selected
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => performAction("skip")}
-                      disabled={loading || (!selectAllBatch && selectedIds.length === 0) || (selectAllBatch && summary.totalRows === 0)}
-                      className="rounded-lg border border-red-200 bg-white px-4 py-2 text-xs font-bold text-red-600 hover:bg-red-50 disabled:opacity-40"
-                    >
-                      Skip Selected
-                    </button>
-
-                    <a
-                      href={`/api/imports/${batchId}/error-report?format=csv`}
-                      className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                    >
-                      Error Report →
-                    </a>
-                  </div>
-
-                  <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
+                  <div className="mb-1 flex justify-end"><button type="button" onClick={() => { setShowAllDetails((current) => !current); setDetailOverrides({}); }} className="rounded px-2 py-1 text-[10px] font-semibold text-blue-700 hover:bg-blue-50">{showAllDetails ? "Hide Details" : "Show Details"}</button></div><div className="overflow-hidden rounded-lg border border-slate-200 bg-white">
                     <div className="overflow-x-auto">
-                      <table className="w-full min-w-[760px] text-left text-sm">
+                      <table className="w-full min-w-[980px] text-left text-xs">
                         <thead className="bg-slate-100 text-xs font-bold uppercase tracking-wide text-slate-600">
                           <tr>
                             <th className="w-12 p-3">Select</th>
@@ -1190,6 +1266,15 @@ export default function QuestionImportPanel() {
                           {rows.map((row) => {
                             const raw = row.rawData ?? {};
                             const errors = getErrors(row);
+                            const htmlMetadata = isRecord(raw.htmlImportMetadata) ? raw.htmlImportMetadata : {};
+                            const imageAnalyses = isRecord(htmlMetadata.imageStandardization) && Array.isArray((htmlMetadata.imageStandardization as Record<string, unknown>).analyses)
+                              ? ((htmlMetadata.imageStandardization as Record<string, unknown>).analyses as unknown[]).filter(isRecord)
+                              : [];
+                            const parserWarnings = Array.isArray(htmlMetadata.warnings)
+                              ? htmlMetadata.warnings.filter((warning): warning is string =>
+                                  typeof warning === "string" && !/Explanation was not found/i.test(warning),
+                                )
+                              : [];
                             const selectable = [
                               "VALID",
                               "INVALID",
@@ -1201,7 +1286,7 @@ export default function QuestionImportPanel() {
                                 key={row.id}
                                 className="align-top transition hover:bg-slate-50"
                               >
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
                                   <input
                                     type="checkbox"
                                     checked={
@@ -1221,11 +1306,11 @@ export default function QuestionImportPanel() {
                                   />
                                 </td>
 
-                                <td className="p-3 font-semibold text-slate-500">
+                                <td className="px-2 py-1.5 font-semibold text-slate-500">
                                   {row.rowNumber}
                                 </td>
 
-                                <td className="max-w-sm whitespace-normal p-3 font-medium text-slate-800">
+                                <td className="whitespace-normal px-2 py-1.5 font-medium text-slate-800">
                                   {Boolean(raw.htmlImportMetadata) &&
                                     typeof raw.htmlImportMetadata === "object" &&
                                     typeof (raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId === "string" && (
@@ -1233,10 +1318,31 @@ export default function QuestionImportPanel() {
                                         Source ID: {String((raw.htmlImportMetadata as Record<string, unknown>).sourceQuestionId)}
                                       </p>
                                     )}
-                                  {String(raw.questionText ?? "â€”")}
+                                  {String(raw.questionText ?? "")}
+                                  {imageAnalyses.filter((analysis) => Array.isArray(raw.imageReferences) && raw.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, index) => (
+                                    <div key={String(analysis.source ?? index)} className="mt-2 rounded-lg border border-blue-200 bg-blue-50 p-2 text-xs text-slate-700">
+                                      <p className="font-semibold text-blue-800">Question image OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
+                                      <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
+                                      <p className="mb-2 text-[10px] text-slate-600">মূল প্রশ্নের ছবি এখনো সংযুক্ত আছে। যাচাই করে তারপর প্রতিস্থাপন করুন।</p>
+                                      <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে প্রশ্নের ছবি প্রতিস্থাপন করুন</button>
+                                    </div>
+                                  ))}
+                                  {parserWarnings.length > 0 && (
+                                    <ul className="mt-1 list-inside list-disc space-y-1 text-[10px] font-medium text-amber-700">
+                                      {parserWarnings.map((warning, index) => (
+                                        <li key={index}>{warning}</li>
+                                      ))}
+                                    </ul>
+                                  )}
+                                  {Array.isArray(raw.imageReferences) && raw.imageReferences.length > 0 && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {raw.imageReferences.map((source: unknown, index: number) => typeof source === "string" ? <img key={index} src={source} alt={`Question image ${index + 1}`} loading="lazy" className="max-h-36 max-w-full rounded border border-slate-200 object-contain" /> : null)}
+                                    </div>
+                                  )}
+                                  {!String(raw.questionText ?? "").trim() && (!Array.isArray(raw.imageReferences) || raw.imageReferences.length === 0) && <span className="text-red-600">Question text/image missing</span>}
                                   {Array.isArray(raw.options) && raw.options.length > 0 && (
-                                    <div className="mt-3 space-y-1.5">
-                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; isCorrect?: boolean }, index: number) => (
+                                    <div className="mt-1 grid grid-cols-2 gap-x-2 gap-y-1 lg:grid-cols-4">
+                                      {raw.options.map((option: { label?: string; optionText?: string; text?: string; imageReferences?: string[]; isCorrect?: boolean }, index: number) => (
                                         <div
                                           key={`${option.label ?? index}-${index}`}
                                           className={`rounded-lg px-3 py-2 text-xs ${
@@ -1249,6 +1355,19 @@ export default function QuestionImportPanel() {
                                             {option.label ?? String.fromCharCode(65 + index)}.
                                           </span>
                                           {option.optionText ?? option.text ?? ""}
+                                          {imageAnalyses.filter((analysis) => Array.isArray(option.imageReferences) && option.imageReferences.includes(String(analysis.source)) && typeof analysis.extractedText === "string" && String(analysis.extractedText).trim()).map((analysis, analysisIndex) => (
+                                            <div key={String(analysis.source ?? analysisIndex)} className="mt-2 rounded-md border border-blue-200 bg-blue-50 p-2 font-normal text-slate-700">
+                                              <p className="font-semibold text-blue-800">Option {option.label ?? index + 1} OCR · Confidence {Number(analysis.confidence ?? 0)}%</p>
+                                              <p className="my-1 whitespace-pre-wrap">{String(analysis.extractedText)}</p>
+                                              <p className="mb-2 text-[10px] text-slate-600">এই Option-এর মূল ছবি এখনো সংযুক্ত আছে।</p>
+                                              <button type="button" onClick={() => handleOcrSuggestion(row, String(analysis.source ?? ""), String(analysis.extractedText))} className="rounded-md border border-blue-300 bg-white px-2 py-1 font-semibold text-blue-700 hover:bg-blue-100">এই লেখা দিয়ে Option-এর ছবি প্রতিস্থাপন করুন</button>
+                                            </div>
+                                          ))}
+                                          {Array.isArray(option.imageReferences) && option.imageReferences.length > 0 && (
+                                            <div className="mt-2 flex flex-wrap gap-1">
+                                              {option.imageReferences.map((source: unknown, imageIndex: number) => typeof source === "string" ? <img key={imageIndex} src={source} alt={`Option ${option.label ?? index} image ${imageIndex + 1}`} loading="lazy" className="max-h-24 max-w-full rounded border border-slate-200 object-contain" /> : null)}
+                                            </div>
+                                          )}
                                           {option.isCorrect && (
                                             <span className="ml-2">✓ Correct</span>
                                           )}
@@ -1257,27 +1376,36 @@ export default function QuestionImportPanel() {
                                     </div>
                                   )}
 
-                                  {raw.correctAnswer != null && (
-                                    <p className="mt-3 text-xs font-semibold text-emerald-700">
-                                      Correct Answer: {String(raw.correctAnswer)}
-                                    </p>
-                                  )}
-
-                                  {raw.explanation != null && String(raw.explanation).trim() !== "" && (
-                                    <p className="mt-2 whitespace-pre-wrap text-xs text-slate-600">
-                                      Explanation: {String(raw.explanation)}
-                                    </p>
-                                  )}
+                                  <details open={detailOverrides[row.id] ?? showAllDetails} onToggle={(event) => { const isOpen = event.currentTarget.open; setDetailOverrides((current) => ({ ...current, [row.id]: isOpen })); }} className="mt-1 rounded border border-slate-200 bg-slate-50 px-2 py-1">
+                                    <summary className="cursor-pointer text-[10px] font-semibold text-blue-700">Answer · metadata · explanation · source · occurrences</summary>
+                                    <div className="grid grid-cols-1 gap-x-3 gap-y-1 pt-1 sm:grid-cols-2 xl:grid-cols-3">
+                                      {raw.correctAnswer != null && <p className="text-[11px] font-semibold text-emerald-700"><strong>Correct Answer:</strong> {String(raw.correctAnswer)}</p>}
+                                      {raw.questionType != null && <p className="text-[11px]"><strong>Type:</strong> {String(raw.questionType)}</p>}
+                                      {raw.difficulty != null && <p className="text-[11px]"><strong>Difficulty:</strong> {String(raw.difficulty)}</p>}
+                                      {raw.examName != null && <p className="text-[11px]"><strong>Exam:</strong> {String(raw.examName)}</p>}
+                                      {raw.examYear != null && <p className="text-[11px]"><strong>Year:</strong> {String(raw.examYear)}</p>}
+                                      {raw.institution != null && <p className="text-[11px]"><strong>Institution:</strong> {String(raw.institution)}</p>}
+                                      {raw.postName != null && <p className="text-[11px]"><strong>Post:</strong> {String(raw.postName)}</p>}
+                                      {raw.department != null && <p className="text-[11px]"><strong>Department:</strong> {String(raw.department)}</p>}
+                                      {raw.explanation != null && String(raw.explanation).trim() !== "" && <p className="whitespace-pre-wrap text-[11px]"><strong>Explanation:</strong> {String(raw.explanation)}</p>}
+                                      {raw.source != null && <p className="text-[11px]"><strong>Source:</strong> {String(raw.source)}</p>}
+                                      {raw.sourcePage != null && <p className="text-[11px]"><strong>Source Page:</strong> {String(raw.sourcePage)}</p>}
+                                      {raw.sourceUrl != null && <p className="break-all text-[11px]"><strong>Source URL:</strong> {String(raw.sourceUrl)}</p>}
+                                      {raw.repeatGroupId != null && <p className="text-[11px]"><strong>Repeat Group:</strong> {String(raw.repeatGroupId)}</p>}
+                                      {Array.isArray(raw.occurrences) && raw.occurrences.map((occurrence: unknown, index: number) => { const item = isRecord(occurrence) ? occurrence : {}; return <p key={index} className="text-[11px]"><strong>{String(item.examName ?? "Exam")}:</strong> {[item.examYear, item.postName, item.department, item.isPrimary ? "Primary" : "Additional"].filter(Boolean).map(String).join(" · ")}</p>; })}
+                                      {Object.entries(raw).filter(([key, value]) => !["questionText","options","correctAnswer","explanation","subject","topic","questionType","difficulty","status","institution","examName","examYear","postName","department","source","sourcePage","sourceUrl","occurrences","repeatGroupId","htmlImportMetadata"].includes(key) && value !== null && value !== undefined && value !== "").map(([key,value]) => <p key={key} className="break-words text-[11px]"><strong>{key}:</strong> {typeof value === "object" ? JSON.stringify(value) : String(value)}</p>)}
+                                    </div>
+                                  </details>
                                 </td>
 
-                                <td className="p-3 text-slate-700">
-                                  {String(raw.subject ?? "â€”")}
+                                <td className="px-2 py-1.5 text-slate-700">
+                                  {String(raw.subject ?? "—")}
                                   <p className="mt-1 text-xs text-slate-400">
-                                    {String(raw.topic ?? "â€”")}
+                                    {String(raw.topic ?? "—")}
                                   </p>
                                 </td>
 
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
                                   <span
                                     className={`inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 ${statusStyle(row.status)}`}
                                   >
@@ -1291,7 +1419,27 @@ export default function QuestionImportPanel() {
                                     </ul>
                                   )}
                                 </td>
-                                <td className="p-3">
+                                <td className="px-2 py-1.5">
+                                  {row.status === "DUPLICATE" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void reviewDuplicateRows([row.id], "PASS")}
+                                      disabled={loading}
+                                      className="mb-1 inline-flex items-center rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[10px] font-semibold text-amber-800 hover:bg-amber-100 disabled:opacity-40"
+                                    >
+                                      Pass Anyway
+                                    </button>
+                                  )}
+                                  {row.status === "VALID" && isRecord(raw._importReviewOverride) && raw._importReviewOverride.duplicate === "PASS" && (
+                                    <button
+                                      type="button"
+                                      onClick={() => void reviewDuplicateRows([row.id], "RECHECK")}
+                                      disabled={loading}
+                                      className="mb-1 inline-flex items-center rounded-lg border border-slate-300 px-2 py-1.5 text-[10px] font-semibold text-slate-600 hover:bg-slate-100 disabled:opacity-40"
+                                    >
+                                      Undo Pass
+                                    </button>
+                                  )}
                                   <button
                                     type="button"
                                     onClick={() => {
@@ -1323,29 +1471,7 @@ export default function QuestionImportPanel() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-                    <p className="text-xs text-slate-500">
-                      Page {page} of {totalPages}
-                    </p>
-                    <div className="flex gap-2">
-                      <button
-                        type="button"
-                        disabled={page <= 1 || loading}
-                        onClick={() => loadRows(batchId, page - 1)}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Previous
-                      </button>
-                      <button
-                        type="button"
-                        disabled={page >= totalPages || loading}
-                        onClick={() => loadRows(batchId, page + 1)}
-                        className="rounded-lg border border-slate-300 bg-white px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:opacity-40"
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
+                  <div className="mt-2 text-center text-[10px] text-slate-500">Showing all {rows.length.toLocaleString("en-US")} import rows in this workspace · no pagination</div>
                 </>
               )}
             </div>
@@ -1360,3 +1486,4 @@ export default function QuestionImportPanel() {
     </>
   );
 }
+

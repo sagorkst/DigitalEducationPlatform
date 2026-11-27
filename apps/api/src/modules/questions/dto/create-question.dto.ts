@@ -44,9 +44,13 @@ export class QuestionOptionDto {
   label!: string;
 
   @IsString()
-  @IsNotEmpty()
   @MaxLength(2000)
   optionText!: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
 
   @IsOptional()
   @IsBoolean()
@@ -119,13 +123,21 @@ export class QuestionOccurrenceDto {
   @IsOptional()
   @IsUUID()
   sourceDocumentId?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  isPrimary?: boolean;
 }
 
 export class CreateQuestionDto {
   @IsString()
-  @IsNotEmpty()
   @MaxLength(1000)
   questionText!: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  imageReferences?: string[];
 
   @IsOptional()
   @IsEnum(QuestionType)

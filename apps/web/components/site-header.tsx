@@ -1,10 +1,10 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 type AuthUser = {
   id?: string;
@@ -113,50 +113,16 @@ const links = [
   { label: "লাইব্রেরি", href: "/library" },
 ];
 
-export default function SiteHeader() {
+function SiteHeaderContent() {
   const router = useRouter();
 
-  // null keeps the first server and client render identical.
-  const [pathname, setPathname] = useState<string | null>(null);
+  const pathname = usePathname();
 
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [authChecked, setAuthChecked] = useState(false);
   const [logoutLoading, setLogoutLoading] = useState(false);
   const [logoutError, setLogoutError] = useState("");
-
-  useEffect(() => {
-    setPathname(window.location.pathname);
-
-    function handleDocumentClick(event: MouseEvent) {
-      const target = event.target;
-
-      if (!(target instanceof Element)) return;
-
-      const anchor = target.closest("a[href]");
-
-      if (!(anchor instanceof HTMLAnchorElement)) return;
-      if (anchor.target === "_blank") return;
-
-      const destination = new URL(anchor.href, window.location.origin);
-
-      if (destination.origin === window.location.origin) {
-        setPathname(destination.pathname);
-      }
-    }
-
-    function handlePopState() {
-      setPathname(window.location.pathname);
-    }
-
-    document.addEventListener("click", handleDocumentClick);
-    window.addEventListener("popstate", handlePopState);
-
-    return () => {
-      document.removeEventListener("click", handleDocumentClick);
-      window.removeEventListener("popstate", handlePopState);
-    };
-  }, []);
 
   useEffect(() => {
     let active = true;
@@ -280,7 +246,6 @@ export default function SiteHeader() {
 
       setUser(null);
       setIsSuperAdmin(false);
-      setPathname("/");
 
       window.dispatchEvent(new Event("shikhasetu:auth-changed"));
       router.push("/");
@@ -489,5 +454,37 @@ export default function SiteHeader() {
         </div>
       )}
     </header>
+  );
+}
+
+function SiteHeaderFallback() {
+  return (
+    <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/95 shadow-sm backdrop-blur">
+      <div className="mx-auto flex w-full max-w-7xl items-center gap-4 px-4 py-3 sm:px-5">
+        <Link href="/" className="flex shrink-0 items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-700 text-lg text-white">🎓</span>
+          <span className="whitespace-nowrap text-lg font-black tracking-tight text-slate-900">শিক্ষাসেতু</span>
+        </Link>
+        <nav className="hidden min-w-0 flex-1 items-center justify-center gap-x-2 xl:flex" aria-label="প্রধান নেভিগেশন">
+          {links.map((link) => (
+            <Link key={link.href} href={link.href} className="whitespace-nowrap rounded-md px-2.5 py-2 text-[13px] font-semibold text-slate-600">
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+        <div className="ml-auto flex shrink-0 items-center gap-2">
+          <span className="h-10 w-20 animate-pulse rounded-md bg-slate-100" />
+          <span className="xl:hidden rounded-md border border-slate-200 px-3 py-2 text-lg text-slate-500">☰</span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export default function SiteHeader() {
+  return (
+    <Suspense fallback={<SiteHeaderFallback />}>
+      <SiteHeaderContent />
+    </Suspense>
   );
 }
