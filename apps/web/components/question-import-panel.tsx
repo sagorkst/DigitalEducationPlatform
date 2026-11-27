@@ -704,7 +704,6 @@ export default function QuestionImportPanel() {
     setRows([]);
     setSelectedIds([]);
     setPage(1);
-    setTotalPages(1);
     setMessage("");
     setError("");
   }
