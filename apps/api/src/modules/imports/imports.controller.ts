@@ -243,7 +243,11 @@ export class ImportsController {
         status: 'DRAFT',
         ...(options.length > 0 ? { options } : {}),
         ...(correctOption
-          ? { correctAnswer: correctOption.text }
+          ? {
+              correctAnswer:
+                options.find((option) => option.label.toUpperCase() === correctOption.label.toUpperCase())?.optionText ||
+                correctOption.text,
+            }
           : {}),
         ...(question.explanation
           ? { explanation: question.explanation }
