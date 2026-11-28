@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import AdminQuestionBank from "./admin-question-bank";
+import QuestionImportPanel from "./question-import-panel";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -64,7 +65,7 @@ function hasQuestionManagementAccess(payload: unknown): boolean {
   return false;
 }
 
-export default function AdminQuestionBankGate() {
+export default function AdminQuestionBankGate({ page = "questions" }: { page?: "questions" | "import" }) {
   const [state, setState] = useState<"loading" | "allowed" | "denied">("loading");
 
   useEffect(() => {
@@ -85,5 +86,5 @@ export default function AdminQuestionBankGate() {
 
   if (state === "loading") return <main className="mx-auto max-w-4xl px-4 py-16 text-center text-slate-500">à¦…à¦¨à§à¦®à¦¤à¦¿ à¦¯à¦¾à¦šà¦¾à¦‡ à¦¹à¦šà§à¦›à§‡...</main>;
   if (state === "denied") return <main className="mx-auto max-w-4xl px-4 py-16"><div className="rounded-2xl border border-amber-200 bg-amber-50 p-8 text-center"><h1 className="text-xl font-bold text-slate-900">à¦ªà§à¦°à¦¬à§‡à¦¶à¦¾à¦§à¦¿à¦•à¦¾à¦° à¦¨à§‡à¦‡</h1><p className="mt-2 text-sm text-slate-600">à¦ªà§à¦°à¦¶à§à¦¨à¦¬à§à¦¯à¦¾à¦‚à¦• à¦¬à§à¦¯à¦¬à¦¸à§à¦¥à¦¾à¦ªà¦¨à¦¾ à¦¦à§‡à¦–à¦¤à§‡ à¦…à¦¨à§à¦®à§‹à¦¦à¦¿à¦¤ à¦…à§à¦¯à¦¾à¦•à¦¾à¦‰à¦¨à§à¦Ÿ à¦ªà§à¦°à§Ÿà§‹à¦œà¦¨à¥¤</p><Link href="/question-bank" className="mt-5 inline-block rounded-lg bg-[#142B49] px-4 py-2 text-sm font-bold text-white">Public Question Bank</Link></div></main>;
-  return <AdminQuestionBank />;
+  return page === "import" ? <QuestionImportPanel /> : <AdminQuestionBank />;
 }

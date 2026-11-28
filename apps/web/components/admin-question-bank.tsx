@@ -1,6 +1,7 @@
 
 "use client";
 
+import Link from "next/link";
 /* eslint-disable @next/next/no-html-link-for-pages -- Native anchors are required for API file downloads. */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -15,7 +16,6 @@ import {
   Select,
   Badge,
 } from "@shikhasetu/ui";
-import QuestionImportPanel from "./question-import-panel";
 import QuestionImportTemplates from "./question-import-templates";
 import QuestionImportHistory from "./question-import-history";
 
@@ -1258,7 +1258,10 @@ export default function QuestionBankPage() {
               <div className="grid min-w-0 grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">                {!showTrash && (
                   <>
                     <Button onClick={openAddForm} className="flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 whitespace-normal rounded-md bg-blue-700 px-1 text-sm font-bold leading-tight text-white hover:bg-blue-800"><svg viewBox="0 0 24 24" fill="none" className="h-5 w-5 shrink-0"><path d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/></svg><span className="text-center text-sm font-bold">নতুন প্রশ্ন</span></Button>
-                    <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-emerald-200 bg-emerald-50/40 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80"><QuestionImportPanel /></div>
+                    <Link href="/admin/questions/import" className="flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 rounded-md border border-emerald-200 bg-emerald-50/40 px-1 text-center text-sm font-bold leading-tight text-slate-800 transition-colors hover:border-emerald-400 hover:bg-emerald-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-300">
+  <span className="flex h-5 w-5 shrink-0 items-center justify-center text-emerald-700"><svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg></span>
+  <span className="text-center text-sm font-bold">Import</span>
+</Link>
                     <a href="/api/imports/export?format=xlsx" className="inline-flex h-full min-h-[80px] w-full min-w-0 flex-col items-center justify-center gap-3 whitespace-normal rounded-md border border-slate-300 bg-white px-1 text-sm font-bold leading-tight text-slate-700 transition-colors hover:border-slate-400 hover:bg-slate-100"><svg viewBox="0 0 24 24" fill="none" className="h-7 w-7 shrink-0"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 17v4h14v-4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/></svg><span className="text-sm font-bold">Export</span></a>
                     <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-violet-200 bg-violet-50/40 transition-colors hover:border-violet-400 hover:bg-violet-100/80"><QuestionImportTemplates /></div>
                     <div className="flex h-full min-h-[80px] min-w-0 w-full items-center justify-center rounded-md border border-blue-200 bg-blue-50/40 transition-colors hover:border-blue-400 hover:bg-blue-100/80"><QuestionImportHistory /></div>

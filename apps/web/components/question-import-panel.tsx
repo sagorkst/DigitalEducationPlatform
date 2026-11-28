@@ -1,7 +1,8 @@
-
+﻿
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import OcrQuestionImportPanel from "./ocr-question-import-panel";
 
 type ImportSummary = {
@@ -121,9 +122,9 @@ function FileIcon({ type }: { type: string }) {
 }
 
 export default function QuestionImportPanel() {
+  const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [open, setOpen] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [batchId, setBatchId] = useState("");
@@ -822,37 +823,15 @@ export default function QuestionImportPanel() {
 
   function closePanel() {
     if (loading) return;
-
-    setOpen(false);
-    setFile(null);
-    setBatchId("");
-    setSummary(null);
-    setRows([]);
-    setSelectedIds([]);
-    setPage(1);
-    setMessage("");
-    setError("");
+    router.push("/admin/questions");
   }
 
   return (
     <>
       <OcrQuestionImportPanel embedded />
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className="flex h-full min-h-0 w-full min-w-0 flex-col items-center justify-center gap-3 rounded-md bg-transparent px-1 text-center text-sm font-bold leading-tight text-slate-800 transition-colors hover:bg-emerald-100/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-emerald-300"
-      >
-        <svg viewBox="0 0 24 24" fill="none" className="hidden h-4 w-4">
-          <path d="M12 16V4m0 0L7 9m5-5 5 5M5 14v5a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center text-emerald-700"><svg viewBox="0 0 24 24" fill="none" className="h-5 w-5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9zM13 2v7h7M12 12v7m-3.5-3.5h7" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" /></svg>
-        </span>
-        <span className="text-center text-sm font-bold leading-tight">Import</span>
-      </button>
-
-      {open && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/65 p-2 backdrop-blur-sm sm:p-5">
-          <div className={`flex w-full flex-col overflow-hidden bg-slate-50 shadow-2xl ${summary ? "max-h-[96vh] max-w-[98vw] rounded-xl" : "max-h-[95vh] max-w-6xl rounded-2xl"}`}>
+      <main className="min-h-screen bg-[#f3f6fb] px-3 py-4 sm:px-5 lg:px-8">
+        <div className="mx-auto w-full max-w-[1440px]">
+        <div className="overflow-hidden rounded-xl border border-slate-200 bg-slate-50 shadow-sm">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
               <div className="flex min-w-0 flex-1 items-center gap-3">
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-blue-50 text-blue-700">
@@ -874,10 +853,13 @@ export default function QuestionImportPanel() {
                 type="button"
                 onClick={closePanel}
                 disabled={loading}
-                aria-label="Close import panel"
-                className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40"
+                aria-label="Back to Question Bank"
+                className="flex h-9 shrink-0 items-center gap-2 rounded-lg px-3 text-xs font-semibold text-slate-600 transition hover:bg-slate-100 hover:text-slate-900 disabled:opacity-40 sm:text-sm"
               >
-                ×
+                <svg viewBox="0 0 24 24" fill="none" className="h-4 w-4 shrink-0" aria-hidden="true">
+                  <path d="M19 12H5m0 0 7-7m-7 7 7 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span>Back to Question Bank</span>
               </button>
             </div>
 
@@ -1572,9 +1554,9 @@ export default function QuestionImportPanel() {
               <span>Shikhasetu · Question Bank Import</span>
               <span>Secure preview before importing</span>
             </div>
-          </div>
         </div>
-      )}
+      </div>
+      </main>
     </>
   );
 }
